@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Inter:wght@400;500;600;700&family=Noto+Sans+Sinhala:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; background: #F7F5FF; }
+    * { box-sizing: border-box; }
+    a { color: #6C4FF6; text-decoration: none; }
+    a:hover { color: #5539E0; }
+  </style>
+</helmet>
+
+<div style="font-family: 'Inter', sans-serif; background: #F7F5FF; color: #1E1B2E; min-height: 100vh; display: flex; flex-direction: column;">
+
+  <nav style="display: flex; align-items: center; justify-content: space-between; padding: 20px 48px; max-width: 1280px; margin: 0 auto; width: 100%;">
+    <a href="Duolingo Style Homepage.dc.html" style="display: flex; align-items: center; gap: 10px;">
+      <div style="width: 36px; height: 36px; border-radius: 10px; background: #6C4FF6; display: flex; align-items: center; justify-content: center;">
+        <div style="width: 14px; height: 14px; border-radius: 50%; background: #F7F5FF;"></div>
+      </div>
+      <span style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 22px; color: #1E1B2E;">Englisher</span>
+    </a>
+    <a href="Duolingo Style Homepage.dc.html" style="font-weight: 600; font-size: 14px; color: #6B6580;">Exit test</a>
+  </nav>
+
+  <div style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px 24px 64px;">
+
+    <sc-if value="{{ isIntro }}" hint-placeholder-val="{{ true }}">
+      <div style="max-width: 520px; width: 100%; text-align: center;">
+        <div style="width: 72px; height: 72px; border-radius: 50%; background: #ECE8FB; margin: 0 auto 24px; display: flex; align-items: center; justify-content: center;">
+          <div style="width: 28px; height: 28px; border-radius: 50%; border: 3px solid #6C4FF6; position: relative;">
+            <div style="width: 6px; height: 6px; border-radius: 50%; background: #6C4FF6; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);"></div>
+          </div>
+        </div>
+        <h1 style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 28px; margin: 0 0 16px; line-height: 1.3;">Let's find your starting point.</h1>
+        <p style="font-size: 17px; line-height: 1.6; color: #4A4560; margin: 0 0 36px;">6 quick questions, about 2 minutes. No account needed — just answer honestly, there's no wrong way to do this.</p>
+        <button onClick="{{ startTest }}" style="background: #6C4FF6; color: white; border: none; border-radius: 999px; padding: 18px 48px; font-weight: 800; font-size: 17px; font-family: 'Baloo 2', sans-serif; cursor: pointer; box-shadow: 0 6px 0 #4B3AC7;" style-hover="background: #5539E0;">Start</button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isQuestion }}" hint-placeholder-val="{{ false }}">
+      <div style="max-width: 560px; width: 100%;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+          <span style="font-weight: 700; font-size: 14px; color: #1E1B2E;">Question {{ qNumber }} of 6</span>
+          <span style="font-weight: 700; font-size: 14px; color: #6B6580;">{{ progressPct }}%</span>
+        </div>
+        <div style="width: 100%; height: 10px; border-radius: 999px; background: #ECE8FB; margin-bottom: 20px; overflow: hidden;">
+          <div style="height: 100%; border-radius: 999px; background: #6C4FF6; width: {{ progressPct }}%; transition: width 0.3s;"></div>
+        </div>
+        <button onClick="{{ skipQuestion }}" style="width: 100%; background: white; border: 2px solid #6C4FF6; color: #6C4FF6; border-radius: 999px; padding: 12px 20px; font-weight: 700; font-size: 15px; font-family: 'Baloo 2', sans-serif; cursor: pointer; margin-bottom: 20px;" style-hover="background: #F7F5FF;">Not sure — skip</button>
+        <div style="background: white; border-radius: 20px; padding: 36px; display: flex; flex-direction: column; gap: 24px;">
+          <h2 style="font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 21px; margin: 0; line-height: 1.4;">{{ currentQuestion.prompt }}</h2>
+
+          <sc-if value="{{ isTranslateQuestion }}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <div style="font-family: 'Noto Sans Sinhala', sans-serif; font-size: 22px; font-weight: 600; background: #F7F5FF; border-radius: 12px; padding: 16px 18px;">{{ currentQuestion.sinhala }}</div>
+              <input type="text" value="{{ translateInput }}" onChange="{{ onTranslateChange }}" placeholder="Type your answer..." style="font-size: 16px; padding: 16px 20px; border-radius: 999px; border: 2px solid #D8D3EE; font-family: 'Inter', sans-serif; outline: none;" style-focus="border-color: #6C4FF6;"/>
+              <button onClick="{{ submitTranslate }}" style="align-self: flex-end; background: #6C4FF6; color: white; border: none; border-radius: 999px; padding: 12px 32px; font-weight: 700; font-size: 15px; font-family: 'Baloo 2', sans-serif; cursor: pointer; margin-top: 6px; box-shadow: 0 4px 0 #4B3AC7;">Submit</button>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ isChoiceQuestion }}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <sc-for list="{{ currentQuestion.options }}" as="opt" hint-placeholder-count="2">
+                <button onClick="{{ opt.onSelect }}" style="text-align: left; background: white; border: 2px solid #ECE8FB; border-radius: 16px; padding: 16px 20px; font-size: 16px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; color: #1E1B2E;" style-hover="border-color: #6C4FF6; background: #F7F5FF;">{{ opt.label }}</button>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isFeedback }}" hint-placeholder-val="{{ false }}">
+      <div style="max-width: 560px; width: 100%;">
+        <sc-if value="{{ isFeedbackCorrect }}" hint-placeholder-val="{{ true }}">
+          <div style="background: #DEF7E3; border-radius: 16px; padding: 20px 24px; display: flex; align-items: center; gap: 16px; margin-bottom: 24px;">
+            <div style="width: 40px; height: 40px; border-radius: 50%; background: #34C759; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10.5L8 14.5L16 5" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div>
+              <div style="font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 17px; color: #1B5E33;">Correct!</div>
+              <div style="font-size: 14px; color: #1B5E33; opacity: 0.85;">+10 XP earned</div>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ isFeedbackIncorrect }}" hint-placeholder-val="{{ false }}">
+          <div style="background: #FDE2E1; border-radius: 16px; padding: 20px 24px; display: flex; align-items: center; gap: 16px; margin-bottom: 24px;">
+            <div style="width: 40px; height: 40px; border-radius: 50%; background: #FF4D5E; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M4 4L14 14M14 4L4 14" stroke="white" stroke-width="2.4" stroke-linecap="round"/></svg>
+            </div>
+            <div>
+              <div style="font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 17px; color: #8C1D1D;">Not quite</div>
+              <div style="font-size: 14px; color: #8C1D1D; opacity: 0.85;">Correct answer: "{{ feedbackCorrectLabel }}"</div>
+            </div>
+          </div>
+        </sc-if>
+        <div style="background: white; border-radius: 20px; padding: 28px; display: flex; justify-content: flex-end;">
+          <button onClick="{{ continueAfterFeedback }}" style="background: #6C4FF6; color: white; border: none; border-radius: 999px; padding: 14px 32px; font-weight: 700; font-size: 15px; font-family: 'Baloo 2', sans-serif; cursor: pointer; box-shadow: 0 4px 0 #4B3AC7;" style-hover="background: #5539E0;">Continue</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isResult }}" hint-placeholder-val="{{ false }}">
+      <div style="max-width: 560px; width: 100%; text-align: center;">
+        <div style="width: 88px; height: 88px; border-radius: 50%; background: #FFF3D6; margin: 0 auto 28px; display: flex; align-items: center; justify-content: center;">
+          <div style="width: 36px; height: 36px; background: #FFB800; clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);"></div>
+        </div>
+        <h1 style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 26px; margin: 0 0 8px;">Stage {{ resultStage }} — {{ resultStageName }}</h1>
+        <p style="font-size: 17px; line-height: 1.6; color: #4A4560; margin: 0 0 36px; max-width: 480px; margin-left: auto; margin-right: auto;">{{ resultMessage }}</p>
+
+        <div style="background: white; border-radius: 20px; padding: 32px; text-align: left; display: flex; flex-direction: column; gap: 20px;">
+          <p style="margin: 0; font-size: 16px; line-height: 1.6; font-weight: 600;">{{ signupCopy }}</p>
+          <div style="display: flex; gap: 14px; flex-wrap: wrap;">
+            <a href="Sign Up.dc.html" style="background: #6C4FF6; color: white; border-radius: 999px; padding: 14px 30px; font-weight: 700; font-size: 15px; font-family: 'Baloo 2', sans-serif; cursor: pointer; box-shadow: 0 4px 0 #4B3AC7; display: inline-block;" style-hover="background: #5539E0;">Create account</a>
+            <a href="Course Roadmap.dc.html" style="background: white; color: #6C4FF6; border: 2px solid #6C4FF6; border-radius: 999px; padding: 14px 30px; font-weight: 700; font-size: 15px; font-family: 'Baloo 2', sans-serif; cursor: pointer; display: inline-block;" style-hover="background: #F7F5FF;">Try a lesson first →</a>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const QUESTIONS = [
+  { stage: 1, type: 'choice', prompt: 'Which sentence is correct?', options: ['I eat rice', 'I rice eat'], correct: 'I eat rice' },
+  { stage: 1, type: 'choice', prompt: 'Fill the blank: "She ___ to school every day."', options: ['go', 'goes'], correct: 'goes' },
+  { stage: 2, type: 'choice', prompt: 'Which sentence uses "because" correctly?', options: ['I was late because traffic.', 'I was late because the traffic was heavy.'], correct: 'I was late because the traffic was heavy.' },
+  { stage: 3, type: 'choice', prompt: 'Fill the blank: "The book is ___ the table."', options: ['on', 'in'], correct: 'on' },
+  { stage: 4, type: 'choice', prompt: 'Which sentence is passive voice?', options: ['The chef cooked the meal.', 'The meal was cooked by the chef.'], correct: 'The meal was cooked by the chef.' },
+  { stage: 5, type: 'translate', prompt: 'Translate this into English:', sinhala: 'මම පාසැලට යනවා' },
+];
+
+const STAGE_NAMES = { 1: 'Tenses', 2: 'Complex Sentences', 3: 'Adjectives & Prepositions', 4: 'Passive Voice', 5: 'Everyday Translation' };
+
+const STAGE_MESSAGES = {
+  1: "You're ready to start at Stage 1 — Tenses. Everyone starts somewhere. This is exactly where you'll build the strongest foundation.",
+  2: "You're ready to start at Stage 2 — Complex Sentences. You've already got the basics of word order down. Let's build from there.",
+  3: "You're ready to start at Stage 3 — Adjectives & Prepositions. You're already forming full sentences with the right tenses. Time to sharpen the details.",
+  4: "You're ready to start at Stage 4 — Passive Voice. You're handling complex sentence structure well. Let's build on that.",
+  5: "You're ready to start at Stage 5 — Everyday Translation. You're translating between languages naturally already. Let's put that to work.",
+};
+
+class Component extends DCLogic {
+  state = { screen: 'intro', qIndex: 0, correctStages: [], translateInput: '', pending: null };
+
+  startTest = () => this.setState({ screen: 'question', qIndex: 0, correctStages: [] });
+
+  selectAnswer = (isCorrect, correctLabel) => {
+    this.setState({ screen: 'feedback', pending: { isCorrect, correctLabel } });
+  };
+
+  skipQuestion = () => this.advance(false, null);
+
+  onTranslateChange = (e) => this.setState({ translateInput: e.target.value });
+  submitTranslate = () => {
+    const val = this.state.translateInput.toLowerCase();
+    const isCorrect = val.includes('school') && (val.includes('go') || val.includes('going'));
+    this.selectAnswer(isCorrect, 'I go to school');
+  };
+
+  continueAfterFeedback = () => {
+    const { isCorrect } = this.state.pending;
+    this.advance(isCorrect, null);
+  };
+
+  advance = (isCorrect) => {
+    const q = QUESTIONS[this.state.qIndex];
+    const correctStages = isCorrect ? [...this.state.correctStages, q.stage] : this.state.correctStages;
+    const nextIndex = this.state.qIndex + 1;
+    if (nextIndex >= QUESTIONS.length) {
+      this.setState({ screen: 'result', correctStages });
+    } else {
+      this.setState({ screen: 'question', qIndex: nextIndex, correctStages, translateInput: '', pending: null });
+    }
+  };
+
+  renderVals() {
+    const { screen, qIndex, correctStages } = this.state;
+    const q = QUESTIONS[qIndex];
+
+    const resultStage = correctStages.length ? Math.max(...correctStages) : 1;
+
+    let currentQuestion = null;
+    if (q) {
+      currentQuestion = {
+        prompt: q.prompt,
+        sinhala: q.sinhala,
+        options: (q.options || []).map(label => ({
+          label,
+          onSelect: () => this.selectAnswer(label === q.correct, q.correct),
+        })),
+      };
+    }
+
+    const pending = this.state.pending;
+    const progressPct = Math.round((qIndex / QUESTIONS.length) * 100);
+
+    return {
+      isIntro: screen === 'intro',
+      isQuestion: screen === 'question',
+      isFeedback: screen === 'feedback',
+      isResult: screen === 'result',
+      startTest: this.startTest,
+      qNumber: qIndex + 1,
+      progressPct,
+      currentQuestion,
+      isTranslateQuestion: !!q && q.type === 'translate',
+      isChoiceQuestion: !!q && q.type === 'choice',
+      translateInput: this.state.translateInput,
+      onTranslateChange: this.onTranslateChange,
+      submitTranslate: this.submitTranslate,
+      skipQuestion: this.skipQuestion,
+      isFeedbackCorrect: !!pending && pending.isCorrect,
+      isFeedbackIncorrect: !!pending && !pending.isCorrect,
+      feedbackCorrectLabel: pending ? pending.correctLabel : '',
+      continueAfterFeedback: this.continueAfterFeedback,
+      resultStage,
+      resultStageName: STAGE_NAMES[resultStage],
+      resultMessage: STAGE_MESSAGES[resultStage],
+      signupCopy: `Save this so you don't lose it. Create a free account to start Stage ${resultStage} and keep your progress, XP, and streak as you go.`,
+    };
+  }
+}
+</script>
+</body>
+</html>

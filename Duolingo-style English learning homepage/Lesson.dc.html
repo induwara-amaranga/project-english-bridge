@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Inter:wght@400;500;600;700&family=Noto+Sans+Sinhala:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; background: #F7F5FF; }
+    * { box-sizing: border-box; }
+    a { color: #6C4FF6; text-decoration: none; }
+    a:hover { color: #5539E0; }
+  </style>
+</helmet>
+
+<div style="font-family: 'Inter', sans-serif; background: #F7F5FF; color: #1E1B2E; min-height: 100vh;">
+
+  <div style="background: #6C4FF6; padding: 20px 24px;">
+    <div style="max-width: 640px; margin: 0 auto; display: flex; align-items: center; gap: 14px;">
+      <a href="Stage Lessons.dc.html?stage=1" style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.22); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 3L5 9L11 15" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.75); letter-spacing: 0.04em;">STAGE {{ stageNumber }} — {{ stageTitleEn }}</div>
+        <div style="font-family: 'Noto Sans Sinhala', sans-serif; font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.85);">අදියර {{ stageNumber }} — {{ stageTitleSi }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="max-width: 640px; margin: 0 auto; padding: 28px 24px 64px; display: flex; flex-direction: column; gap: 24px;">
+
+    <div style="background: white; border-radius: 20px; padding: 26px;">
+      <div style="font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 13px; color: #6C4FF6; margin-bottom: 12px;">EXPLANATION</div>
+      <p style="font-family: 'Noto Sans Sinhala', sans-serif; font-size: 17px; line-height: 1.9; margin: 0; color: #1E1B2E;">ඉංග්‍රීසි වාක්‍යයක වචන අනුපිළිවෙල සිංහල භාෂාවට වඩා වෙනස්. සිංහලෙන් අපි 'මම බත් කනවා' කියනවා — කර්තෘ, කර්ම, ක්‍රියා පදය (Subject-Object-Verb) අනුපිළිවෙලට. නමුත් ඉංග්‍රීසියෙන් අපි කියන්නේ 'I eat rice' — කර්තෘ, ක්‍රියා පදය, කර්ම (Subject-Verb-Object) අනුපිළිවෙලට.</p>
+    </div>
+
+    <div style="background: white; border-radius: 20px; padding: 26px;">
+      <div style="font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 13px; color: #6C4FF6; margin-bottom: 16px;">WORKED EXAMPLES</div>
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <sc-for list="{{ examples }}" as="ex" hint-placeholder-count="3">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #F7F5FF; border-radius: 14px; padding: 14px 18px; flex-wrap: wrap;">
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <span style="font-weight: 700; font-size: 16px;">{{ ex.en }}</span>
+              <span style="font-family: 'Noto Sans Sinhala', sans-serif; font-size: 15px; color: #4A4560;">{{ ex.si }}</span>
+            </div>
+            <span style="background: #ECE8FB; color: #6C4FF6; font-weight: 700; font-size: 12px; padding: 5px 12px; border-radius: 999px; flex-shrink: 0;">{{ ex.tag }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="background: #FFF3D6; border: 1px solid #FFE1A0; border-radius: 20px; padding: 24px;">
+      <div style="display: flex; align-items: flex-start; gap: 12px;">
+        <span style="font-size: 22px; line-height: 1;">⚠️</span>
+        <p style="margin: 0; font-size: 15px; line-height: 1.7; font-weight: 600; color: #6B4E00;">Common mistake: Sinhala speakers often write "I rice eat" by translating Sinhala word order directly. Remember: in English, the verb always comes right after the subject — never at the end.</p>
+      </div>
+    </div>
+
+    <a href="Exercise.dc.html?stage=1&lesson=1" style="align-self: center; background: #6C4FF6; color: white; border-radius: 14px; padding: 16px 40px; font-weight: 800; font-size: 17px; font-family: 'Baloo 2', sans-serif; box-shadow: 0 6px 0 #5539E0; margin-top: 8px;">Go to exercise</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      stageNumber: 1,
+      stageTitleEn: 'Tenses',
+      stageTitleSi: 'කාල වචන',
+      examples: [
+        { en: 'I eat rice.', si: 'මම බත් කනවා', tag: 'S–V–O' },
+        { en: 'She reads a book.', si: 'ඇය පොතක් කියවනවා', tag: 'S–V–O' },
+        { en: 'We watch movies.', si: 'අපි චිත්‍රපට බලනවා', tag: 'S–V–O' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Inter:wght@400;500;600;700&family=Noto+Sans+Sinhala:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; background: #F7F5FF; }
+    * { box-sizing: border-box; }
+    a { color: #6C4FF6; text-decoration: none; }
+    a:hover { color: #5539E0; }
+    @keyframes twinkle { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+    @keyframes hop { 0% { transform: translateY(0) scale(1) rotate(0deg); } 25% { transform: translateY(-50px) scale(1.1) rotate(-8deg); } 55% { transform: translateY(-60px) scale(1.12) rotate(6deg); } 100% { transform: translateY(0) scale(1) rotate(0deg); } }
+    @keyframes spin-ring { 0% { transform: translate(-50%,-50%) rotate(0deg); } 100% { transform: translate(-50%,-50%) rotate(360deg); } }
+    @keyframes meteor { 0% { transform: translate(0,0); opacity: 0; } 10% { opacity: 0.8; } 90% { opacity: 0.5; } 100% { transform: translate(160px, 220px); opacity: 0; } }
+    @keyframes rocket-launch { 0% { transform: translateY(160px); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(0); opacity: 1; } }
+  </style>
+</helmet>
+
+<div style="font-family: {{ bodyFont }}; background: #F7F5FF; color: #1E1B2E; min-height: 100vh; display: flex; flex-direction: column; padding-bottom: 88px;">
+
+  <div style="background: #6C4FF6; padding: 24px 24px 32px;">
+    <div style="max-width: 640px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between;">
+      <div style="width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center;">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="white"><circle cx="11" cy="7" r="4"/><path d="M3 20c0-4 3.5-7 8-7s8 3 8 7" /></svg>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.22); border-radius: 999px; padding: 8px 14px;">
+          <div style="width: 16px; height: 16px; background: #FFB800; clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);"></div>
+          <span style="color: white; font-weight: 700; font-size: 14px;">{{ xpLabel }}</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.22); border-radius: 999px; padding: 8px 14px;">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="#FF6B4A"><path d="M8 1C8 1 5 5 5 9C5 11.5 6.5 13.5 8 13.5C9.5 13.5 11 11.5 11 9C11 7.5 10.3 6.5 9.7 6.5C9.7 8 9 9 8.3 9C9 6.5 8 4.5 8 1Z"/></svg>
+          <span style="color: white; font-weight: 700; font-size: 14px;">{{ streakLabel }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="max-width: 640px; width: 100%; margin: 0 auto; padding: 32px 24px 0; flex: 1;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
+      <h1 style="font-family: {{ headFont }}; font-weight: 800; font-size: 24px; margin: 0;">{{ pageTitle }}</h1>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <button onClick="{{ toggleView }}" style="display: flex; align-items: center; gap: 8px; background: #ECE8FB; border: none; border-radius: 999px; padding: 6px 6px; cursor: pointer;">
+          <span style="padding: 5px 12px; border-radius: 999px; font-weight: 700; font-size: 12px; background: {{ listChipBg }}; color: {{ listChipColor }};">List</span>
+          <span style="padding: 5px 12px; border-radius: 999px; font-weight: 700; font-size: 12px; background: {{ mapChipBg }}; color: {{ mapChipColor }};">Map</span>
+        </button>
+        <button onClick="{{ toggleLang }}" style="display: flex; align-items: center; gap: 8px; background: #ECE8FB; border: none; border-radius: 999px; padding: 6px 6px; cursor: pointer;">
+          <span style="padding: 5px 10px; border-radius: 999px; font-weight: 700; font-size: 12px; background: {{ enChipBg }}; color: {{ enChipColor }};">EN</span>
+          <span style="padding: 5px 10px; border-radius: 999px; font-weight: 700; font-size: 12px; font-family: 'Noto Sans Sinhala', sans-serif; background: {{ siChipBg }}; color: {{ siChipColor }};">සිං</span>
+        </button>
+      </div>
+    </div>
+
+    <sc-if value="{{ isListView }}" hint-placeholder-val="{{ true }}">
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+      <sc-for list="{{ stages }}" as="stage" hint-placeholder-count="8">
+        <div style="background: {{ stage.bg }}; border-radius: 20px; padding: 20px 22px; display: flex; align-items: center; gap: 16px; border: {{ stage.border }};">
+          <div style="width: 48px; height: 48px; border-radius: 50%; background: {{ stage.badgeBg }}; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+            <sc-if value="{{ stage.isLocked }}" hint-placeholder-val="{{ false }}">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="5" y="9" width="10" height="8" rx="2" fill="#9B94BE"/><path d="M7 9V6.5C7 4.5 8.3 3 10 3C11.7 3 13 4.5 13 6.5V9" stroke="#9B94BE" stroke-width="1.8" fill="none"/></svg>
+            </sc-if>
+            <sc-if value="{{ stage.isCompleted }}" hint-placeholder-val="{{ false }}">
+              <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5 11.5L9.5 16L17 6" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </sc-if>
+            <sc-if value="{{ stage.isCurrent }}" hint-placeholder-val="{{ true }}">
+              <span style="color: white; font-family: {{ headFont }}; font-weight: 800; font-size: 18px;">{{ stage.n }}</span>
+            </sc-if>
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-family: {{ headFont }}; font-weight: 700; font-size: 17px; color: {{ stage.titleColor }};">{{ stage.title }}</div>
+            <div style="font-size: 13px; color: {{ stage.statusColor }}; font-weight: 600; margin-top: 2px;">{{ stage.statusLabel }}</div>
+            <sc-if value="{{ stage.isCurrent }}" hint-placeholder-val="{{ true }}">
+              <div style="width: 100%; height: 8px; border-radius: 999px; background: #ECE8FB; margin-top: 10px; overflow: hidden;">
+                <div style="height: 100%; border-radius: 999px; background: #14D8C4; width: {{ stage.pct }}%;"></div>
+              </div>
+            </sc-if>
+          </div>
+          <sc-if value="{{ stage.isCompleted }}" hint-placeholder-val="{{ false }}">
+            <div style="width: 22px; height: 22px; background: #FFB800; flex-shrink: 0; clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);"></div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ isMapView }}" hint-placeholder-val="{{ false }}">
+    <div style="background: #0B0A16; border-radius: 24px; padding: 0; position: relative; overflow: hidden;">
+      <sc-for list="{{ stars }}" as="star" hint-placeholder-count="20">
+        <div style="position: absolute; width: {{ star.size }}px; height: {{ star.size }}px; border-radius: 50%; background: white; opacity: {{ star.opacity }}; top: {{ star.top }}%; left: {{ star.left }}%; animation: twinkle {{ star.dur }}s ease-in-out infinite;"></div>
+      </sc-for>
+      <div style="position: absolute; top: -60px; left: -80px; width: 320px; height: 320px; border-radius: 50%; background: radial-gradient(circle, rgba(108,79,246,0.28), transparent 70%); filter: blur(10px);"></div>
+      <div style="position: absolute; top: 40%; right: -100px; width: 300px; height: 300px; border-radius: 50%; background: radial-gradient(circle, rgba(20,216,196,0.18), transparent 70%); filter: blur(10px);"></div>
+
+      <sc-for list="{{ meteors }}" as="m" hint-placeholder-count="5">
+        <div style="position: absolute; top: {{ m.top }}px; left: {{ m.left }}%; width: 2px; height: 46px; background: linear-gradient(to bottom, transparent, white); transform: rotate(-35deg); animation: meteor {{ m.dur }}s linear {{ m.delay }}s infinite;"></div>
+      </sc-for>
+
+      <div style="position: relative; padding: 44px 24px 20px; text-align: center;">
+        <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(108,79,246,0.18); border: 1px solid rgba(108,79,246,0.4); color: #B7A6FF; padding: 7px 16px; border-radius: 999px; font-weight: 700; font-size: 11px; letter-spacing: 0.06em; margin-bottom: 20px;">CELESTIAL STAGE SYSTEM</div>
+        <h1 style="font-family: {{ headFont }}; font-weight: 800; font-size: 30px; color: white; margin: 0 0 8px;">{{ pageTitle }}</h1>
+        <p style="font-size: 14px; color: #9B94BE; margin: 0 0 20px;">{{ mapSubtitle }}</p>
+        <img src="assets/rocket_ship.png" alt="" style="width: 64px; height: auto; object-fit: contain; animation: rocket-launch 2.4s cubic-bezier(.2,.7,.3,1) both;"></img>
+      </div>
+
+      <div style="position: relative; height: {{ mapHeight }}px; margin-top: 10px;">
+        <svg style="position: absolute; top: 0; left: 0;" width="100%" height="{{ mapHeight }}" viewBox="0 0 400 {{ mapHeight }}" preserveAspectRatio="none">
+          <path d="{{ pathD }}" stroke="rgba(255,255,255,0.18)" stroke-width="3" stroke-dasharray="3 12" stroke-linecap="round" fill="none"/>
+        </svg>
+        <img src="assets/mascot_spacesuit.png" alt="" style="position: absolute; width: 60px; height: 60px; object-fit: contain; top: {{ mascotTop }}px; left: {{ mascotLeft }}%; transform: translate(-50%, -80%); transition: top 0.6s cubic-bezier(.34,1.56,.64,1), left 0.6s cubic-bezier(.34,1.56,.64,1); animation: {{ mascotAnim }}; filter: drop-shadow(0 0 18px rgba(108,79,246,0.7)); z-index: 5;"></img>
+        <sc-for list="{{ mapStages }}" as="stage" hint-placeholder-count="8">
+          <sc-if value="{{ stage.sectorLabel }}" hint-placeholder-val="{{ false }}">
+            <div style="position: absolute; top: {{ stage.top }}px; left: 50%; transform: translate(-50%, -56px); border: 1px solid rgba(255,255,255,0.12); background: rgba(11,10,22,0.7); border-radius: 14px; padding: 8px 18px; text-align: center; white-space: nowrap;">
+              <div style="font-family: {{ headFont }}; font-weight: 700; font-size: 12px; color: white;">{{ stage.sectorLabel }}</div>
+            </div>
+          </sc-if>
+          <div onClick="{{ stage.onJump }}" style="position: absolute; top: {{ stage.top }}px; left: {{ stage.left }}%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; width: 140px; cursor: pointer;">
+            <div style="width: 88px; height: 88px; border-radius: 50%; background: {{ stage.planetGradient }}; display: flex; align-items: center; justify-content: center; position: relative; box-shadow: {{ stage.glow }};">
+              <sc-if value="{{ stage.isCurrent }}" hint-placeholder-val="{{ true }}">
+                <div style="position: absolute; width: 128px; height: 44px; border: 2px dashed rgba(255,255,255,0.55); border-radius: 50%; top: 50%; left: 50%; animation: spin-ring 9s linear infinite;"></div>
+              </sc-if>
+              <div style="position: absolute; top: 14px; left: 18px; width: 22px; height: 13px; border-radius: 50%; background: rgba(255,255,255,0.35);"></div>
+              <div style="position: absolute; bottom: 16px; right: 16px; width: 11px; height: 11px; border-radius: 50%; background: rgba(0,0,0,0.2);"></div>
+              <div style="position: absolute; bottom: 26px; left: 14px; width: 7px; height: 7px; border-radius: 50%; background: rgba(0,0,0,0.2);"></div>
+              <sc-if value="{{ stage.isLocked }}" hint-placeholder-val="{{ false }}">
+                <svg width="26" height="26" viewBox="0 0 20 20" fill="none"><rect x="5" y="9" width="10" height="8" rx="2" fill="white" opacity="0.85"/><path d="M7 9V6.5C7 4.5 8.3 3 10 3C11.7 3 13 4.5 13 6.5V9" stroke="white" stroke-width="1.8" fill="none" opacity="0.85"/></svg>
+              </sc-if>
+              <sc-if value="{{ stage.isCompleted }}" hint-placeholder-val="{{ false }}">
+                <svg width="30" height="30" viewBox="0 0 22 22" fill="none"><path d="M5 11.5L9.5 16L17 6" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </sc-if>
+              <sc-if value="{{ stage.isCurrent }}" hint-placeholder-val="{{ true }}">
+                <span style="color: white; font-family: {{ headFont }}; font-weight: 800; font-size: 24px;">{{ stage.n }}</span>
+              </sc-if>
+            </div>
+            <div style="text-align: center; margin-top: 4px;">
+              <div style="font-family: {{ headFont }}; font-weight: 700; font-size: 14px; color: white;">{{ stage.title }}</div>
+              <div style="font-size: 11px; color: {{ stage.statusColor }}; font-weight: 700; margin-top: 2px;">{{ stage.mapStatus }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
+  </div>
+
+  <div style="position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #ECE8FB; display: flex; justify-content: center; padding: 10px 0;">
+    <div style="max-width: 640px; width: 100%; display: flex; justify-content: space-around;">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; background: #ECE8FB; border-radius: 12px; padding: 8px 18px;">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="#6C4FF6"><path d="M10 2L2 9h2v9h5v-6h2v6h5V9h2z"/></svg>
+        <span style="font-size: 12px; font-weight: 700; color: #6C4FF6;">Home</span>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 18px;">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#B5AFD4" stroke-width="1.6"><path d="M10 4C8 3 4 3 2 4v12c2-1 6-1 8 0M10 4c2-1 6-1 8 0v12c-2-1-6-1-8 0M10 4v12"/></svg>
+        <span style="font-size: 12px; font-weight: 600; color: #B5AFD4;">Lessons</span>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 18px;">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#B5AFD4" stroke-width="1.6"><circle cx="10" cy="10" r="7.5"/><path d="M10 4.5A5.5 5.5 0 0 1 15.5 10" stroke="#6C4FF6"/></svg>
+        <span style="font-size: 12px; font-weight: 600; color: #B5AFD4;">Progress</span>
+      </div>
+      <a href="Progress.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 18px;">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#B5AFD4" stroke-width="1.6"><circle cx="10" cy="6.5" r="3.2"/><path d="M3.5 17c0-3.5 3-6 6.5-6s6.5 2.5 6.5 6"/></svg>
+        <span style="font-size: 12px; font-weight: 600; color: #B5AFD4;">Profile</span>
+      </a>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const STAGES = [
+  { en: 'Tenses', si: 'කාල වචන' },
+  { en: 'Complex Sentences', si: 'සංකීර්ණ වාක්‍ය' },
+  { en: 'Adjectives, Adverbs & Prepositions', si: 'විශේෂණ, ක්‍රියා විශේෂණ සහ නිපාත' },
+  { en: 'Passive Voice', si: 'කර්ම කාරකය' },
+  { en: 'Sinhala–English Translation', si: 'සිංහල–ඉංග්‍රීසි පරිවර්තනය' },
+  { en: 'Guided Essays', si: 'මඟපෙන්වූ රචනා' },
+  { en: 'Solo Essays', si: 'ස්වාධීන රචනා' },
+  { en: 'Formal Letters', si: 'විධිමත් ලිපි' },
+];
+
+// demo progress state — stage 1 completed, stage 2 in progress at 60%
+const DEMO_XP = 240;
+const DEMO_STREAK = 7;
+const CURRENT_STAGE = 2;
+const CURRENT_PCT = 60;
+
+const STARS = Array.from({ length: 20 }, (_, i) => ({
+  top: (i * 37) % 100, left: (i * 53) % 100, size: 1 + (i % 3), opacity: 0.35 + (i % 4) * 0.15, dur: 2 + (i % 5) * 0.4,
+}));
+const SECTORS = [
+  { from: 1, to: 2, label: 'SECTOR I · FOUNDATIONS' },
+  { from: 3, to: 4, label: 'SECTOR II · STRUCTURE' },
+  { from: 5, to: 6, label: 'SECTOR III · TRANSLATION & WRITING' },
+  { from: 7, to: 8, label: 'SECTOR IV · MASTERY' },
+];
+const METEORS = [
+  { top: 20, left: 15, dur: 4.2, delay: 0 }, { top: 60, left: 70, dur: 5.1, delay: 1.4 },
+  { top: 10, left: 45, dur: 3.6, delay: 2.6 }, { top: 90, left: 85, dur: 4.8, delay: 0.8 },
+  { top: 140, left: 25, dur: 5.6, delay: 3.3 },
+];
+const PLANET_GRADIENTS = {
+  completed: 'radial-gradient(circle at 35% 30%, #6EE7A8, #2FAE63 70%)',
+  current: 'radial-gradient(circle at 35% 30%, #A78BFA, #6C4FF6 70%)',
+  locked: 'radial-gradient(circle at 35% 30%, #4A4560, #2B2740 70%)',
+};
+
+const X_OFFSETS = [50, 66, 50, 34, 50, 66, 50, 34];
+const V_GAP = 170;
+
+class Component extends DCLogic {
+  state = { lang: 'en', view: 'list', mascotStage: CURRENT_STAGE - 1, jumping: false };
+  toggleLang = () => this.setState(s => ({ lang: s.lang === 'en' ? 'si' : 'en' }));
+  toggleView = () => this.setState(s => ({ view: s.view === 'list' ? 'map' : 'list' }));
+
+  jumpTo = (i) => {
+    clearTimeout(this._jumpTimer);
+    if (i === this.state.mascotStage) {
+      window.location.href = `Stage Lessons.dc.html?stage=${i + 1}`;
+      return;
+    }
+    this.setState({ mascotStage: i, jumping: true });
+    this._jumpTimer = setTimeout(() => {
+      this.setState({ jumping: false });
+      window.location.href = `Stage Lessons.dc.html?stage=${i + 1}`;
+    }, 650);
+  };
+
+  renderVals() {
+    const lang = this.state.lang;
+    const isSi = lang === 'si';
+    const bodyFont = isSi ? "'Noto Sans Sinhala', 'Inter', sans-serif" : "'Inter', sans-serif";
+    const headFont = isSi ? "'Noto Sans Sinhala', 'Baloo 2', sans-serif" : "'Baloo 2', sans-serif";
+
+    const stages = STAGES.map((s, i) => {
+      const n = i + 1;
+      const isCompleted = n < CURRENT_STAGE;
+      const isCurrent = n === CURRENT_STAGE;
+      const isLocked = n > CURRENT_STAGE;
+      let statusLabel, statusColor, bg, border, badgeBg, titleColor;
+
+      if (isCompleted) {
+        statusLabel = isSi ? 'සම්පූර්ණයි · තට්ටු කර සමාලෝචනය කරන්න' : 'Completed · Tap to review';
+        statusColor = '#3E8E5B'; bg = '#F1EFE3'; border = 'none'; badgeBg = '#3ECF6E'; titleColor = '#1E1B2E';
+      } else if (isCurrent) {
+        statusLabel = isSi ? `ක්‍රියාත්මකයි — ${CURRENT_PCT}% සම්පූර්ණයි` : `In progress — ${CURRENT_PCT}% complete`;
+        statusColor = '#6C4FF6'; bg = 'white'; border = '2px solid #6C4FF6'; badgeBg = '#6C4FF6'; titleColor = '#1E1B2E';
+      } else {
+        statusLabel = isSi ? `අගුළු දමා ඇත — අවසන් කරන්න අදියර ${n - 1}` : `Locked · Complete Stage ${n - 1} to unlock`;
+        statusColor = '#9B94BE'; bg = '#ECE9F5'; border = 'none'; badgeBg = '#D8D3EE'; titleColor = '#9B94BE';
+      }
+
+      return {
+        n, title: isSi ? s.si : s.en,
+        isCompleted, isCurrent, isLocked,
+        statusLabel, statusColor, bg, border, badgeBg, titleColor,
+        pct: CURRENT_PCT,
+      };
+    });
+
+    const mapStages = STAGES.map((s, i) => {
+      const n = i + 1;
+      const isCompleted = n < CURRENT_STAGE;
+      const isCurrent = n === CURRENT_STAGE;
+      const isLocked = n > CURRENT_STAGE;
+      const sector = SECTORS.find(sec => sec.from === n);
+      let mapStatus, statusColor, planetGradient, glow;
+      if (isCompleted) { mapStatus = isSi ? 'සම්පූර්ණයි' : 'Completed'; statusColor = '#6EE7A8'; planetGradient = PLANET_GRADIENTS.completed; glow = '0 0 30px 4px rgba(62,207,110,0.35)'; }
+      else if (isCurrent) { mapStatus = isSi ? `${CURRENT_PCT}%` : `${CURRENT_PCT}% complete`; statusColor = '#B7A6FF'; planetGradient = PLANET_GRADIENTS.current; glow = '0 0 40px 8px rgba(108,79,246,0.55)'; }
+      else { mapStatus = isSi ? 'අගුළු දමා ඇත' : 'Locked'; statusColor = '#6B6580'; planetGradient = PLANET_GRADIENTS.locked; glow = 'none'; }
+      return {
+        n, title: isSi ? s.si : s.en,
+        isCompleted, isCurrent, isLocked, mapStatus, statusColor, planetGradient, glow,
+        sectorLabel: sector ? sector.label : null,
+        top: i * V_GAP + (sector ? 56 : 0), left: X_OFFSETS[i],
+        onJump: () => this.jumpTo(i),
+      };
+    });
+    const mapHeight = (STAGES.length - 1) * V_GAP + 200;
+    const pts = mapStages.map(s => ({ x: s.left * 4, y: s.top + 44 }));
+    let pathD = `M ${pts[0].x} ${pts[0].y}`;
+    for (let i = 1; i < pts.length; i++) {
+      const prev = pts[i - 1], cur = pts[i];
+      const midY = (prev.y + cur.y) / 2;
+      pathD += ` C ${prev.x} ${midY}, ${cur.x} ${midY}, ${cur.x} ${cur.y}`;
+    }
+    const mascotStageObj = mapStages[this.state.mascotStage];
+
+    return {
+      bodyFont, headFont,
+      toggleLang: this.toggleLang, toggleView: this.toggleView,
+      isListView: this.state.view === 'list', isMapView: this.state.view === 'map',
+      listChipBg: this.state.view === 'list' ? 'white' : 'transparent',
+      listChipColor: this.state.view === 'list' ? '#1E1B2E' : '#6B6580',
+      mapChipBg: this.state.view === 'map' ? 'white' : 'transparent',
+      mapChipColor: this.state.view === 'map' ? '#1E1B2E' : '#6B6580',
+      pageTitle: isSi ? 'ඔබේ මාවත' : 'Your roadmap',
+      xpLabel: `${DEMO_XP} XP`,
+      streakLabel: isSi ? `දින ${DEMO_STREAK} අඛණ්ඩව` : `${DEMO_STREAK}-day streak`,
+      stages, mapStages, stars: STARS, mapHeight, pathD, meteors: METEORS,
+      mapSubtitle: isSi ? 'අදියර 1 සිට 8 දක්වා' : 'Eight stages, from tenses to formal letters.',
+      mascotTop: mascotStageObj.top + 8,
+      mascotLeft: mascotStageObj.left,
+      mascotAnim: this.state.jumping ? 'hop 0.65s cubic-bezier(.34,1.56,.64,1)' : 'none',
+      enChipBg: isSi ? 'transparent' : 'white',
+      enChipColor: isSi ? '#6B6580' : '#1E1B2E',
+      siChipBg: isSi ? 'white' : 'transparent',
+      siChipColor: isSi ? '#1E1B2E' : '#6B6580',
+    };
+  }
+}
+</script>
+</body>
+</html>

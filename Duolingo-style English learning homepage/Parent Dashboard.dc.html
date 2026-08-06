@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; background: #F7F5FF; }
+    * { box-sizing: border-box; }
+    a { color: #6C4FF6; text-decoration: none; }
+    a:hover { color: #5539E0; }
+  </style>
+</helmet>
+
+<div style="font-family: 'Inter', sans-serif; background: #F7F5FF; color: #1E1B2E; min-height: 100vh;">
+
+  <div style="background: #6C4FF6; padding: 32px 24px;">
+    <div style="max-width: 640px; margin: 0 auto;">
+      <div style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 24px; color: white;">How {{ childName }} is doing</div>
+      <div style="font-size: 14px; color: rgba(255,255,255,0.8); font-weight: 600; margin-top: 6px;">A quick look at their learning — not a report card.</div>
+    </div>
+  </div>
+
+  <div style="max-width: 640px; margin: 0 auto; padding: 28px 24px 64px; display: flex; flex-direction: column; gap: 20px;">
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+      <div style="background: white; border-radius: 20px; padding: 22px;">
+        <div style="width: 30px; height: 30px; background: #FFB800; clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); margin-bottom: 10px;"></div>
+        <div style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 21px;">{{ weekXp }} XP earned this week</div>
+        <div style="font-size: 13px; color: #6B6580; font-weight: 600; margin-top: 4px;">{{ totalXp }} XP total</div>
+      </div>
+
+      <div style="background: white; border-radius: 20px; padding: 22px;">
+        <svg width="30" height="30" viewBox="0 0 16 16" fill="#FF6B4A" style="margin-bottom: 10px; display: block;"><path d="M8 1C8 1 5 5 5 9C5 11.5 6.5 13.5 8 13.5C9.5 13.5 11 11.5 11 9C11 7.5 10.3 6.5 9.7 6.5C9.7 8 9 9 8.3 9C9 6.5 8 4.5 8 1Z"/></svg>
+        <div style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 21px;">{{ streakLabel }}</div>
+        <div style="font-size: 13px; color: #6B6580; font-weight: 600; margin-top: 4px;">{{ streakSubtext }}</div>
+      </div>
+    </div>
+
+    <div style="background: white; border-radius: 20px; padding: 24px;">
+      <div style="font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 13px; color: #6C4FF6; margin-bottom: 12px;">STAGE PROGRESS</div>
+      <div style="font-size: 17px; font-weight: 700; margin-bottom: 6px;">Currently on: Stage {{ currentStage }} — {{ currentStageName }}</div>
+      <div style="font-size: 14px; color: #6B6580; font-weight: 600; margin-bottom: 14px;">{{ stagesComplete }} of 8 stages complete</div>
+      <div style="width: 100%; height: 10px; border-radius: 999px; background: #ECE8FB; overflow: hidden;">
+        <div style="height: 100%; border-radius: 999px; background: #6C4FF6; width: {{ overallPct }}%;"></div>
+      </div>
+    </div>
+
+    <div style="background: #ECE8FB; border-radius: 20px; padding: 22px;">
+      <p style="margin: 0; font-size: 15px; line-height: 1.6; font-weight: 700; color: #3D3468;">The best way to help: ask what they learned today, not how much they scored.</p>
+    </div>
+
+    <div style="background: white; border: 1px solid #ECE8FB; border-radius: 20px; padding: 22px; display: flex; gap: 12px; align-items: flex-start;">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="flex-shrink: 0; margin-top: 2px;"><circle cx="10" cy="10" r="8.5" stroke="#6C4FF6" stroke-width="1.6"/><path d="M10 6.5v4.5M10 13.5h.01" stroke="#6C4FF6" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #6B6580; font-weight: 500;">This view only shows progress, not individual answers or mistakes. {{ childName }}'s practice stays private.</p>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const STAGE_NAMES = [
+  'Tenses', 'Complex Sentences', 'Adjectives, Adverbs & Prepositions', 'Passive Voice',
+  'Sinhala–English Translation', 'Guided Essays', 'Solo Essays', 'Formal Letters',
+];
+const CHILD_NAME = 'Nimal';
+const WEEK_XP = 180;
+const TOTAL_XP = 240;
+const STREAK = 5;
+const DAYS_INACTIVE = 0;
+const CURRENT_STAGE = 2;
+const CURRENT_PCT = 60;
+
+class Component extends DCLogic {
+  renderVals() {
+    const completedCount = CURRENT_STAGE - 1;
+    const overallPct = Math.round(((completedCount + CURRENT_PCT / 100) / STAGE_NAMES.length) * 100);
+    const streakSubtext = DAYS_INACTIVE >= 2
+      ? `Hasn't practiced in ${DAYS_INACTIVE} days — a gentle reminder might help`
+      : 'Active this week';
+
+    return {
+      childName: CHILD_NAME,
+      weekXp: WEEK_XP,
+      totalXp: TOTAL_XP.toLocaleString(),
+      streakLabel: `${STREAK}-day streak`,
+      streakSubtext,
+      currentStage: CURRENT_STAGE,
+      currentStageName: STAGE_NAMES[CURRENT_STAGE - 1],
+      stagesComplete: completedCount,
+      overallPct,
+    };
+  }
+}
+</script>
+</body>
+</html>
