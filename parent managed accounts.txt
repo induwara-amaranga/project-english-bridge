@@ -3,3 +3,4 @@ SRS changes
 - parent managed accounts
 - add blogs
 - should be able to add new questions dynamically to backend's exercise pool and UI auto updates.UI                  	must be able to visually present exercises in non visual formats like json  
+- add leaderboards and quests

@@ -40,16 +40,15 @@
 
       <form onSubmit="{{ handleSubmit }}" style="background: white; border-radius: 20px; padding: 32px; display: flex; flex-direction: column; gap: 18px; margin-top: 28px;">
         <div style="display: flex; flex-direction: column; gap: 8px;">
-          <label style="font-size: 14px; font-weight: 700; color: #4A4560;">{{ nameLabel }}</label>
-          <input type="text" value="{{ name }}" onChange="{{ onNameChange }}" placeholder="{{ namePlaceholder }}" style="font-size: 16px; padding: 14px 18px; border-radius: 999px; border: 2px solid #D8D3EE; font-family: 'Inter', sans-serif; outline: none;" style-focus="border-color: #6C4FF6;"/>
-        </div>
-        <div style="display: flex; flex-direction: column; gap: 8px;">
           <label style="font-size: 14px; font-weight: 700; color: #4A4560;">{{ emailLabel }}</label>
           <input type="email" value="{{ email }}" onChange="{{ onEmailChange }}" placeholder="{{ emailPlaceholder }}" style="font-size: 16px; padding: 14px 18px; border-radius: 999px; border: 2px solid #D8D3EE; font-family: 'Inter', sans-serif; outline: none;" style-focus="border-color: #6C4FF6;"/>
         </div>
         <div style="display: flex; flex-direction: column; gap: 8px;">
           <label style="font-size: 14px; font-weight: 700; color: #4A4560;">{{ passwordLabel }}</label>
           <input type="password" value="{{ password }}" onChange="{{ onPasswordChange }}" placeholder="{{ passwordPlaceholder }}" style="font-size: 16px; padding: 14px 18px; border-radius: 999px; border: 2px solid #D8D3EE; font-family: 'Inter', sans-serif; outline: none;" style-focus="border-color: #6C4FF6;"/>
+        </div>
+        <div style="text-align: right;">
+          <a href="#" style="font-size: 13px; font-weight: 600;">{{ forgotLabel }}</a>
         </div>
         <button type="submit" style="background: #6C4FF6; color: white; border: none; border-radius: 999px; padding: 16px; font-weight: 700; font-size: 16px; font-family: {{ headFont }}; cursor: pointer; box-shadow: 0 5px 0 #4B3AC7; margin-top: 8px;" style-hover="background: #5539E0;">{{ submitLabel }}</button>
       </form>
@@ -72,18 +71,19 @@
       </div>
 
       <div style="text-align: center; margin-top: 20px;">
-        <a href="Course Roadmap.dc.html" style="font-weight: 700; font-size: 15px;">{{ secondaryLabel }}</a>
+        <span style="font-size: 14px; color: #6B6580;">{{ noAccountLabel }}</span>
+        <a href="Sign Up.dc.html" style="font-weight: 700; font-size: 14px; margin-left: 4px;">{{ signUpLabel }}</a>
       </div>
     </div>
   </div>
 </div>
+
 </x-dc>
 <script type="text/x-dc" data-dc-script>
 class Component extends DCLogic {
-  state = { lang: 'en', name: '', email: '', password: '' };
+  state = { lang: 'en', email: '', password: '' };
 
   toggleLang = () => this.setState(s => ({ lang: s.lang === 'en' ? 'si' : 'en' }));
-  onNameChange = (e) => this.setState({ name: e.target.value });
   onEmailChange = (e) => this.setState({ email: e.target.value });
   onPasswordChange = (e) => this.setState({ password: e.target.value });
   handleSubmit = (e) => { e.preventDefault(); window.location.href = 'Course Roadmap.dc.html'; };
@@ -98,22 +98,22 @@ class Component extends DCLogic {
 
     const copy = {
       en: {
-        framing: "Save your progress so it's here next time you come back.",
-        nameLabel: 'Your name', namePlaceholder: 'Your name',
+        framing: 'Welcome back! Pick up right where you left off.',
         emailLabel: 'Email address', emailPlaceholder: 'Email address',
-        passwordLabel: 'Create a password', passwordPlaceholder: 'Create a password',
-        submit: 'Save and continue',
-        secondary: 'Continue without an account',
+        passwordLabel: 'Password', passwordPlaceholder: 'Password',
+        forgot: 'Forgot password?',
+        submit: 'Sign in',
         or: 'OR', google: 'Continue with Google', facebook: 'Continue with Facebook',
+        noAccount: "Don't have an account?", signUp: 'Sign up',
       },
       si: {
-        framing: 'ඔබේ ප්‍රගතිය සුරකින්න, ඊළඟ වතාවේ ආපහු එනකොට තියෙන්න.',
-        nameLabel: 'ඔබේ නම', namePlaceholder: 'ඔබේ නම',
+        framing: 'නැවත සාදරයෙන් පිළිගනිමු! ඔබ නැවතුම් තැනින්ම ආරම්භ කරන්න.',
         emailLabel: 'විද්‍යුත් තැපැල් ලිපිනය', emailPlaceholder: 'විද්‍යුත් තැපැල් ලිපිනය',
-        passwordLabel: 'මුරපදයක් සාදන්න', passwordPlaceholder: 'මුරපදයක් සාදන්න',
-        submit: 'සුරකින්න, ඉදිරියට යන්න',
-        secondary: 'ගිණුමකින් තොරව ඉදිරියට යන්න',
+        passwordLabel: 'මුරපදය', passwordPlaceholder: 'මුරපදය',
+        forgot: 'මුරපදය අමතකද?',
+        submit: 'පිවිසෙන්න',
         or: 'හෝ', google: 'Google සමඟ ඉදිරියට යන්න', facebook: 'Facebook සමඟ ඉදිරියට යන්න',
+        noAccount: 'ගිණුමක් නැද්ද?', signUp: 'ලියාපදිංචි වන්න',
       },
     };
     const c = copy[lang];
@@ -122,14 +122,15 @@ class Component extends DCLogic {
       bodyFont, headFont,
       toggleLang: this.toggleLang,
       framingLine: c.framing,
-      nameLabel: c.nameLabel, namePlaceholder: c.namePlaceholder,
       emailLabel: c.emailLabel, emailPlaceholder: c.emailPlaceholder,
       passwordLabel: c.passwordLabel, passwordPlaceholder: c.passwordPlaceholder,
-      submitLabel: c.submit, secondaryLabel: c.secondary,
+      forgotLabel: c.forgot,
+      submitLabel: c.submit,
       orLabel: c.or, googleLabel: c.google, facebookLabel: c.facebook,
+      noAccountLabel: c.noAccount, signUpLabel: c.signUp,
       handleGoogle: this.handleGoogle, handleFacebook: this.handleFacebook,
-      name: this.state.name, email: this.state.email, password: this.state.password,
-      onNameChange: this.onNameChange, onEmailChange: this.onEmailChange, onPasswordChange: this.onPasswordChange,
+      email: this.state.email, password: this.state.password,
+      onEmailChange: this.onEmailChange, onPasswordChange: this.onPasswordChange,
       handleSubmit: this.handleSubmit,
       enChipBg: isSi ? 'transparent' : 'white',
       enChipColor: isSi ? '#6B6580' : '#1E1B2E',
@@ -138,6 +139,7 @@ class Component extends DCLogic {
     };
   }
 }
+
 </script>
 </body>
 </html>

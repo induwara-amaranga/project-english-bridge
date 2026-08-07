@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./curriculum.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Inter:wght@400;500;600;700&family=Noto+Sans+Sinhala:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; background: #F7F5FF; }
+    * { box-sizing: border-box; }
+    a { color: #6C4FF6; text-decoration: none; }
+    .card { background: white; border-radius: 18px; border: 1px solid #E3DEF5; }
+    .h2 { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 18px; margin: 0; }
+    .cap { font-size: 11px; font-weight: 700; color: #6B6580; letter-spacing: 0.06em; }
+    .btn { background: #6C4FF6; color: white; border: none; border-radius: 999px; padding: 9px 18px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Baloo 2', sans-serif; box-shadow: 0 3px 0 #4B3AC7; }
+    .btn:hover { background: #5539E0; }
+    .btn2 { background: #ECE8FB; color: #6C4FF6; border: none; border-radius: 999px; padding: 8px 16px; font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; }
+    .btn2:hover { background: #DED7F8; }
+    .si { font-family: 'Noto Sans Sinhala', 'Inter', sans-serif; }
+    /* chart tokens — single-hue magnitude, see references/color-formula.md */
+    .viz { --bar: #6C4FF6; --track: #ECE8FB; --ink-2: #6B6580; }
+  </style>
+</helmet>
+
+<div style="font-family: 'Inter', sans-serif; color: #1E1B2E; min-height: 100vh;">
+
+  <!-- ================= TOP BAR ================= -->
+  <div style="background: white; border-bottom: 1px solid #E3DEF5; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <a href="Duolingo Style Homepage.dc.html" style="display: flex; align-items: center; gap: 10px;">
+        <div style="width: 32px; height: 32px; border-radius: 9px; background: #6C4FF6; display: flex; align-items: center; justify-content: center;">
+          <div style="width: 12px; height: 12px; border-radius: 50%; background: #F7F5FF;"></div>
+        </div>
+        <span style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 18px; color: #1E1B2E;">Englisher</span>
+      </a>
+      <div style="width: 1px; height: 22px; background: #E3DEF5;"></div>
+      <span style="font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 16px;">Course Dashboard</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <span style="font-size: 12px; font-weight: 700; color: #6B6580;">{{ savedNote }}</span>
+      <div style="background: #ECE8FB; color: #6C4FF6; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700;">{{ versionLabel }}</div>
+    </div>
+  </div>
+
+  <div style="max-width: 1120px; margin: 0 auto; padding: 28px 24px 64px;">
+
+    <!-- ================= STAT TILES ================= -->
+    <div style="display: flex; gap: 16px; margin-bottom: 20px;">
+      <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="4">
+        <div class="card" style="flex: 1; padding: 18px 20px;">
+          <div class="cap">{{ t.label }}</div>
+          <div style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 32px; line-height: 1.1; margin: 6px 0 2px;">{{ t.value }}</div>
+          <div style="font-size: 12px; color: #6B6580; font-weight: 600;">{{ t.sub }}</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- ================= CHARTS ROW ================= -->
+    <div style="display: flex; gap: 16px; margin-bottom: 32px; align-items: stretch;">
+
+      <!-- exercise mix: single measure across categories -> one hue, direct labels -->
+      <div class="card viz" style="flex: 1.3; padding: 20px 22px;">
+        <h3 class="h2">Exercise mix</h3>
+        <div style="font-size: 12px; color: #6B6580; font-weight: 600; margin: 3px 0 18px;">{{ totalExercises }} exercises across all courses</div>
+        <div style="display: flex; flex-direction: column; gap: 13px;">
+          <sc-for list="{{ typeBars }}" as="b" hint-placeholder-count="5">
+            <div>
+              <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 5px;">
+                <span style="font-size: 12.5px; font-weight: 600; color: #1E1B2E;">{{ b.label }}</span>
+                <span style="font-size: 12.5px; font-weight: 700; color: #6B6580;">{{ b.countLabel }}</span>
+              </div>
+              <div title="{{ b.tip }}" style="height: 10px; background: var(--track); border-radius: 5px; overflow: hidden;">
+                <div style="height: 10px; width: {{ b.pct }}%; background: var(--bar); border-radius: 2px 5px 5px 2px;"></div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- content gaps: status list, icon + label, never colour alone -->
+      <div class="card" style="flex: 1; padding: 20px 22px;">
+        <h3 class="h2">Content checks</h3>
+        <div style="font-size: 12px; color: #6B6580; font-weight: 600; margin: 3px 0 18px;">Run against the current draft</div>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <sc-for list="{{ checks }}" as="ck" hint-placeholder-count="4">
+            <div style="display: flex; align-items: flex-start; gap: 10px;">
+              <div style="width: 20px; height: 20px; border-radius: 6px; background: {{ ck.bg }}; color: {{ ck.fg }}; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">{{ ck.icon }}</div>
+              <div>
+                <div style="font-size: 13px; font-weight: 700; color: {{ ck.fg }};">{{ ck.headline }}</div>
+                <div style="font-size: 12px; color: #6B6580; font-weight: 500; line-height: 1.5;">{{ ck.detail }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= COURSES ================= -->
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+      <h2 style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 22px; margin: 0;">Courses</h2>
+      <button class="btn" onClick="{{ onAddCourse }}">+ Add course</button>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+      <sc-for list="{{ courses }}" as="c" hint-placeholder-count="3">
+        <div class="card" style="overflow: hidden;">
+
+          <!-- course header -->
+          <div style="padding: 18px 22px; display: flex; align-items: center; gap: 16px;">
+            <div onClick="{{ c.onToggle }}" style="cursor: pointer; display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">
+              <span style="font-size: 11px; color: #B5AFD4; width: 10px;">{{ c.caret }}</span>
+              <div style="width: 38px; height: 38px; border-radius: 50%; background: {{ c.dot }}; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: white; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 15px;">{{ c.order }}</div>
+              <div style="min-width: 0;">
+                <div style="font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 16px;">{{ c.title }}</div>
+                <div class="si" style="font-size: 12px; color: #6B6580; font-weight: 600;">{{ c.titleSi }}</div>
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 26px; flex-shrink: 0;">
+              <div style="text-align: right;">
+                <div style="font-size: 11px; color: #6B6580; font-weight: 700;">LESSONS</div>
+                <div style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 17px;">{{ c.lessonCount }}</div>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-size: 11px; color: #6B6580; font-weight: 700;">EXERCISES</div>
+                <div style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 17px;">{{ c.exCount }}</div>
+              </div>
+              <div class="viz" style="width: 132px;">
+                <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px;">
+                  <span style="font-size: 11px; color: #6B6580; font-weight: 700;">COMPLETED</span>
+                  <span style="font-size: 12px; font-weight: 700;">{{ c.completionLabel }}</span>
+                </div>
+                <div title="{{ c.completionTip }}" style="height: 8px; background: var(--track); border-radius: 4px; overflow: hidden;">
+                  <div style="height: 8px; width: {{ c.completionPct }}%; background: var(--bar); border-radius: 2px 4px 4px 2px;"></div>
+                </div>
+              </div>
+              <button class="btn2" onClick="{{ c.onEdit }}">Edit course</button>
+            </div>
+          </div>
+
+          <!-- lessons -->
+          <sc-if value="{{ c.expanded }}" hint-placeholder-val="{{ true }}">
+            <div style="border-top: 1px solid #E3DEF5; background: #FBFAFF; padding: 8px 22px 16px;">
+              <sc-for list="{{ c.lessons }}" as="l" hint-placeholder-count="2">
+                <div style="display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid #EFECFA;">
+                  <div style="width: 26px; height: 26px; border-radius: 8px; background: #ECE8FB; color: #6C4FF6; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">{{ l.order }}</div>
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="font-size: 14px; font-weight: 700;">{{ l.title }}</div>
+                    <div style="font-size: 12px; color: #6B6580; font-weight: 500; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ l.explain }}</div>
+                  </div>
+                  <div style="display: flex; gap: 5px; flex-shrink: 0;">
+                    <sc-for list="{{ l.typeChips }}" as="chip" hint-placeholder-count="2">
+                      <span style="font-size: 9.5px; font-weight: 700; color: white; background: {{ chip.color }}; border-radius: 5px; padding: 3px 6px;">{{ chip.short }}</span>
+                    </sc-for>
+                  </div>
+                  <div style="width: 88px; text-align: right; flex-shrink: 0;">
+                    <span style="font-size: 12px; color: #6B6580; font-weight: 600;">{{ l.exLabel }}</span>
+                  </div>
+                  <button class="btn2" onClick="{{ l.onEdit }}">Edit</button>
+                </div>
+              </sc-for>
+
+              <sc-if value="{{ c.isEmpty }}" hint-placeholder-val="{{ false }}">
+                <div style="padding: 16px 0; font-size: 13px; color: #9B94BE; font-weight: 600;">No lessons yet — add the first one.</div>
+              </sc-if>
+
+              <button class="btn2" style="margin-top: 12px;" onClick="{{ c.onAddLesson }}">+ Add lesson to this course</button>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const TYPE_META = window.TYPE_META;
+const ANALYTICS = window.ANALYTICS;
+
+// Badge hues are UI accents carrying a text label beside them, not chart marks.
+const TYPE_COLOR = { mcq: '#6C4FF6', gap_fill: '#0FA593', drag_order: '#B37E00', match: '#FF4D5E', free_text: '#2FAE63' };
+const TYPE_ORDER = ['mcq', 'gap_fill', 'drag_order', 'match', 'free_text'];
+
+const clone = (o) => JSON.parse(JSON.stringify(o));
+const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const uniqueId = (base, taken) => {
+  let id = base, n = 2;
+  while (taken.indexOf(id) !== -1) { id = base + '-' + n; n++; }
+  return id;
+};
+const goto = (url) => { try { window.location.href = url; } catch (e) { /* non-browser */ } };
+
+class Component extends DCLogic {
+  state = (() => {
+    const cur = window.loadCurriculum();
+    const expanded = {};
+    cur.stages.forEach((s, i) => { expanded[s.id] = i === 0; });
+    return { curriculum: cur, expanded, savedNote: '' };
+  })();
+
+  toggle = (id) => this.setState(s => ({ expanded: { ...s.expanded, [id]: !s.expanded[id] } }));
+
+  persist = (c, note) => {
+    const ok = window.saveCurriculum(c);
+    this.setState({ curriculum: c, savedNote: ok ? note : 'Storage unavailable — change is session-only' });
+  };
+
+  addCourse = () => {
+    const c = clone(this.state.curriculum);
+    const id = uniqueId('new-course', c.stages.map(s => s.id));
+    c.stages.push({
+      id, order: c.stages.length + 1,
+      title: { en: 'New course', si: '' },
+      theme: { from: '#A78BFA', to: '#6C4FF6' },
+      unlock: { kind: 'afterStage', stageId: c.stages.length ? c.stages[c.stages.length - 1].id : null },
+      lessons: [],
+    });
+    this.setState(s => ({ expanded: { ...s.expanded, [id]: true } }));
+    this.persist(c, 'Course added');
+  };
+
+  addLesson = (stageId) => {
+    const c = clone(this.state.curriculum);
+    const st = c.stages.find(s => s.id === stageId);
+    if (!st) return;
+    const id = uniqueId(slug(st.title.en) + '-lesson', st.lessons.map(l => l.id));
+    st.lessons.push({
+      id, order: st.lessons.length + 1, kind: 'teach',
+      title: { en: 'New lesson', si: '' },
+      explanation: { en: '', si: '' },
+      exercises: [],
+    });
+    this.persist(c, 'Lesson added');
+  };
+
+  editCourse = (stageId) => goto('Course Editor.dc.html?stage=' + encodeURIComponent(stageId));
+  editLesson = (stageId, lessonId) =>
+    goto('Course Editor.dc.html?stage=' + encodeURIComponent(stageId) + '&lesson=' + encodeURIComponent(lessonId));
+
+  renderVals() {
+    const { curriculum, expanded, savedNote } = this.state;
+    const stages = curriculum.stages;
+
+    // ---- aggregates ----
+    const allLessons = stages.reduce((a, s) => a.concat(s.lessons), []);
+    const allExercises = allLessons.reduce((a, l) => a.concat(l.exercises), []);
+    const totalExercises = allExercises.length;
+
+    const counts = {};
+    TYPE_ORDER.forEach(t => { counts[t] = 0; });
+    allExercises.forEach(e => { if (counts[e.type] !== undefined) counts[e.type]++; });
+    const maxCount = Math.max(1, ...TYPE_ORDER.map(t => counts[t]));
+
+    const typeBars = TYPE_ORDER.map(t => {
+      const n = counts[t];
+      const share = totalExercises ? Math.round((n / totalExercises) * 100) : 0;
+      return {
+        label: TYPE_META[t].label,
+        countLabel: n === 1 ? '1 exercise' : n + ' exercises',
+        pct: Math.round((n / maxCount) * 100),
+        tip: n + ' of ' + totalExercises + ' exercises (' + share + '%)',
+      };
+    });
+
+    // ---- content checks ----
+    const noSinhala = allExercises.filter(e => !e.prompt.si).length;
+    const noFeedback = allExercises.filter(e => !e.feedback.correct.en || !e.feedback.incorrect.en).length;
+    const emptyLessons = allLessons.filter(l => l.exercises.length === 0).length;
+    const emptyCourses = stages.filter(s => s.lessons.length === 0).length;
+    const mk = (bad, badText, goodText, detail) => bad > 0
+      ? { icon: '!', bg: '#FFF3D6', fg: '#B37E00', headline: badText, detail }
+      : { icon: '✓', bg: '#E3F9EB', fg: '#2FAE63', headline: goodText, detail };
+
+    const checks = [
+      mk(noSinhala, noSinhala + ' prompts missing Sinhala', 'All prompts translated', 'Learners on the SI toggle fall back to English.'),
+      mk(noFeedback, noFeedback + ' exercises missing feedback', 'All exercises give feedback', 'Both the correct and incorrect message should be set.'),
+      mk(emptyLessons, emptyLessons + ' lessons have no exercises', 'Every lesson has exercises', 'Empty lessons are skipped in the learner roadmap.'),
+      mk(emptyCourses, emptyCourses + ' courses have no lessons', 'Every course has lessons', 'Empty courses cannot be unlocked.'),
+    ];
+
+    // ---- tiles ----
+    const tiles = [
+      { label: 'COURSES', value: stages.length, sub: stages.length === 1 ? '1 stage on the roadmap' : stages.length + ' stages on the roadmap' },
+      { label: 'LESSONS', value: allLessons.length, sub: 'across all courses' },
+      { label: 'EXERCISES', value: totalExercises, sub: TYPE_ORDER.filter(t => counts[t] > 0).length + ' of 5 types in use' },
+      { label: 'ACTIVE LEARNERS', value: ANALYTICS.activeLearners, sub: ANALYTICS.weeklyActive + ' active this week' },
+    ];
+
+    // ---- course cards ----
+    const courses = stages.map(st => {
+      const a = ANALYTICS.byStage[st.id] || { completionPct: 0, learners: 0 };
+      const exCount = st.lessons.reduce((n, l) => n + l.exercises.length, 0);
+      return {
+        order: st.order,
+        title: st.title.en,
+        titleSi: st.title.si || '—',
+        dot: st.theme.to,
+        caret: expanded[st.id] ? '▾' : '▸',
+        expanded: !!expanded[st.id],
+        isEmpty: st.lessons.length === 0,
+        lessonCount: st.lessons.length,
+        exCount,
+        completionPct: a.completionPct,
+        completionLabel: a.completionPct + '%',
+        completionTip: a.learners + ' learners reached this course · ' + a.completionPct + '% finished it',
+        onToggle: () => this.toggle(st.id),
+        onEdit: () => this.editCourse(st.id),
+        onAddLesson: () => this.addLesson(st.id),
+        lessons: st.lessons.map(l => ({
+          order: l.order,
+          title: l.title.en,
+          explain: l.explanation.en || 'No explanation set',
+          exLabel: l.exercises.length === 1 ? '1 exercise' : l.exercises.length + ' exercises',
+          typeChips: TYPE_ORDER
+            .filter(t => l.exercises.some(e => e.type === t))
+            .map(t => ({ short: TYPE_META[t].short, color: TYPE_COLOR[t] })),
+          onEdit: () => this.editLesson(st.id, l.id),
+        })),
+      };
+    });
+
+    return {
+      versionLabel: 'Draft · v' + (curriculum.version + 1),
+      savedNote,
+      tiles, typeBars, checks, courses,
+      totalExercises,
+      onAddCourse: this.addCourse,
+    };
+  }
+}
+</script>
+</body>
+</html>
