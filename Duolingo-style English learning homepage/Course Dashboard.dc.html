@@ -23,6 +23,8 @@
     .btn2 { background: #ECE8FB; color: #6C4FF6; border: none; border-radius: 999px; padding: 8px 16px; font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; }
     .btn2:hover { background: #DED7F8; }
     .si { font-family: 'Noto Sans Sinhala', 'Inter', sans-serif; }
+    .movebtn { width: 20px; height: 18px; display: flex; align-items: center; justify-content: center; border-radius: 5px; font-size: 11px; line-height: 1; cursor: pointer; }
+    .movebtn:hover { background: #ECE8FB; }
     /* chart tokens — single-hue magnitude, see references/color-formula.md */
     .viz { --bar: #6C4FF6; --track: #ECE8FB; --ink-2: #6B6580; }
   </style>
@@ -43,7 +45,7 @@
       <span style="font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 16px;">Course Dashboard</span>
     </div>
     <div style="display: flex; align-items: center; gap: 12px;">
-      <span style="font-size: 12px; font-weight: 700; color: #6B6580;">{{ savedNote }}</span>
+      <span style="font-size: 12px; font-weight: 700; color: #6B6580;">{{ note }}</span>
       <div style="background: #ECE8FB; color: #6C4FF6; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700;">{{ versionLabel }}</div>
     </div>
   </div>
@@ -140,6 +142,10 @@
                   <div style="height: 8px; width: {{ c.completionPct }}%; background: var(--bar); border-radius: 2px 4px 4px 2px;"></div>
                 </div>
               </div>
+              <div style="display: flex; flex-direction: column; gap: 2px;">
+                <div class="movebtn" onClick="{{ c.onUp }}" style="color: {{ c.upColor }};">↑</div>
+                <div class="movebtn" onClick="{{ c.onDown }}" style="color: {{ c.downColor }};">↓</div>
+              </div>
               <button class="btn2" onClick="{{ c.onEdit }}">Edit course</button>
             </div>
           </div>
@@ -187,13 +193,6 @@ const ANALYTICS = window.ANALYTICS;
 const TYPE_COLOR = { mcq: '#6C4FF6', gap_fill: '#0FA593', drag_order: '#B37E00', match: '#FF4D5E', free_text: '#2FAE63' };
 const TYPE_ORDER = ['mcq', 'gap_fill', 'drag_order', 'match', 'free_text'];
 
-const clone = (o) => JSON.parse(JSON.stringify(o));
-const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-const uniqueId = (base, taken) => {
-  let id = base, n = 2;
-  while (taken.indexOf(id) !== -1) { id = base + '-' + n; n++; }
-  return id;
-};
 const goto = (url) => { try { window.location.href = url; } catch (e) { /* non-browser */ } };
 
 class Component extends DCLogic {
@@ -201,50 +200,38 @@ class Component extends DCLogic {
     const cur = window.loadCurriculum();
     const expanded = {};
     cur.stages.forEach((s, i) => { expanded[s.id] = i === 0; });
-    return { curriculum: cur, expanded, savedNote: '' };
+    return { curriculum: cur, expanded, note: '' };
   })();
 
   toggle = (id) => this.setState(s => ({ expanded: { ...s.expanded, [id]: !s.expanded[id] } }));
 
-  persist = (c, note) => {
+  // Reordering IS a complete action, so unlike adding it commits straight away —
+  // there is no half-finished state to review in the editor first.
+  moveCourse = (stageId, d) => {
+    const c = JSON.parse(JSON.stringify(this.state.curriculum));
+    const i = c.stages.findIndex(s => s.id === stageId);
+    const j = i + d;
+    if (i < 0 || j < 0 || j >= c.stages.length) return;
+    const tmp = c.stages[i]; c.stages[i] = c.stages[j]; c.stages[j] = tmp;
+    c.stages.forEach((s, k) => { s.order = k + 1; });
+    window.repairUnlocks(c);
     const ok = window.saveCurriculum(c);
-    this.setState({ curriculum: c, savedNote: ok ? note : 'Storage unavailable — change is session-only' });
+    this.setState({ curriculum: c, note: ok ? 'Order saved' : 'Storage unavailable — order is session-only' });
   };
 
-  addCourse = () => {
-    const c = clone(this.state.curriculum);
-    const id = uniqueId('new-course', c.stages.map(s => s.id));
-    c.stages.push({
-      id, order: c.stages.length + 1,
-      title: { en: 'New course', si: '' },
-      theme: { from: '#A78BFA', to: '#6C4FF6' },
-      unlock: { kind: 'afterStage', stageId: c.stages.length ? c.stages[c.stages.length - 1].id : null },
-      lessons: [],
-    });
-    this.setState(s => ({ expanded: { ...s.expanded, [id]: true } }));
-    this.persist(c, 'Course added');
-  };
-
-  addLesson = (stageId) => {
-    const c = clone(this.state.curriculum);
-    const st = c.stages.find(s => s.id === stageId);
-    if (!st) return;
-    const id = uniqueId(slug(st.title.en) + '-lesson', st.lessons.map(l => l.id));
-    st.lessons.push({
-      id, order: st.lessons.length + 1, kind: 'teach',
-      title: { en: 'New lesson', si: '' },
-      explanation: { en: '', si: '' },
-      exercises: [],
-    });
-    this.persist(c, 'Lesson added');
-  };
+  // Adding does NOT write here. The dashboard hands off to the editor, which
+  // opens the new course / lesson as an unsaved draft — it only joins this list
+  // once the admin saves it there. That way a mis-click never leaves an empty
+  // "New course" stranded in the curriculum.
+  addCourse = () => goto('Course Editor.dc.html?new=course');
+  addLesson = (stageId) => goto('Course Editor.dc.html?new=lesson&stage=' + encodeURIComponent(stageId));
 
   editCourse = (stageId) => goto('Course Editor.dc.html?stage=' + encodeURIComponent(stageId));
   editLesson = (stageId, lessonId) =>
     goto('Course Editor.dc.html?stage=' + encodeURIComponent(stageId) + '&lesson=' + encodeURIComponent(lessonId));
 
   renderVals() {
-    const { curriculum, expanded, savedNote } = this.state;
+    const { curriculum, expanded, note } = this.state;
     const stages = curriculum.stages;
 
     // ---- aggregates ----
@@ -293,12 +280,12 @@ class Component extends DCLogic {
     ];
 
     // ---- course cards ----
-    const courses = stages.map(st => {
+    const courses = stages.map((st, si) => {
       const a = ANALYTICS.byStage[st.id] || { completionPct: 0, learners: 0 };
       const exCount = st.lessons.reduce((n, l) => n + l.exercises.length, 0);
       return {
         order: st.order,
-        title: st.title.en,
+        title: st.title.en || '(untitled course)',
         titleSi: st.title.si || '—',
         dot: st.theme.to,
         caret: expanded[st.id] ? '▾' : '▸',
@@ -309,12 +296,16 @@ class Component extends DCLogic {
         completionPct: a.completionPct,
         completionLabel: a.completionPct + '%',
         completionTip: a.learners + ' learners reached this course · ' + a.completionPct + '% finished it',
+        upColor: si > 0 ? '#6B6580' : '#DED7F8',
+        downColor: si < stages.length - 1 ? '#6B6580' : '#DED7F8',
         onToggle: () => this.toggle(st.id),
         onEdit: () => this.editCourse(st.id),
         onAddLesson: () => this.addLesson(st.id),
+        onUp: () => this.moveCourse(st.id, -1),
+        onDown: () => this.moveCourse(st.id, 1),
         lessons: st.lessons.map(l => ({
           order: l.order,
-          title: l.title.en,
+          title: l.title.en || '(untitled lesson)',
           explain: l.explanation.en || 'No explanation set',
           exLabel: l.exercises.length === 1 ? '1 exercise' : l.exercises.length + ' exercises',
           typeChips: TYPE_ORDER
@@ -327,7 +318,7 @@ class Component extends DCLogic {
 
     return {
       versionLabel: 'Draft · v' + (curriculum.version + 1),
-      savedNote,
+      note,
       tiles, typeBars, checks, courses,
       totalExercises,
       onAddCourse: this.addCourse,

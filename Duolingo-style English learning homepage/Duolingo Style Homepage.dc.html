@@ -49,7 +49,9 @@
       <h1 style="font-family: {{ headFont }}; font-weight: 800; font-size: 44px; line-height: 1.2; margin: 0 0 28px; max-width: 560px;">{{ valueStatement }}</h1>
       <div style="display: flex; align-items: center; gap: 16px;">
         <a href="Placement Test.dc.html" style="background: {{ primary }}; color: white; border-radius: 14px; padding: 16px 32px; font-weight: 800; font-size: 17px; font-family: {{ ctaFont }}; cursor: pointer; box-shadow: 0 6px 0 {{ primaryDark }}; display: inline-block;">{{ ctaLabel }}</a>
-        <span style="font-size: 14px; color: {{ inkSoft }}; font-weight: 600;">Free · 2 minutes</span>
+        <span style="font-size: 14px; color: {{ inkSoft }}; font-weight: 600;">{{ alreadyKnowLabel }}
+          <a href="Sign Up.dc.html" style="font-weight: 700; color: {{ primary }};">{{ signUpLabel }}</a>
+        </span>
       </div>
     </div>
 
@@ -141,6 +143,8 @@ class Component extends DCLogic {
       en: {
         value: 'Learn English on the go — built for Sinhala speakers with step by step guide.',
         cta: 'Check your level',
+        alreadyKnow: 'Already know your level?',
+        signUp: 'Sign up',
         steps: [
           'Take a 2-minute check to see where you stand',
           'Follow 8 steps, from tenses to formal letters',
@@ -155,6 +159,8 @@ class Component extends DCLogic {
       si: {
         value: 'ඉංග්‍රීසි ඉගෙන ගන්න, පියවරෙන් පියවර — සිංහල කතා කරන අයට විශේෂයෙන්.',
         cta: 'ඔබේ මට්ටම බලන්න',
+        alreadyKnow: 'ඔබේ මට්ටම දැනටමත් දන්නවාද?',
+        signUp: 'ලියාපදිංචි වන්න',
         steps: [
           'Take a 2-minute check to see where you stand',
           'Follow 8 steps, from tenses to formal letters',
@@ -185,6 +191,7 @@ class Component extends DCLogic {
       primary, primaryDark, accent, accentDark, accentSoft, bg, ink, inkSoft, cardBg, chipBg, divider, flame,
       headFont: headingFont, ctaFont: headingFont,
       valueStatement: c.value, ctaLabel: c.cta,
+      alreadyKnowLabel: c.alreadyKnow, signUpLabel: c.signUp,
       steps,
       whyText: c.why,
       textbookHeadline: c.textbookHeadline,

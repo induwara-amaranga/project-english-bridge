@@ -20,7 +20,7 @@
   </style>
 </helmet>
 
-<div style="font-family: 'Inter', sans-serif; color: white; min-height: 100vh; position: relative; overflow: hidden; padding-bottom: 60px; background-image: url('assets/stage_bg_alien.webp'); background-size: cover; background-position: center bottom; background-repeat: no-repeat; padding-bottom: 88px;">
+<div style="font-family: 'Inter', sans-serif; color: white; min-height: 100vh; position: relative; overflow: hidden; background-image: url('assets/stage_bg_alien.webp'); background-size: cover; background-position: center bottom; background-repeat: no-repeat; padding-bottom: 60px;">
   <div style="position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(18,10,28,0.75) 0%, rgba(24,12,32,0.55) 30%, rgba(20,10,30,0.85) 75%, rgba(14,8,22,0.96) 100%); z-index: 0;"></div>
 
   <div style="position: relative; z-index: 2; background: #6C4FF6; padding: 24px 24px 32px;">
@@ -91,26 +91,6 @@
     </div>
   </div>
 
-  <div style="position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #ECE8FB; display: flex; justify-content: center; padding: 10px 0; z-index: 3;">
-    <div style="max-width: 640px; width: 100%; display: flex; justify-content: space-around;">
-      <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; background: #ECE8FB; border-radius: 12px; padding: 8px 18px;">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="#6C4FF6"><path d="M10 2L2 9h2v9h5v-6h2v6h5V9h2z"/></svg>
-        <span style="font-size: 12px; font-weight: 700; color: #6C4FF6;">Home</span>
-      </div>
-      <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 18px;">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#B5AFD4" stroke-width="1.6"><path d="M10 4C8 3 4 3 2 4v12c2-1 6-1 8 0M10 4c2-1 6-1 8 0v12c-2-1-6-1-8 0M10 4v12"/></svg>
-        <span style="font-size: 12px; font-weight: 600; color: #B5AFD4;">Lessons</span>
-      </div>
-      <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 18px;">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#B5AFD4" stroke-width="1.6"><circle cx="10" cy="10" r="7.5"/><path d="M10 4.5A5.5 5.5 0 0 1 15.5 10" stroke="#6C4FF6"/></svg>
-        <span style="font-size: 12px; font-weight: 600; color: #B5AFD4;">Progress</span>
-      </div>
-      <a href="Progress.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 18px;">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#B5AFD4" stroke-width="1.6"><circle cx="10" cy="6.5" r="3.2"/><path d="M3.5 17c0-3.5 3-6 6.5-6s6.5 2.5 6.5 6"/></svg>
-        <span style="font-size: 12px; font-weight: 600; color: #B5AFD4;">Profile</span>
-      </a>
-    </div>
-  </div>
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script>
@@ -124,6 +104,15 @@ const STAGES = [
   { en: 'Solo Essays', si: 'ස්වාධීන රචනා' },
   { en: 'Formal Letters', si: 'විධිමත් ලිපි' },
 ];
+
+// Stages 6–8 finish with a writing task instead of a checkpoint exercise. These
+// screens already link back to `Stage Lessons.dc.html?stage=N`, so this closes
+// the loop they were built for.
+const STAGE_TASKS = {
+  6: 'Guided Essay.dc.html',
+  7: 'Solo Essay.dc.html',
+  8: 'Formal Letter.dc.html',
+};
 const PLANET_GRADIENTS = [
   'radial-gradient(circle at 35% 30%, #6EE7A8, #2FAE63 70%)',
   'radial-gradient(circle at 35% 30%, #6EF2E4, #0FA593 70%)',
@@ -140,6 +129,17 @@ const STARS = Array.from({ length: 16 }, (_, i) => ({
 const OFFSETS = [0, 46, -34, 46, 0];
 const V_STEP = 106;
 
+// Demo progress, kept in step with Course Roadmap's — otherwise the roadmap can
+// call a stage "completed" while this screen shows it half done.
+const CURRENT_STAGE = 2;
+const CURRENT_DONE = 2;
+
+// Course Roadmap already navigates into locked stages, so this screen matches
+// it: the lock styling still communicates progression, but every node opens for
+// review. Set to false once real progress gating replaces the demo constants —
+// then onClick falls back to blocking locked nodes.
+const PREVIEW_LOCKED = true;
+
 class Component extends DCLogic {
   state = { stageIndex: 0 };
 
@@ -152,7 +152,12 @@ class Component extends DCLogic {
   renderVals() {
     const idx = this.state.stageIndex;
     const stage = STAGES[idx];
-    const doneCount = 2;
+    // Finished stages show every node done — including the checkpoint, so a
+    // completed writing task can be reopened for review.
+    const stageNo = idx + 1;
+    const doneCount = stageNo < CURRENT_STAGE ? OFFSETS.length
+      : stageNo === CURRENT_STAGE ? CURRENT_DONE
+      : 0;
     const lessons = OFFSETS.map((offset, i) => {
       const isCheckpointRaw = i === OFFSETS.length - 1;
       const isDone = i < doneCount;
@@ -168,7 +173,15 @@ class Component extends DCLogic {
         offset, isCheckpoint, isDone, isNext, isLocked, bg, border, shadow, labelColor,
         floatAnim: (isNext || isCheckpoint) ? `float-node ${2.6 + i * 0.3}s ease-in-out infinite` : 'none',
         label: isCheckpoint ? 'Checkpoint' : `Lesson ${i + 1}`,
-        onClick: isLocked ? undefined : () => { window.location.href = `Lesson.dc.html?stage=${idx + 1}&lesson=${i + 1}`; },
+        onClick: (isLocked && !PREVIEW_LOCKED) ? undefined : () => {
+          // The writing stages end in a task screen rather than another lesson.
+          // Keyed on isCheckpointRaw, not isCheckpoint, so a finished checkpoint
+          // still reopens the task for review instead of falling back to a lesson.
+          const task = STAGE_TASKS[idx + 1];
+          window.location.href = (isCheckpointRaw && task)
+            ? task
+            : `Lesson.dc.html?stage=${idx + 1}&lesson=${i + 1}`;
+        },
       };
     });
 

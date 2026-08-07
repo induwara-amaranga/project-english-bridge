@@ -28,6 +28,17 @@
     .addbtn:hover { background: #DED7F8; }
     .savebtn { background: #6C4FF6; color: white; border: none; border-radius: 999px; padding: 9px 20px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Baloo 2', sans-serif; box-shadow: 0 3px 0 #4B3AC7; }
     .savebtn:hover { background: #5539E0; }
+    .delbtn { border: 1.5px solid; border-radius: 999px; padding: 8px 14px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; white-space: nowrap; }
+    .treeadd { display: flex; align-items: center; gap: 7px; border-radius: 10px; cursor: pointer; font-size: 12px; font-weight: 700; color: #9B94BE; }
+    .treeadd:hover { background: #F2EFFC; color: #6C4FF6; }
+    .fmtbar { display: flex; gap: 5px; margin-bottom: 6px; flex-wrap: wrap; }
+    .fmtbtn { background: white; border: 1.5px solid #E3DEF5; border-radius: 8px; padding: 4px 9px; font-size: 12px; color: #4A4560; cursor: pointer; font-family: 'Inter', sans-serif; line-height: 1.5; }
+    .fmtbtn:hover { border-color: #6C4FF6; color: #6C4FF6; background: #F7F5FF; }
+    .hint { font-size: 11px; color: #9B94BE; margin-top: 5px; line-height: 1.6; }
+    .hint code { font-family: ui-monospace, monospace; background: #F0EDFA; border-radius: 4px; padding: 1px 4px; }
+    .moves { display: flex; gap: 1px; margin-left: auto; flex-shrink: 0; }
+    .movebtn { width: 17px; height: 17px; display: flex; align-items: center; justify-content: center; border-radius: 5px; font-size: 10px; line-height: 1; cursor: pointer; }
+    .movebtn:hover { background: #DED7F8; }
   </style>
 </helmet>
 
@@ -58,22 +69,36 @@
         <div onClick="{{ stage.onSelect }}" style="display: flex; align-items: center; gap: 8px; padding: 9px 8px; border-radius: 10px; cursor: pointer; background: {{ stage.bg }};">
           <span style="font-size: 10px; color: #B5AFD4; width: 10px;">{{ stage.caret }}</span>
           <div style="width: 8px; height: 8px; border-radius: 50%; background: {{ stage.dot }}; flex-shrink: 0;"></div>
-          <span style="font-size: 13px; font-weight: 700; color: {{ stage.color }}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ stage.label }}</span>
+          <span style="font-size: 13px; font-weight: 700; color: {{ stage.color }}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;">{{ stage.label }}</span>
+          <div class="moves">
+            <div class="movebtn" onClick="{{ stage.onUp }}" style="color: {{ stage.upColor }};">↑</div>
+            <div class="movebtn" onClick="{{ stage.onDown }}" style="color: {{ stage.downColor }};">↓</div>
+          </div>
         </div>
 
         <sc-if value="{{ stage.expanded }}" hint-placeholder-val="{{ true }}">
           <sc-for list="{{ stage.lessons }}" as="lesson" hint-placeholder-count="2">
             <div onClick="{{ lesson.onSelect }}" style="display: flex; align-items: center; gap: 8px; padding: 7px 8px 7px 30px; border-radius: 10px; cursor: pointer; background: {{ lesson.bg }};">
               <span style="font-size: 10px;">{{ lesson.icon }}</span>
-              <span style="font-size: 12.5px; font-weight: 600; color: {{ lesson.color }}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ lesson.label }}</span>
+              <span style="font-size: 12.5px; font-weight: 600; color: {{ lesson.color }}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;">{{ lesson.label }}</span>
+              <div class="moves">
+                <div class="movebtn" onClick="{{ lesson.onUp }}" style="color: {{ lesson.upColor }};">↑</div>
+                <div class="movebtn" onClick="{{ lesson.onDown }}" style="color: {{ lesson.downColor }};">↓</div>
+              </div>
             </div>
             <sc-for list="{{ lesson.exercises }}" as="ex" hint-placeholder-count="2">
               <div onClick="{{ ex.onSelect }}" style="display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 52px; border-radius: 10px; cursor: pointer; background: {{ ex.bg }};">
                 <span style="font-size: 9px; font-weight: 700; color: white; background: {{ ex.badge }}; border-radius: 5px; padding: 2px 5px; flex-shrink: 0;">{{ ex.typeShort }}</span>
-                <span style="font-size: 12px; font-weight: 500; color: {{ ex.color }}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ ex.label }}</span>
+                <span style="font-size: 12px; font-weight: 500; color: {{ ex.color }}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;">{{ ex.label }}</span>
+                <div class="moves">
+                  <div class="movebtn" onClick="{{ ex.onUp }}" style="color: {{ ex.upColor }};">↑</div>
+                  <div class="movebtn" onClick="{{ ex.onDown }}" style="color: {{ ex.downColor }};">↓</div>
+                </div>
               </div>
             </sc-for>
+            <div class="treeadd" onClick="{{ lesson.onAddExercise }}" style="padding: 6px 8px 6px 52px;">+ Add exercise</div>
           </sc-for>
+          <div class="treeadd" onClick="{{ stage.onAddLesson }}" style="padding: 7px 8px 7px 30px;">+ Add lesson</div>
         </sc-if>
       </sc-for>
     </div>
@@ -83,35 +108,46 @@
 
       <!-- ---- stage selected ---- -->
       <sc-if value="{{ isStage }}" hint-placeholder-val="{{ false }}">
-        <div style="font-size: 11px; font-weight: 700; color: #6B6580; letter-spacing: 0.06em;">EDITING COURSE</div>
-        <h2 style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 22px; margin: 6px 0 22px;">{{ stageTitleEn }}</h2>
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 22px;">
+          <div>
+            <div style="font-size: 11px; font-weight: 700; color: #6B6580; letter-spacing: 0.06em;">EDITING COURSE</div>
+            <h2 style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 22px; margin: 6px 0 0;">{{ stageHeading }}</h2>
+          </div>
+          <button class="delbtn" onClick="{{ onDeleteStage }}" style="background: {{ stDelBg }}; color: {{ stDelColor }}; border-color: {{ stDelBorder }};">{{ stDelLabel }}</button>
+        </div>
         <div style="display: flex; flex-direction: column; gap: 16px; max-width: 560px;">
           <div>
             <label class="lbl">Course title — English</label>
-            <input class="fld" value="{{ stageTitleEn }}" onChange="{{ onStageTitleEn }}"/>
+            <input class="fld" value="{{ stageTitleEn }}" onChange="{{ onStageTitleEn }}" placeholder="e.g. Prepositions"/>
           </div>
           <div>
             <label class="lbl">Course title — Sinhala</label>
             <input class="fld si" value="{{ stageTitleSi }}" onChange="{{ onStageTitleSi }}"/>
           </div>
           <div>
-            <label class="lbl">Course ID — referenced by progress records, not editable</label>
-            <input class="fld" value="{{ stageId }}" style="background: #F7F5FF; color: #9B94BE;"/>
+            <label class="lbl">{{ stageIdLabel }}</label>
+            <input class="fld" value="{{ stageIdShown }}" style="background: #F7F5FF; color: #9B94BE;"/>
           </div>
           <div style="background: #ECE8FB; border-radius: 12px; padding: 14px 16px; font-size: 12.5px; color: #4A4560;">
             Holds <b>{{ stageLessonCount }}</b> lessons and <b>{{ stageExCount }}</b> exercises. Unlock rule: <b>{{ stageUnlock }}</b>.
           </div>
+          <button class="addbtn" onClick="{{ onAddLessonHere }}">+ Add lesson</button>
         </div>
       </sc-if>
 
       <!-- ---- lesson selected ---- -->
       <sc-if value="{{ isLesson }}" hint-placeholder-val="{{ false }}">
-        <div style="font-size: 11px; font-weight: 700; color: #6B6580; letter-spacing: 0.06em;">EDITING LESSON</div>
-        <h2 style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 22px; margin: 6px 0 22px;">{{ lessonTitleEn }}</h2>
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 22px;">
+          <div>
+            <div style="font-size: 11px; font-weight: 700; color: #6B6580; letter-spacing: 0.06em;">EDITING LESSON</div>
+            <h2 style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 22px; margin: 6px 0 0;">{{ lessonHeading }}</h2>
+          </div>
+          <button class="delbtn" onClick="{{ onDeleteLesson }}" style="background: {{ lsDelBg }}; color: {{ lsDelColor }}; border-color: {{ lsDelBorder }};">{{ lsDelLabel }}</button>
+        </div>
         <div style="display: flex; flex-direction: column; gap: 16px; max-width: 560px;">
           <div>
             <label class="lbl">Lesson title — English</label>
-            <input class="fld" value="{{ lessonTitleEn }}" onChange="{{ onLessonTitleEn }}"/>
+            <input class="fld" value="{{ lessonTitleEn }}" onChange="{{ onLessonTitleEn }}" placeholder="e.g. Word order"/>
           </div>
           <div>
             <label class="lbl">Lesson title — Sinhala</label>
@@ -119,11 +155,26 @@
           </div>
           <div>
             <label class="lbl">Explanation shown before the exercises</label>
-            <textarea class="fld" rows="4" value="{{ lessonExplain }}" onChange="{{ onLessonExplain }}"></textarea>
+            <div class="fmtbar">
+              <sc-for list="{{ explainTools }}" as="t" hint-placeholder-count="6">
+                <button class="fmtbtn" onClick="{{ t.onClick }}" style="font-weight: {{ t.weight }}; font-style: {{ t.style }};">{{ t.label }}</button>
+              </sc-for>
+            </div>
+            <textarea class="fld" id="fld-explain" rows="7" value="{{ lessonExplain }}" onChange="{{ onLessonExplain }}" placeholder="Explain the rule in plain language, then show what it looks like."></textarea>
+            <div class="hint">{{ markupHint }}</div>
           </div>
           <div style="background: #ECE8FB; border-radius: 12px; padding: 14px 16px; font-size: 12.5px; color: #4A4560;">
             This lesson holds <b>{{ lessonExCount }}</b> exercises. Select one in the tree to edit it.
           </div>
+          <button class="addbtn" onClick="{{ onAddExerciseHere }}">+ Add exercise</button>
+        </div>
+      </sc-if>
+
+      <!-- ---- nothing left to edit ---- -->
+      <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width: 460px; margin-top: 60px; text-align: center; color: #6B6580;">
+          <div style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 20px; color: #1E1B2E; margin-bottom: 8px;">No courses left</div>
+          <div style="font-size: 13.5px; line-height: 1.6;">The curriculum is empty. Save this draft to keep it that way, or head back to the dashboard to add a course.</div>
         </div>
       </sc-if>
 
@@ -134,22 +185,31 @@
             <div style="font-size: 11px; font-weight: 700; color: #6B6580; letter-spacing: 0.06em;">EDITING EXERCISE</div>
             <h2 style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 22px; margin: 6px 0 0;">{{ exTitle }}</h2>
           </div>
-          <div style="flex-shrink: 0;">
-            <label class="lbl">Exercise type</label>
-            <select class="fld" style="width: 190px; cursor: pointer;" value="{{ exType }}" onChange="{{ onTypeChange }}">
-              <option value="mcq">Multiple choice</option>
-              <option value="gap_fill">Fill in the blank</option>
-              <option value="drag_order">Drag to order</option>
-              <option value="match">Match pairs</option>
-              <option value="free_text">Free text</option>
-            </select>
+          <div style="flex-shrink: 0; display: flex; align-items: flex-end; gap: 10px;">
+            <button class="delbtn" onClick="{{ onDeleteExercise }}" style="background: {{ exDelBg }}; color: {{ exDelColor }}; border-color: {{ exDelBorder }};">{{ exDelLabel }}</button>
+            <div>
+              <label class="lbl">Exercise type</label>
+              <select class="fld" style="width: 190px; cursor: pointer;" value="{{ exType }}" onChange="{{ onTypeChange }}">
+                <option value="mcq">Multiple choice</option>
+                <option value="gap_fill">Fill in the blank</option>
+                <option value="drag_order">Drag to order</option>
+                <option value="match">Match pairs</option>
+                <option value="free_text">Free text</option>
+              </select>
+            </div>
           </div>
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 16px; max-width: 620px;">
           <div>
             <label class="lbl">Prompt — English</label>
-            <input class="fld" value="{{ promptEn }}" onChange="{{ onPromptEn }}" placeholder="What the learner is asked to do"/>
+            <div class="fmtbar">
+              <sc-for list="{{ promptTools }}" as="t" hint-placeholder-count="6">
+                <button class="fmtbtn" onClick="{{ t.onClick }}" style="font-weight: {{ t.weight }}; font-style: {{ t.style }};">{{ t.label }}</button>
+              </sc-for>
+            </div>
+            <textarea class="fld" id="fld-prompt" rows="3" value="{{ promptEn }}" onChange="{{ onPromptEn }}" placeholder="What the learner is asked to do"></textarea>
+            <div class="hint">{{ markupHint }}</div>
           </div>
           <div>
             <label class="lbl">Prompt — Sinhala</label>
@@ -275,7 +335,24 @@
       <sc-if value="{{ isExercise }}" hint-placeholder-val="{{ true }}">
         <div style="background: #F7F5FF; border-radius: 18px; padding: 20px; min-height: 340px;">
           <div style="font-size: 11px; font-weight: 700; color: #6C4FF6; letter-spacing: 0.05em; margin-bottom: 12px;">{{ previewStageLabel }}</div>
-          <div style="font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 17px; line-height: 1.4; margin-bottom: 18px;">{{ promptEn }}</div>
+          <div style="font-family: 'Baloo 2', sans-serif; font-size: 17px; margin-bottom: 18px;">
+            <sc-for list="{{ promptBlocks }}" as="b" hint-placeholder-count="1">
+              <sc-if value="{{ b.isImage }}" hint-placeholder-val="{{ false }}">
+                <img src="{{ b.src }}" alt="{{ b.alt }}" style="display: block; max-width: 100%; border-radius: 12px; margin: 0 0 10px;"/>
+              </sc-if>
+              <sc-if value="{{ b.isText }}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; gap: 7px; margin-bottom: 4px;">
+                  <sc-if value="{{ b.hasMarker }}" hint-placeholder-val="{{ false }}">
+                    <span style="line-height: 1.4; color: #6C4FF6; font-weight: 700; flex-shrink: 0;">{{ b.marker }}</span>
+                  </sc-if>
+                  <div style="line-height: 1.4; min-width: 0;"><sc-for list="{{ b.runs }}" as="r" hint-placeholder-count="1"><sc-if value="{{ r.isLink }}" hint-placeholder-val="{{ false }}"><a href="{{ r.href }}" target="_blank" rel="noopener" style="font-weight: {{ r.promptWeight }}; font-style: {{ r.italic }}; text-decoration: underline;">{{ r.text }}</a></sc-if><sc-if value="{{ r.plain }}" hint-placeholder-val="{{ true }}"><span style="font-weight: {{ r.promptWeight }}; font-style: {{ r.italic }};">{{ r.text }}</span></sc-if></sc-for></div>
+                </div>
+              </sc-if>
+            </sc-for>
+            <sc-if value="{{ promptMissing }}" hint-placeholder-val="{{ false }}">
+              <span style="color: #B5AFD4; font-weight: 700;">(no prompt yet)</span>
+            </sc-if>
+          </div>
 
           <sc-if value="{{ isMcq }}" hint-placeholder-val="{{ true }}">
             <div style="display: flex; flex-direction: column; gap: 10px;">
@@ -334,8 +411,56 @@
         </div>
       </sc-if>
 
-      <sc-if value="{{ notExercise }}" hint-placeholder-val="{{ false }}">
-        <div style="background: #F7F5FF; border-radius: 18px; padding: 28px 20px; text-align: center; color: #9B94BE; font-size: 13px; font-weight: 600; line-height: 1.6;">Select an exercise in the tree to preview it as a learner sees it.</div>
+      <!-- A lesson is a screen of its own for the learner: the explanation they
+           read before the first exercise, then the run of exercises. -->
+      <sc-if value="{{ isLesson }}" hint-placeholder-val="{{ false }}">
+        <div style="background: #F7F5FF; border-radius: 18px; padding: 20px; min-height: 340px;">
+          <div style="font-size: 11px; font-weight: 700; color: #6C4FF6; letter-spacing: 0.05em; margin-bottom: 12px;">{{ previewStageLabel }}</div>
+          <div style="font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 19px; line-height: 1.3;">{{ lessonHeading }}</div>
+          <sc-if value="{{ hasLessonSi }}" hint-placeholder-val="{{ true }}">
+            <div class="si" style="font-size: 14px; font-weight: 600; color: #6B6580; margin-top: 3px;">{{ lessonTitleSi }}</div>
+          </sc-if>
+
+          <div style="background: white; border-radius: 14px; padding: 16px; margin-top: 16px;">
+            <div style="font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 11.5px; color: #6C4FF6; letter-spacing: 0.04em; margin-bottom: 9px;">EXPLANATION</div>
+            <!-- Inline runs carry no whitespace between their tags on purpose:
+                 the runtime keeps whitespace-only text nodes, so a newline here
+                 would show up as a stray space mid-sentence. -->
+            <sc-for list="{{ explainBlocks }}" as="b" hint-placeholder-count="2">
+              <sc-if value="{{ b.isImage }}" hint-placeholder-val="{{ false }}">
+                <img src="{{ b.src }}" alt="{{ b.alt }}" style="display: block; max-width: 100%; border-radius: 10px; margin: 0 0 10px;"/>
+              </sc-if>
+              <sc-if value="{{ b.isText }}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; gap: 7px; margin-bottom: 8px;">
+                  <sc-if value="{{ b.hasMarker }}" hint-placeholder-val="{{ false }}">
+                    <span style="font-size: 14px; line-height: 1.75; color: #6C4FF6; font-weight: 700; flex-shrink: 0;">{{ b.marker }}</span>
+                  </sc-if>
+                  <div style="font-size: 14px; line-height: 1.75; min-width: 0;"><sc-for list="{{ b.runs }}" as="r" hint-placeholder-count="1"><sc-if value="{{ r.isLink }}" hint-placeholder-val="{{ false }}"><a href="{{ r.href }}" target="_blank" rel="noopener" style="font-weight: {{ r.weight }}; font-style: {{ r.italic }}; text-decoration: underline;">{{ r.text }}</a></sc-if><sc-if value="{{ r.plain }}" hint-placeholder-val="{{ true }}"><span style="font-weight: {{ r.weight }}; font-style: {{ r.italic }};">{{ r.text }}</span></sc-if></sc-for></div>
+                </div>
+              </sc-if>
+            </sc-for>
+            <sc-if value="{{ explainMissing }}" hint-placeholder-val="{{ false }}">
+              <p style="margin: 0; font-size: 14px; line-height: 1.75; color: #B5AFD4;">{{ explainMissingNote }}</p>
+            </sc-if>
+          </div>
+
+          <div style="font-size: 11px; font-weight: 700; color: #6B6580; letter-spacing: 0.05em; margin: 18px 0 10px;">{{ previewExHeading }}</div>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <sc-for list="{{ previewExercises }}" as="pe" hint-placeholder-count="2">
+              <div style="background: white; border: 1.5px solid #E3DEF5; border-radius: 12px; padding: 11px 13px; display: flex; align-items: center; gap: 9px;">
+                <span style="font-size: 11px; font-weight: 800; color: #B5AFD4; flex-shrink: 0;">{{ pe.n }}</span>
+                <span style="font-size: 9px; font-weight: 700; color: white; background: {{ pe.badge }}; border-radius: 5px; padding: 2px 5px; flex-shrink: 0;">{{ pe.typeShort }}</span>
+                <span style="font-size: 13px; font-weight: 600; color: {{ pe.color }}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ pe.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="margin-top: 20px; background: {{ lessonCtaBg }}; color: white; border-radius: 999px; padding: 13px; text-align: center; font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 15px; box-shadow: 0 4px 0 {{ lessonCtaShadow }};">{{ lessonCta }}</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ previewIdle }}" hint-placeholder-val="{{ false }}">
+        <div style="background: #F7F5FF; border-radius: 18px; padding: 28px 20px; text-align: center; color: #9B94BE; font-size: 13px; font-weight: 600; line-height: 1.6;">Select a lesson or an exercise in the tree to preview it as a learner sees it.</div>
       </sc-if>
     </div>
   </div>
@@ -359,6 +484,178 @@ const UNLOCK_LABEL = { always: 'Open to everyone', afterStage: 'After the previo
 
 const clone = (o) => JSON.parse(JSON.stringify(o));
 const csvIn = (s) => s.split(',').map(x => x.trim()).filter(Boolean);
+const slug = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const uniqueId = (base, taken) => {
+  let id = base, n = 2;
+  while (taken.indexOf(id) !== -1) { id = base + '-' + n; n++; }
+  return id;
+};
+// Exercise ids are unique across the WHOLE curriculum, not just their lesson —
+// attempt rows reference an exercise by id alone, so a duplicate anywhere would
+// merge two exercises' history.
+const allExerciseIds = (c) =>
+  c.stages.reduce((a, s) => a.concat(s.lessons.reduce((b, l) => b.concat(l.exercises.map(e => e.id)), [])), []);
+
+// A delete needs a second click to go through — there is no undo once the draft
+// is saved. Deleting a container takes its children with it, so the armed label
+// spells out what is about to go rather than just asking again.
+const plural = (n, word) => n + ' ' + word + (n === 1 ? '' : 's');
+const delStyle = (armed, takesWith) => ({
+  label: !armed ? 'Delete' : (takesWith ? 'Click again — also deletes ' + takesWith : 'Click again to delete'),
+  bg: armed ? '#FF4D5E' : 'white',
+  color: armed ? 'white' : '#C2354A',
+  border: armed ? '#FF4D5E' : '#F2C9D0',
+});
+// ---------------------------------------------------------------------------
+// LIGHTWEIGHT MARKUP
+//
+// Content fields stay plain strings — the API, the graders and the learner
+// players all keep working on text. Formatting is a small, deliberate subset
+// that survives being read raw in a database row:
+//
+//   **bold**   *italic*   [text](url)   ![caption](path.png)   - bullet   1. step
+//
+// Rendering happens only in the preview and, in production, in the learner
+// player. Nothing here injects HTML — every run becomes a plain React node — so
+// admin-authored text can never smuggle markup into the page.
+// ---------------------------------------------------------------------------
+// The italic arm requires a non-space right after the opening star, so prose
+// like "a * b * c" stays literal instead of turning into stray italics.
+const INLINE_RE = /(\*\*[\s\S]+?\*\*|\*[^*\s\n][^*\n]*?\*|!?\[[^\]\n]*\]\([^)\n]*\))/g;
+
+const mkRun = (text, bold, italic, href) => ({
+  text,
+  href: href || '',
+  isLink: !!href,
+  plain: !href,
+  weight: bold ? '700' : '400',
+  promptWeight: bold ? '800' : '700', // prompts render bold already
+  italic: italic ? 'italic' : 'normal',
+});
+
+function inlineRuns(text) {
+  const runs = [];
+  String(text == null ? '' : text).split(INLINE_RE).forEach(part => {
+    if (!part) return;
+    let m;
+    if ((m = /^\*\*([\s\S]+)\*\*$/.exec(part))) runs.push(mkRun(m[1], true, false, null));
+    else if ((m = /^\*([^*]+)\*$/.exec(part))) runs.push(mkRun(m[1], false, true, null));
+    // Images are block-level; one written mid-sentence degrades to its caption
+    // rather than leaking the raw markup into the preview.
+    else if ((m = /^!\[([^\]]*)\]\([^)]*\)$/.exec(part))) runs.push(mkRun(m[1], false, false, null));
+    else if ((m = /^\[([^\]]*)\]\(([^)]*)\)$/.exec(part))) runs.push(mkRun(m[1] || m[2], false, false, m[2]));
+    else runs.push(mkRun(part, false, false, null));
+  });
+  return runs;
+}
+
+// Markup belongs in the preview, not in a tree row or a heading — those want the
+// words only, so `**Which** form?` reads as `Which form?`.
+const plainText = (src) => parseRich(src)
+  .map(b => b.isImage ? (b.alt || '(image)') : b.runs.map(r => r.text).join(''))
+  .join(' ')
+  .trim();
+
+// One entry per rendered line. Paragraphs and list items share a shape and
+// differ only by their marker, which keeps the preview template to one loop.
+function parseRich(src) {
+  const out = [];
+  let counter = 0; // ordered lists are renumbered, so 1. 1. 1. still reads 1. 2. 3.
+  String(src == null ? '' : src).split('\n').forEach(raw => {
+    const line = raw.trim();
+    if (!line) { counter = 0; return; }
+    let m;
+    if ((m = /^!\[([^\]]*)\]\(([^)]*)\)$/.exec(line))) {
+      out.push({ isImage: true, isText: false, src: m[2], alt: m[1] });
+      counter = 0;
+      return;
+    }
+    // The marker alone counts as an empty item — a bullet appears the moment it
+    // is typed, instead of after the first word.
+    if ((m = /^[-*+](?:\s+(.*))?$/.exec(line))) {
+      out.push({ isText: true, isImage: false, hasMarker: true, marker: '•', runs: inlineRuns(m[1]) });
+      counter = 0;
+      return;
+    }
+    if ((m = /^\d+[.)](?:\s+(.*))?$/.exec(line))) {
+      counter += 1;
+      out.push({ isText: true, isImage: false, hasMarker: true, marker: counter + '.', runs: inlineRuns(m[1]) });
+      return;
+    }
+    out.push({ isText: true, isImage: false, hasMarker: false, marker: '', runs: inlineRuns(line) });
+    counter = 0;
+  });
+  return out;
+}
+
+// ---- toolbar ---------------------------------------------------------------
+// Each button rewrites the raw markup around the current selection. With nothing
+// selected it drops in a sample and selects it, so a button press always leaves
+// something to type over rather than a bare pair of asterisks.
+const TOOLS = [
+  { key: 'bold', label: 'B', weight: '800', style: 'normal' },
+  { key: 'italic', label: 'I', weight: '600', style: 'italic' },
+  { key: 'link', label: 'Link', weight: '700', style: 'normal' },
+  { key: 'image', label: 'Image', weight: '700', style: 'normal' },
+  { key: 'bullets', label: '• List', weight: '700', style: 'normal' },
+  { key: 'numbers', label: '1. List', weight: '700', style: 'normal' },
+];
+const WRAPS = {
+  bold: { open: '**', close: '**', sample: 'bold text' },
+  italic: { open: '*', close: '*', sample: 'italic text' },
+};
+const MARKUP_HINT = '**bold**  ·  *italic*  ·  [text](https://…)  ·  ![caption](assets/photo.png)  ·  - bullet  ·  1. step';
+
+function applyMarkup(kind, text, start, end) {
+  const sel = text.slice(start, end);
+
+  if (kind === 'bullets' || kind === 'numbers') {
+    // Markers only mean anything at the start of a line, so snap to line bounds.
+    const from = text.lastIndexOf('\n', Math.max(0, start - 1)) + 1;
+    let to = text.indexOf('\n', end);
+    if (to < 0) to = text.length;
+    const blank = !text.slice(from, to).trim();
+    const body = blank ? 'List item' : text.slice(from, to);
+    const marked = body.split('\n').map((line, i) => {
+      const bare = line.replace(/^\s*(?:[-*+]|\d+[.)])\s+/, '');
+      return (kind === 'bullets' ? '- ' : (i + 1) + '. ') + bare;
+    }).join('\n');
+    const next = text.slice(0, from) + marked + text.slice(to);
+    const lead = kind === 'bullets' ? 2 : 3;
+    return blank
+      ? { text: next, from: from + lead, to: from + marked.length }
+      : { text: next, from: from + marked.length, to: from + marked.length };
+  }
+
+  if (kind === 'image') {
+    // Images are their own block, so land on the next line boundary.
+    let at = text.indexOf('\n', end);
+    if (at < 0) at = text.length;
+    const lead = (at === 0 || !text.slice(0, at).trim()) ? '' : '\n';
+    const caption = 'Caption';
+    const snippet = lead + '![' + caption + '](assets/mascot_elephant.png)';
+    const capAt = at + lead.length + 2;
+    return { text: text.slice(0, at) + snippet + text.slice(at), from: capAt, to: capAt + caption.length };
+  }
+
+  if (kind === 'link') {
+    const body = sel || 'link text';
+    const url = 'https://example.com';
+    const next = text.slice(0, start) + '[' + body + '](' + url + ')' + text.slice(end);
+    // With text already selected the URL is what still needs typing, and vice versa.
+    const urlAt = start + 1 + body.length + 2;
+    return sel
+      ? { text: next, from: urlAt, to: urlAt + url.length }
+      : { text: next, from: start + 1, to: start + 1 + body.length };
+  }
+
+  const w = WRAPS[kind];
+  const body = sel || w.sample;
+  const next = text.slice(0, start) + w.open + body + w.close + text.slice(end);
+  const from = start + w.open.length;
+  return { text: next, from, to: from + body.length };
+}
+
 const seededShuffle = (arr, seed) => {
   const a = arr.slice();
   let s = seed;
@@ -370,14 +667,96 @@ const seededShuffle = (arr, seed) => {
   return a;
 };
 
+// ---- node factories --------------------------------------------------------
+// Shared by the "+ Add" buttons and by the ?new= handoff from the dashboard, so
+// a course created either way has exactly the same shape.
+// A brand-new course / lesson starts blank — no "New course" text for the admin
+// to select and delete before typing the real name. The placeholder id below is
+// replaced with a slug of the title by finaliseDraft() on the first save.
+const makeStage = (c) => {
+  const prev = c.stages[c.stages.length - 1];
+  return {
+    id: uniqueId('new-course', c.stages.map(s => s.id)),
+    order: c.stages.length + 1,
+    title: { en: '', si: '' },
+    theme: { from: '#A78BFA', to: '#6C4FF6' },
+    unlock: prev ? { kind: 'afterStage', stageId: prev.id } : { kind: 'always' },
+    lessons: [],
+  };
+};
+const makeLesson = (st) => ({
+  id: uniqueId((slug(st.title.en) || 'course') + '-lesson', st.lessons.map(l => l.id)),
+  order: st.lessons.length + 1, kind: 'teach',
+  title: { en: '', si: '' },
+  explanation: { en: '', si: '' },
+  exercises: [],
+});
+const makeExercise = (c, ls) => ({
+  id: uniqueId((slug(ls.title.en) || 'lesson') + '-ex', allExerciseIds(c)),
+  type: 'mcq',
+  prompt: { en: '', si: '' },
+  feedback: { correct: { en: '', si: '' }, incorrect: { en: '', si: '' } },
+  payload: DEFAULT_PAYLOAD.mcq(),
+});
+
+// Shared with the dashboard, which can reorder courses too. See curriculum.js.
+const repairUnlocks = window.repairUnlocks;
+
+// An id is permanent once progress records reference it, so a draft that has
+// never been saved is the last safe moment to derive a readable one from the
+// title. After this the id is frozen and renaming the course no longer moves it.
+function finaliseDraft(c, draft) {
+  if (!draft) return null;
+  const st = c.stages.find(s => s.id === draft.stageId);
+  if (!st) return null;
+
+  if (draft.kind === 'lesson') {
+    const ls = st.lessons.find(l => l.id === draft.lessonId);
+    if (!ls) return null;
+    const others = st.lessons.filter(l => l.id !== ls.id).map(l => l.id);
+    ls.id = uniqueId(slug(ls.title.en) || 'lesson', others);
+    return { stageId: st.id, lessonId: ls.id, exerciseId: null };
+  }
+
+  const others = c.stages.filter(s => s.id !== st.id).map(s => s.id);
+  const oldId = st.id;
+  st.id = uniqueId(slug(st.title.en) || 'new-course', others);
+  // Nothing can point at a course this new, but keep the rules consistent anyway.
+  c.stages.forEach(s => {
+    if (s.unlock && s.unlock.kind === 'afterStage' && s.unlock.stageId === oldId) s.unlock.stageId = st.id;
+  });
+  return { stageId: st.id, lessonId: null, exerciseId: null };
+}
+
 // Deep-link support: Course Editor.dc.html?stage=…&lesson=…&exercise=…
-function initialSelection(cur) {
-  let q = {};
+// plus the dashboard handoff: ?new=course | ?new=lesson&stage=…
+function readQuery() {
   try {
     const sp = new URLSearchParams(window.location.search);
-    q = { stageId: sp.get('stage'), lessonId: sp.get('lesson'), exerciseId: sp.get('exercise') };
-  } catch (e) { /* no location — fall through to defaults */ }
+    return { stageId: sp.get('stage'), lessonId: sp.get('lesson'), exerciseId: sp.get('exercise'), isNew: sp.get('new') };
+  } catch (e) { return {}; /* no location — fall through to defaults */ }
+}
 
+// The dashboard's "+ Add course / lesson" buttons do not write anything; they
+// send the admin here and the node is built in memory as one unsaved change.
+// Save draft is what actually commits it to the curriculum.
+function applyNewParam(cur, q) {
+  if (q.isNew === 'course') {
+    const st = makeStage(cur);
+    cur.stages.push(st);
+    return { kind: 'course', stageId: st.id, lessonId: null, exerciseId: null };
+  }
+  if (q.isNew === 'lesson') {
+    const st = q.stageId ? cur.stages.find(s => s.id === q.stageId) : cur.stages[0];
+    if (!st) return null;
+    const ls = makeLesson(st);
+    st.lessons.push(ls);
+    return { kind: 'lesson', stageId: st.id, lessonId: ls.id, exerciseId: null };
+  }
+  return null;
+}
+
+function initialSelection(cur, q) {
   // A param only narrows the selection if it actually RESOLVED. An id that was
   // supplied but matches nothing (stale link, deleted content) is treated as
   // absent, so the editor falls all the way back instead of stranding the admin
@@ -399,24 +778,43 @@ function initialSelection(cur) {
 
 class Component extends DCLogic {
   state = (() => {
-    const sel = initialSelection(CURRICULUM);
+    const q = readQuery();
+    const draft = applyNewParam(CURRICULUM, q);
+    const sel = draft
+      ? { stageId: draft.stageId, lessonId: draft.lessonId, exerciseId: null }
+      : initialSelection(CURRICULUM, q);
     const expanded = {};
     CURRICULUM.stages.forEach(s => { expanded[s.id] = s.id === sel.stageId; });
-    return { curriculum: CURRICULUM, sel, expanded, dirty: 0, saved: false, showKey: false };
+    return {
+      curriculum: CURRICULUM, sel, expanded, draft,
+      dirty: draft ? 1 : 0, saved: false, showKey: false, pendingDelete: null,
+    };
   })();
 
   // ---- selection -----------------------------------------------------------
+  // Every selection change disarms a pending delete, so a half-pressed Delete
+  // can never land on whatever the admin navigated to next.
   selectStage = (stageId) => this.setState(s => ({
     sel: { stageId, lessonId: null, exerciseId: null },
     expanded: { ...s.expanded, [stageId]: !s.expanded[stageId] },
+    pendingDelete: null,
   }));
-  selectLesson = (stageId, lessonId) => this.setState({ sel: { stageId, lessonId, exerciseId: null } });
-  selectExercise = (stageId, lessonId, exerciseId) => this.setState({ sel: { stageId, lessonId, exerciseId } });
+  selectLesson = (stageId, lessonId) => this.setState({ sel: { stageId, lessonId, exerciseId: null }, pendingDelete: null });
+  selectExercise = (stageId, lessonId, exerciseId) => this.setState({ sel: { stageId, lessonId, exerciseId }, pendingDelete: null });
   toggleKey = () => this.setState(s => ({ showKey: !s.showKey }));
 
   save = () => {
-    const ok = window.saveCurriculum(this.state.curriculum);
-    this.setState({ dirty: 0, saved: ok });
+    const c = clone(this.state.curriculum);
+    // A course/lesson opened via ?new= only gets its real id here — this is the
+    // save that puts it on the dashboard, and the last moment the id is free.
+    const sel = finaliseDraft(c, this.state.draft);
+    const ok = window.saveCurriculum(c);
+    this.setState(s => ({
+      curriculum: c,
+      sel: sel || s.sel,
+      expanded: sel ? { ...s.expanded, [sel.stageId]: true } : s.expanded,
+      draft: null, dirty: 0, saved: ok,
+    }));
   };
 
   // ---- lookups -------------------------------------------------------------
@@ -432,12 +830,144 @@ class Component extends DCLogic {
   };
   editExercise = (mutator) => this.edit(c => { const ex = this.curExercise(c); if (ex) mutator(ex, ex.payload); });
 
+  // ---- structure: add / delete lessons and exercises ------------------------
+  // These change the shape of the tree, so unlike `edit` they also move the
+  // selection onto (or off) the affected node.
+  // `expand` reveals the branch the selection landed in — right when adding,
+  // wrong when merely reordering, which must not pop a collapsed course open.
+  structuralEdit = (mutator, expand) => {
+    const c = clone(this.state.curriculum);
+    const sel = mutator(c);
+    if (!sel) return;
+    this.setState(s => ({
+      curriculum: c, sel,
+      expanded: expand === false || !sel.stageId ? s.expanded : { ...s.expanded, [sel.stageId]: true },
+      dirty: s.dirty + 1, saved: false, pendingDelete: null,
+    }));
+  };
+
+  addLesson = (stageId) => this.structuralEdit(c => {
+    const st = c.stages.find(s => s.id === stageId);
+    if (!st) return null;
+    const lesson = makeLesson(st);
+    st.lessons.push(lesson);
+    return { stageId, lessonId: lesson.id, exerciseId: null };
+  });
+
+  addExercise = (stageId, lessonId) => this.structuralEdit(c => {
+    const st = c.stages.find(s => s.id === stageId);
+    const ls = st && st.lessons.find(l => l.id === lessonId);
+    if (!ls) return null;
+    const ex = makeExercise(c, ls);
+    ls.exercises.push(ex);
+    return { stageId, lessonId, exerciseId: ex.id };
+  });
+
+  // ---- structure: reordering ------------------------------------------------
+  // d is -1 (up) or +1 (down). A move at either end is a no-op, not an error.
+  // The selection is left where it was — the admin keeps editing the same node.
+  swap = (list, i, d) => {
+    const j = i + d;
+    if (i < 0 || j < 0 || j >= list.length) return false;
+    const tmp = list[i]; list[i] = list[j]; list[j] = tmp;
+    return true;
+  };
+
+  moveStage = (stageId, d) => this.structuralEdit(c => {
+    const i = c.stages.findIndex(s => s.id === stageId);
+    if (!this.swap(c.stages, i, d)) return null;
+    c.stages.forEach((s, k) => { s.order = k + 1; });
+    repairUnlocks(c);
+    return this.state.sel;
+  }, false);
+
+  moveLesson = (stageId, lessonId, d) => this.structuralEdit(c => {
+    const st = c.stages.find(s => s.id === stageId);
+    if (!st) return null;
+    const i = st.lessons.findIndex(l => l.id === lessonId);
+    if (!this.swap(st.lessons, i, d)) return null;
+    st.lessons.forEach((l, k) => { l.order = k + 1; });
+    return this.state.sel;
+  }, false);
+
+  moveExercise = (stageId, lessonId, exerciseId, d) => this.structuralEdit(c => {
+    const st = c.stages.find(s => s.id === stageId);
+    const ls = st && st.lessons.find(l => l.id === lessonId);
+    if (!ls) return null;
+    const i = ls.exercises.findIndex(e => e.id === exerciseId);
+    if (!this.swap(ls.exercises, i, d)) return null;
+    return this.state.sel;
+  }, false);
+
+  // First click arms, second click deletes.
+  requestDelete = (what, run) => {
+    if (this.state.pendingDelete !== what) {
+      this.setState({ pendingDelete: what });
+      return;
+    }
+    run();
+  };
+
+  // Removing a course orphans any `afterStage` rule that pointed at it, so the
+  // unlock chain is repaired here exactly as it is after a reorder.
+  deleteStage = () => this.requestDelete('course', () => this.structuralEdit(c => {
+    const { stageId } = this.state.sel;
+    const i = c.stages.findIndex(s => s.id === stageId);
+    if (i < 0) return null;
+    c.stages.splice(i, 1);
+    c.stages.forEach((s, k) => { s.order = k + 1; });
+    repairUnlocks(c);
+    // Land on the course that slid into its place, or the new last one.
+    const next = c.stages[Math.min(i, c.stages.length - 1)];
+    return { stageId: next ? next.id : null, lessonId: null, exerciseId: null };
+  }));
+
+  deleteLesson = () => this.requestDelete('lesson', () => this.structuralEdit(c => {
+    const { stageId, lessonId } = this.state.sel;
+    const st = c.stages.find(s => s.id === stageId);
+    if (!st) return null;
+    st.lessons = st.lessons.filter(l => l.id !== lessonId);
+    st.lessons.forEach((l, i) => { l.order = i + 1; });
+    return { stageId, lessonId: null, exerciseId: null };
+  }));
+
+  deleteExercise = () => this.requestDelete('exercise', () => this.structuralEdit(c => {
+    const { stageId, lessonId, exerciseId } = this.state.sel;
+    const st = c.stages.find(s => s.id === stageId);
+    const ls = st && st.lessons.find(l => l.id === lessonId);
+    if (!ls) return null;
+    ls.exercises = ls.exercises.filter(e => e.id !== exerciseId);
+    return { stageId, lessonId, exerciseId: null };
+  }));
+
   // ---- stage / lesson fields ----------------------------------------------
   onStageTitleEn = (e) => { const v = e.target.value; this.edit(c => { this.curStage(c).title.en = v; }); };
   onStageTitleSi = (e) => { const v = e.target.value; this.edit(c => { this.curStage(c).title.si = v; }); };
   onLessonTitleEn = (e) => { const v = e.target.value; this.edit(c => { this.curLesson(c).title.en = v; }); };
   onLessonTitleSi = (e) => { const v = e.target.value; this.edit(c => { this.curLesson(c).title.si = v; }); };
   onLessonExplain = (e) => { const v = e.target.value; this.edit(c => { this.curLesson(c).explanation.en = v; }); };
+
+  // ---- formatting toolbar ---------------------------------------------------
+  // The textarea is controlled by state, so the caret has to be put back after
+  // React re-renders it — otherwise it snaps to the end on every button press.
+  format = (fieldId, kind, current, commit) => {
+    const el = typeof document !== 'undefined' ? document.getElementById(fieldId) : null;
+    const text = current || '';
+    const start = el ? el.selectionStart : text.length;
+    const end = el ? el.selectionEnd : text.length;
+    const next = applyMarkup(kind, text, start, end);
+    commit(next.text);
+    if (el && typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => {
+        try { el.focus(); el.setSelectionRange(next.from, next.to); } catch (e) { /* detached */ }
+      });
+    }
+  };
+
+  tools = (fieldId, current, commit) => TOOLS.map(t => ({
+    label: t.label, weight: t.weight, style: t.style,
+    onClick: () => this.format(fieldId, t.key, current, commit),
+  }));
 
   // ---- shared exercise fields ---------------------------------------------
   onPromptEn = (e) => { const v = e.target.value; this.editExercise(ex => { ex.prompt.en = v; }); };
@@ -484,34 +1014,58 @@ class Component extends DCLogic {
   togglePunct = () => this.editExercise((ex, p) => { p.normalize.stripPunctuation = !p.normalize.stripPunctuation; });
 
   renderVals() {
-    const { curriculum, sel, expanded, dirty, saved, showKey } = this.state;
+    const { curriculum, sel, expanded, dirty, saved, showKey, pendingDelete, draft } = this.state;
     const stage = this.curStage();
     const lesson = this.curLesson();
     const ex = this.curExercise();
     const type = ex ? ex.type : null;
     const p = ex ? ex.payload : {};
 
-    const tree = curriculum.stages.map(st => ({
-      label: st.title.en,
+    // Move buttons sit inside rows that select on click, so they must swallow
+    // the click — otherwise reordering a course would also toggle it open.
+    const MOVE_ON = '#6B6580', MOVE_OFF = '#DED7F8';
+    const stop = (e, run) => { if (e && e.stopPropagation) e.stopPropagation(); run(); };
+
+    // Titles are blank until the admin types one, so every place that shows a
+    // name needs a stand-in — an unnamed row must still be findable in the tree.
+    const stageName = (s) => s.title.en || '(untitled course)';
+    const lessonName = (l) => l.title.en || '(untitled lesson)';
+
+    const tree = curriculum.stages.map((st, si) => ({
+      label: stageName(st),
+      upColor: si > 0 ? MOVE_ON : MOVE_OFF,
+      downColor: si < curriculum.stages.length - 1 ? MOVE_ON : MOVE_OFF,
+      onUp: (e) => stop(e, () => this.moveStage(st.id, -1)),
+      onDown: (e) => stop(e, () => this.moveStage(st.id, 1)),
       caret: expanded[st.id] ? '▾' : '▸',
       dot: st.theme.to,
       expanded: !!expanded[st.id],
       bg: sel.stageId === st.id && !sel.lessonId ? '#ECE8FB' : 'transparent',
       color: sel.stageId === st.id && !sel.lessonId ? '#6C4FF6' : '#1E1B2E',
       onSelect: () => this.selectStage(st.id),
-      lessons: st.lessons.map(ls => ({
-        label: ls.title.en,
+      onAddLesson: () => this.addLesson(st.id),
+      lessons: st.lessons.map((ls, li) => ({
+        label: lessonName(ls),
+        upColor: li > 0 ? MOVE_ON : MOVE_OFF,
+        downColor: li < st.lessons.length - 1 ? MOVE_ON : MOVE_OFF,
+        onUp: (e) => stop(e, () => this.moveLesson(st.id, ls.id, -1)),
+        onDown: (e) => stop(e, () => this.moveLesson(st.id, ls.id, 1)),
         icon: ls.kind === 'checkpoint' ? '◆' : '◻',
         bg: sel.lessonId === ls.id && !sel.exerciseId ? '#ECE8FB' : 'transparent',
         color: sel.lessonId === ls.id && !sel.exerciseId ? '#6C4FF6' : '#4A4560',
         onSelect: () => this.selectLesson(st.id, ls.id),
-        exercises: ls.exercises.map(e => ({
-          label: e.prompt.en || '(untitled)',
-          typeShort: TYPE_META[e.type].short,
-          badge: TYPE_COLOR[e.type],
-          bg: sel.exerciseId === e.id ? '#ECE8FB' : 'transparent',
-          color: sel.exerciseId === e.id ? '#6C4FF6' : '#6B6580',
-          onSelect: () => this.selectExercise(st.id, ls.id, e.id),
+        onAddExercise: () => this.addExercise(st.id, ls.id),
+        exercises: ls.exercises.map((x, xi) => ({
+          label: plainText(x.prompt.en) || '(untitled)',
+          typeShort: TYPE_META[x.type].short,
+          badge: TYPE_COLOR[x.type],
+          bg: sel.exerciseId === x.id ? '#ECE8FB' : 'transparent',
+          color: sel.exerciseId === x.id ? '#6C4FF6' : '#6B6580',
+          upColor: xi > 0 ? MOVE_ON : MOVE_OFF,
+          downColor: xi < ls.exercises.length - 1 ? MOVE_ON : MOVE_OFF,
+          onSelect: () => this.selectExercise(st.id, ls.id, x.id),
+          onUp: (e) => stop(e, () => this.moveExercise(st.id, ls.id, x.id, -1)),
+          onDown: (e) => stop(e, () => this.moveExercise(st.id, ls.id, x.id, 1)),
         })),
       })),
     }));
@@ -558,8 +1112,27 @@ class Component extends DCLogic {
 
     const stageExCount = stage ? stage.lessons.reduce((n, l) => n + l.exercises.length, 0) : 0;
 
+    // Lesson preview — the intro screen a learner reads before the first
+    // exercise. Empty fields are called out rather than rendered as blanks, so
+    // the gap is visible here instead of only once it ships.
+    const lessonExercises = lesson ? lesson.exercises : [];
+    const previewExercises = lessonExercises.map((x, i) => ({
+      n: i + 1,
+      typeShort: TYPE_META[x.type].short,
+      badge: TYPE_COLOR[x.type],
+      label: plainText(x.prompt.en) || '(no prompt yet)',
+      color: x.prompt.en ? '#1E1B2E' : '#B5AFD4',
+    }));
+    const explainSet = !!(lesson && lesson.explanation.en);
+    const promptSet = !!(ex && ex.prompt.en);
+    const stDel = delStyle(pendingDelete === 'course',
+      stage && stage.lessons.length ? plural(stage.lessons.length, 'lesson') : '');
+    const lsDel = delStyle(pendingDelete === 'lesson',
+      lesson && lesson.exercises.length ? plural(lesson.exercises.length, 'exercise') : '');
+    const exDel = delStyle(pendingDelete === 'exercise');
+
     return {
-      breadcrumb: [stage && stage.title.en, lesson && lesson.title.en].filter(Boolean).join(' › ') || '—',
+      breadcrumb: [stage && stageName(stage), lesson && lessonName(lesson)].filter(Boolean).join(' › ') || '—',
       dirtyLabel: dirty === 0 ? (saved ? 'Draft saved' : 'No changes') : `${dirty} unsaved change${dirty === 1 ? '' : 's'}`,
       dirtyColor: dirty === 0 ? (saved ? '#3E8E5B' : '#6B6580') : '#B37E00',
       onSave: this.save,
@@ -568,32 +1141,64 @@ class Component extends DCLogic {
       isStage: !!stage && !lesson,
       isLesson: !!lesson && !ex,
       isExercise: !!ex,
-      notExercise: !ex,
+      isEmpty: !stage,
+      previewIdle: !ex && !lesson,
 
-      stageId: stage ? stage.id : '',
+      stageHeading: stage ? stageName(stage) : '',
+      stageIdShown: draft && draft.kind === 'course' ? '' : (stage ? stage.id : ''),
+      stageIdLabel: draft && draft.kind === 'course'
+        ? 'Course ID — generated from the title when you save'
+        : 'Course ID — referenced by progress records, not editable',
       stageTitleEn: stage ? stage.title.en : '',
       stageTitleSi: stage ? stage.title.si : '',
       stageLessonCount: stage ? stage.lessons.length : 0,
       stageExCount,
       stageUnlock: stage ? (UNLOCK_LABEL[stage.unlock.kind] || stage.unlock.kind) : '',
       onStageTitleEn: this.onStageTitleEn, onStageTitleSi: this.onStageTitleSi,
+      onAddLessonHere: () => { if (stage) this.addLesson(stage.id); },
+      onDeleteStage: this.deleteStage,
+      stDelLabel: stDel.label, stDelBg: stDel.bg, stDelColor: stDel.color, stDelBorder: stDel.border,
 
+      lessonHeading: lesson ? lessonName(lesson) : '',
       lessonTitleEn: lesson ? lesson.title.en : '',
       lessonTitleSi: lesson ? lesson.title.si : '',
       lessonExplain: lesson ? lesson.explanation.en : '',
       lessonExCount: lesson ? lesson.exercises.length : 0,
       onLessonTitleEn: this.onLessonTitleEn, onLessonTitleSi: this.onLessonTitleSi,
       onLessonExplain: this.onLessonExplain,
+      onAddExerciseHere: () => { if (stage && lesson) this.addExercise(stage.id, lesson.id); },
+      hasLessonSi: !!(lesson && lesson.title.si),
+      markupHint: MARKUP_HINT,
+      explainTools: this.tools('fld-explain', lesson ? lesson.explanation.en : '',
+        (v) => this.edit(c => { this.curLesson(c).explanation.en = v; })),
+      explainBlocks: explainSet ? parseRich(lesson.explanation.en) : [],
+      explainMissing: !explainSet,
+      explainMissingNote: 'No explanation yet — the learner would open this lesson and go straight to the exercises.',
+      previewExercises,
+      previewExHeading: previewExercises.length
+        ? 'THEN ' + plural(previewExercises.length, 'EXERCISE').toUpperCase()
+        : 'NO EXERCISES YET',
+      lessonCta: previewExercises.length ? 'Go to exercise' : 'Nothing to practise yet',
+      lessonCtaBg: previewExercises.length ? '#6C4FF6' : '#C6BFE4',
+      lessonCtaShadow: previewExercises.length ? '#4B3AC7' : '#ADA5CE',
+      onDeleteLesson: this.deleteLesson,
+      lsDelLabel: lsDel.label, lsDelBg: lsDel.bg, lsDelColor: lsDel.color, lsDelBorder: lsDel.border,
 
-      exTitle: ex ? (ex.prompt.en || '(untitled exercise)') : '',
+      exTitle: ex ? (plainText(ex.prompt.en) || '(untitled exercise)') : '',
       exType: type || 'mcq',
       onTypeChange: this.onTypeChange,
       promptEn: ex ? ex.prompt.en : '',
       promptSi: ex ? ex.prompt.si : '',
       onPromptEn: this.onPromptEn, onPromptSi: this.onPromptSi,
+      promptTools: this.tools('fld-prompt', ex ? ex.prompt.en : '',
+        (v) => this.editExercise(e => { e.prompt.en = v; })),
+      promptBlocks: promptSet ? parseRich(ex.prompt.en) : [],
+      promptMissing: !promptSet,
       okFeedback: ex ? ex.feedback.correct.en : '',
       badFeedback: ex ? ex.feedback.incorrect.en : '',
       onOkFeedback: this.onOkFeedback, onBadFeedback: this.onBadFeedback,
+      onDeleteExercise: this.deleteExercise,
+      exDelLabel: exDel.label, exDelBg: exDel.bg, exDelColor: exDel.color, exDelBorder: exDel.border,
 
       isMcq: type === 'mcq',
       isGapFill: type === 'gap_fill',
@@ -629,7 +1234,7 @@ class Component extends DCLogic {
       onToggleKey: this.toggleKey,
       keyTrack: showKey ? '#6C4FF6' : '#D8D3EE',
       keyKnob: showKey ? '14px' : '2px',
-      previewStageLabel: stage ? `COURSE ${stage.order} · ${stage.title.en.toUpperCase()}` : '',
+      previewStageLabel: stage ? `COURSE ${stage.order} · ${stageName(stage).toUpperCase()}` : '',
     };
   }
 }

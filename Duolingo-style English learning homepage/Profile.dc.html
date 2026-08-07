@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./parent-link.js"></script>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -45,9 +46,12 @@
         <span style="font-size: 14px; font-weight: 700; color: #6C4FF6;">{{ langValue }}</span>
       </button>
       <div style="height: 1px; background: #ECE8FB; margin: 0 16px;"></div>
-      <a href="Parent Dashboard.dc.html" style="display: flex; align-items: center; justify-content: space-between; padding: 16px; font-size: 15px; font-weight: 700; color: #1E1B2E;">
+      <a href="Parent Access.dc.html" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px; font-size: 15px; font-weight: 700; color: #1E1B2E;">
         {{ parentLabel }}
-        <span style="color: #B5AFD4;">›</span>
+        <span style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+          <span style="font-size: 12px; font-weight: 700; color: {{ parentStatusColor }}; background: {{ parentStatusBg }}; border-radius: 999px; padding: 4px 10px;">{{ parentStatusLabel }}</span>
+          <span style="color: #B5AFD4;">›</span>
+        </span>
       </a>
       <div style="height: 1px; background: #ECE8FB; margin: 0 16px;"></div>
       <a href="Progress.dc.html" style="display: flex; align-items: center; justify-content: space-between; padding: 16px; font-size: 15px; font-weight: 700; color: #1E1B2E;">
@@ -82,8 +86,16 @@
 
 </x-dc>
 <script type="text/x-dc" data-dc-script>
+// The row leads to the invitation flow, not straight to the dashboard — a
+// parent can only be let in from here, so the status belongs here too.
+const PARENT_STATUS = {
+  none:     { en: 'Not connected', si: 'සම්බන්ධ නැත',  color: '#6B6580', bg: '#ECE8FB' },
+  invited:  { en: 'Invited',       si: 'ආරාධනා කළා',   color: '#B37E00', bg: '#FFF3D6' },
+  accepted: { en: 'Connected',     si: 'සම්බන්ධයි',    color: '#2FAE63', bg: '#E3F9EB' },
+};
+
 class Component extends DCLogic {
-  state = { lang: 'en' };
+  state = { lang: 'en', link: window.loadParentLink() };
   toggleLang = () => this.setState(s => ({ lang: s.lang === 'en' ? 'si' : 'en' }));
 
   renderVals() {
@@ -110,6 +122,9 @@ class Component extends DCLogic {
       initials: 'AS', name: 'Amaya Silva', email: 'amaya.silva@example.com',
       languageLabel: c.language, langValue: isSi ? 'සිංහල' : 'English',
       parentLabel: c.parent, progressLabel: c.progress, logoutLabel: c.logout,
+      parentStatusLabel: (PARENT_STATUS[this.state.link.status] || PARENT_STATUS.none)[lang],
+      parentStatusColor: (PARENT_STATUS[this.state.link.status] || PARENT_STATUS.none).color,
+      parentStatusBg: (PARENT_STATUS[this.state.link.status] || PARENT_STATUS.none).bg,
       homeLabel: c.home, progressTabLabel: c.progressTab, profileTabLabel: c.profileTab,
     };
   }

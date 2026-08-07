@@ -130,6 +130,22 @@ window.TYPE_META = {
 };
 
 // ---------------------------------------------------------------------------
+// Reordering courses can leave an `afterStage` rule pointing at a course that
+// now comes LATER, which would lock both of them forever. Re-point any such rule
+// at the immediately preceding course, and open whichever course ended up first.
+// Courses set to `always` are left alone — those are open by intent, not by
+// position. Shared because both the dashboard and the editor can reorder.
+// ---------------------------------------------------------------------------
+window.repairUnlocks = function (c) {
+  c.stages.forEach(function (st, i) {
+    if (!st.unlock || st.unlock.kind !== 'afterStage') return;
+    var refIdx = c.stages.findIndex(function (s) { return s.id === st.unlock.stageId; });
+    if (refIdx >= 0 && refIdx < i) return;
+    st.unlock = i === 0 ? { kind: 'always' } : { kind: 'afterStage', stageId: c.stages[i - 1].id };
+  });
+};
+
+// ---------------------------------------------------------------------------
 // Shared load/save. Stands in for the API calls; falls back to the in-memory
 // default when storage is unavailable (e.g. opened straight off the filesystem).
 // ---------------------------------------------------------------------------
