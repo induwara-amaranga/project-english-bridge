@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./curriculum.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Inter:wght@400;500;600;700&family=Noto+Sans+Sinhala:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; background: #F7F5FF; }
+    * { box-sizing: border-box; }
+    a { color: #6C4FF6; text-decoration: none; }
+    input, textarea, select { font-family: 'Inter', sans-serif; }
+    input::placeholder, textarea::placeholder { color: #B5AFD4; }
+    .fld { width: 100%; font-size: 13px; padding: 9px 12px; border-radius: 10px; border: 1.5px solid #E3DEF5; background: white; color: #1E1B2E; outline: none; }
+    .fld:focus { border-color: #6C4FF6; }
+    .si { font-family: 'Noto Sans Sinhala', 'Inter', sans-serif; }
+    .lbl { font-size: 11px; font-weight: 700; color: #6B6580; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 6px; display: block; }
+    .row { display: flex; gap: 8px; align-items: center; }
+    .iconbtn { width: 28px; height: 28px; border-radius: 8px; border: 1.5px solid #E3DEF5; background: white; color: #6B6580; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .iconbtn:hover { border-color: #6C4FF6; color: #6C4FF6; }
+    .addbtn { align-self: flex-start; background: #ECE8FB; color: #6C4FF6; border: none; border-radius: 999px; padding: 8px 16px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; }
+    .addbtn:hover { background: #DED7F8; }
+    .savebtn { background: #6C4FF6; color: white; border: none; border-radius: 999px; padding: 9px 20px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Baloo 2', sans-serif; box-shadow: 0 3px 0 #4B3AC7; }
+    .savebtn:hover { background: #5539E0; }
+    .delbtn { border: 1.5px solid; border-radius: 999px; padding: 8px 14px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; white-space: nowrap; }
+    .treeadd { display: flex; align-items: center; gap: 7px; border-radius: 10px; cursor: pointer; font-size: 12px; font-weight: 700; color: #9B94BE; }
+    .treeadd:hover { background: #F2EFFC; color: #6C4FF6; }
+    .fmtbar { display: flex; gap: 5px; margin-bottom: 6px; flex-wrap: wrap; }
+    .fmtbtn { background: white; border: 1.5px solid #E3DEF5; border-radius: 8px; padding: 4px 9px; font-size: 12px; color: #4A4560; cursor: pointer; font-family: 'Inter', sans-serif; line-height: 1.5; }
+    .fmtbtn:hover { border-color: #6C4FF6; color: #6C4FF6; background: #F7F5FF; }
+    .hint { font-size: 11px; color: #9B94BE; margin-top: 5px; line-height: 1.6; }
+    .hint code { font-family: ui-monospace, monospace; background: #F0EDFA; border-radius: 4px; padding: 1px 4px; }
+    .moves { display: flex; gap: 1px; margin-left: auto; flex-shrink: 0; }
+    .movebtn { width: 17px; height: 17px; display: flex; align-items: center; justify-content: center; border-radius: 5px; font-size: 10px; line-height: 1; cursor: pointer; }
+    .movebtn:hover { background: #DED7F8; }
+    .delcard:hover { background: #FFE9E5 !important; }
+    /* ---- column picker in the composer ---- */
+    .colsel { display: flex; gap: 6px; }
+    .colbtn { flex: 1; min-width: 0; border: 1.5px solid #E3DEF5; border-radius: 10px; padding: 9px 6px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; }
+    /* ---- learner preview: the two-column card grid ----
+       Cards carry an explicit grid-column, so the browser packs them into rows
+       in author order. min-width:0 on the item stops long words widening a track. */
+    .pvgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: start; }
+    .pvhead { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; }
+    .cardbadge { font-size: 9px; font-weight: 700; color: white; border-radius: 5px; padding: 2px 5px; flex-shrink: 0; letter-spacing: 0.03em; }
+  </style>
+</helmet>
+
+<div style="font-family: 'Inter', sans-serif; color: #1E1B2E; height: 100vh; display: flex; flex-direction: column; overflow: hidden;">
+
+  <!-- ================= TOP BAR ================= -->
+  <div style="background: white; border-bottom: 1px solid #E3DEF5; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <a href="Course Dashboard.dc.html" style="display: flex; align-items: center; gap: 7px; background: #ECE8FB; border-radius: 999px; padding: 7px 15px; font-size: 13px; font-weight: 700;">← Dashboard</a>
+      <div style="width: 1px; height: 22px; background: #E3DEF5;"></div>
+      <span style="font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 16px;">Content Editor</span>
+      <span style="font-size: 13px; color: #B5AFD4;">/</span>
+      <span style="font-size: 13px; font-weight: 600; color: #6B6580;">{{ breadcrumb }}</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 14px;">
+      <span style="font-size: 12px; font-weight: 700; color: {{ dirtyColor }};">{{ dirtyLabel }}</span>
+      <button class="savebtn" onClick="{{ onSave }}">Save draft</button>
+    </div>
+  </div>
+
+  <div style="flex: 1; display: flex; min-height: 0;">
+
+    <!-- ================= PANE 1 — CURRICULUM TREE ================= -->
+    <div style="width: 288px; flex-shrink: 0; background: white; border-right: 1px solid #E3DEF5; overflow-y: auto; padding: 16px 12px;">
+      <div style="font-size: 11px; font-weight: 700; color: #6B6580; letter-spacing: 0.06em; padding: 0 8px 12px;">CURRICULUM</div>
+
+      <sc-for list="{{ tree }}" as="stage" hint-placeholder-count="3">
+        <div onClick="{{ stage.onSelect }}" style="display: flex; align-items: center; gap: 8px; padding: 9px 8px; border-radius: 10px; cursor: pointer; background: {{ stage.bg }};">
+          <span style="font-size: 10px; color: #B5AFD4; width: 10px;">{{ stage.caret }}</span>
+          <div style="width: 8px; height: 8px; border-radius: 50%; background: {{ stage.dot }}; flex-shrink: 0;"></div>
+          <span style="font-size: 13px; font-weight: 700; color: {{ stage.color }}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;">{{ stage.label }}</span>
+          <div class="moves">
+            <div class="movebtn" onClick="{{ stage.onUp }}" style="color: {{ stage.upColor }};">↑</div>
+            <div class="movebtn" onClick="{{ stage.onDown }}" style="color: {{ stage.downColor }};">↓</div>
+          </div>
+        </div>
+
+        <sc-if value="{{ stage.expanded }}" hint-placeholder-val="{{ true }}">
+          <sc-for list="{{ stage.lessons }}" as="lesson" hint-placeholder-count="2">
+            <div onClick="{{ lesson.onSelect }}" style="display: flex; align-items: center; gap: 8px; padding: 7px 8px 7px 30px; border-radius: 10px; cursor: pointer; background: {{ lesson.bg }};">
+              <span style="font-size: 10px;">{{ lesson.icon }}</span>
+              <span style="font-size: 12.5px; font-weight: 600; color: {{ lesson.color }}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;">{{ lesson.label }}</span>
+              <div class="moves">
+                <div class="movebtn" onClick="{{ lesson.onUp }}" style="color: {{ lesson.upColor }};">↑</div>
+                <div class="movebtn" onClick="{{ lesson.onDown }}" style="color: {{ lesson.downColor }};">↓</div>
+              </div>
+            </div>
+            <sc-for list="{{ lesson.exercises }}" as="ex" hint-placeholder-count="2">
+              <div onClick="{{ ex.onSelect }}" style="display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 52px; border-radius: 10px; cursor: pointer; background: {{ ex.bg }};">
+                <span style="font-size: 9px; font-weight: 700; color: white; background: {{ ex.badge }}; border-radius: 5px; padding: 2px 5px; flex-shrink: 0;">{{ ex.typeShort }}</span>
+                <span style="font-size: 12px; font-weight: 500; color: {{ ex.color }}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;">{{ ex.label }}</span>
+                <div class="moves">
+                  <div class="movebtn" onClick="{{ ex.onUp }}" style="color: {{ ex.upColor }};">↑</div>
+                  <div class="movebtn" onClick="{{ ex.onDown }}" style="color: {{ ex.downColor }};">↓</div>
+                </div>
+              </div>
+            </sc-for>
+            <div class="treeadd" onClick="{{ lesson.onAddExercise }}" style="padding: 6px 8px 6px 52px;">+ Add exercise</div>
+          </sc-for>
+          <div class="treeadd" onClick="{{ stage.onAddLesson }}" style="padding: 7px 8px 7px 30px;">+ Add lesson</div>
+        </sc-if>
+      </sc-for>
+    </div>
+
+    <!-- ================= PANE 2 — INSPECTOR ================= -->
+    <div style="flex: 1; min-width: 0; overflow-y: auto; padding: 24px 28px;">
+
+      <!-- ---- stage selected ---- -->
+      <sc-if value="{{ isStage }}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 22px;">
+          <div>
+            <div style="font-size: 11px; font-weight: 700; color: #6B6580; letter-spacing: 0.06em;">EDITING COURSE</div>
+            <h2 style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 22px; margin: 6px 0 0;">{{ stageHeading }}</h2>
+          </div>
+          <button class="delbtn" onClick="{{ onDeleteStage }}" style="background: {{ stDelBg }}; color: {{ stDelColor }}; border-color: {{ stDelBorder }};">{{ stDelLabel }}</button>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 16px; max-width: 560px;">
+          <div>
+            <label class="lbl">Course title — English</label>
+            <input class="fld" value="{{ stageTitleEn }}" onChange="{{ onStageTitleEn }}" placeholder="e.g. Prepositions"/>
+          </div>
+          <div>
+            <label class="lbl">Course title — Sinhala</label>
+            <input class="fld si" value="{{ stageTitleSi }}" onChange="{{ onStageTitleSi }}"/>
+          </div>
+          <div>
+            <label class="lbl">{{ stageIdLabel }}</label>
+            <input class="fld" value="{{ stageIdShown }}" style="background: #F7F5FF; color: #9B94BE;"/>
+          </div>
+          <div style="background: #ECE8FB; border-radius: 12px; padding: 14px 16px; font-size: 12.5px; color: #4A4560;">
+            Holds <b>{{ stageLessonCount }}</b> lessons and <b>{{ stageExCount }}</b> exercises. Unlock rule: <b>{{ stageUnlock }}</b>.
+          </div>
+          <button class="addbtn" onClick="{{ onAddLessonHere }}">+ Add lesson</button>
+        </div>
+      </sc-if>
+
+      <!-- ---- lesson selected ---- -->
+      <sc-if value="{{ isLesson }}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 22px;">
+          <div>
+            <div style="font-size: 11px; font-weight: 700; color: #6B6580; letter-spacing: 0.06em;">EDITING LESSON</div>
+            <h2 style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 22px; margin: 6px 0 0;">{{ lessonHeading }}</h2>
+          </div>
+          <button class="delbtn" onClick="{{ onDeleteLesson }}" style="background: {{ lsDelBg }}; color: {{ lsDelColor }}; border-color: {{ lsDelBorder }};">{{ lsDelLabel }}</button>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 16px; max-width: 620px;">
+          <div>
+            <label class="lbl">Lesson title — English</label>
+            <input class="fld" value="{{ lessonTitleEn }}" onChange="{{ onLessonTitleEn }}" placeholder="e.g. Word order"/>
+          </div>
+          <div>
+            <label class="lbl">Lesson title — Sinhala</label>
+            <input class="fld si" value="{{ lessonTitleSi }}" onChange="{{ onLessonTitleSi }}"/>
+          </div>
+          <div style="background: #ECE8FB; border-radius: 12px; padding: 14px 16px; font-size: 12.5px; color: #4A4560;">
+            The cards below are what a learner reads when the lesson opens. It then runs its <b>{{ lessonExCount }}</b> exercises.
+          </div>
+          <button class="addbtn" onClick="{{ onAddExerciseHere }}">+ Add exercise</button>
+        </div>
+      </sc-if>
+
+      <!-- ---- nothing left to edit ---- -->
+      <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width: 460px; margin-top: 60px; text-align: center; color: #6B6580;">
+          <div style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 20px; color: #1E1B2E; margin-bottom: 8px;">No courses left</div>
+          <div style="font-size: 13.5px; line-height: 1.6;">The curriculum is empty. Save this draft to keep it that way, or head back to the dashboard to add a course.</div>
+        </div>
+      </sc-if>
+
+
+      <!-- ---- exercise selected ---- -->
+      <sc-if value="{{ isExercise }}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 22px;">
+          <div>
+            <div style="font-size: 11px; font-weight: 700; color: #6B6580; letter-spacing: 0.06em;">EDITING EXERCISE</div>
+            <h2 style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 22px; margin: 6px 0 0;">{{ exTitle }}</h2>
+          </div>
+          <button class="delbtn" onClick="{{ onDeleteExercise }}" style="background: {{ exDelBg }}; color: {{ exDelColor }}; border-color: {{ exDelBorder }};">{{ exDelLabel }}</button>
+        </div>
+        <div style="background: #ECE8FB; border-radius: 12px; padding: 14px 16px; font-size: 12.5px; color: #4A4560; max-width: 620px;">
+          This exercise is made of <b>{{ exCardCount }}</b> cards. They lay out in two columns on the right.
+        </div>
+      </sc-if>
+
+      <!-- ================= CARD COMPOSER =================
+           Shared by the lesson and exercise panes — both hold cards and author
+           them the same way. It edits either the card selected in the preview or
+           an unsaved new one. -->
+      <sc-if value="{{ hasHolder }}" hint-placeholder-val="{{ true }}">
+        <div style="height: 1px; background: #E3DEF5; margin: 26px 0 20px; max-width: 620px;"></div>
+
+        <div style="display: flex; align-items: baseline; gap: 10px;">
+          <h3 style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 17px; margin: 0;">{{ composerHeading }}</h3>
+          <span style="font-size: 11.5px; color: #9B94BE;">{{ composerNote }}</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 16px; max-width: 620px; margin-top: 16px;">
+          <div style="display: flex; gap: 16px; align-items: flex-start;">
+            <div style="flex: 1; min-width: 0;">
+              <label class="lbl">Card type</label>
+              <select class="fld" style="cursor: pointer;" value="{{ cardType }}" onChange="{{ onTypeChange }}">
+                <option value="text">Text</option>
+                <option value="mcq">Multiple choice</option>
+                <option value="gap_fill">Fill in the blank</option>
+                <option value="drag_order">Drag to order</option>
+                <option value="match">Match pairs</option>
+                <option value="free_text">Free text</option>
+              </select>
+            </div>
+            <div style="flex: 1; min-width: 0;">
+              <label class="lbl">Column in the preview</label>
+              <div class="colsel">
+                <sc-for list="{{ columns }}" as="col" hint-placeholder-count="3">
+                  <button class="colbtn" onClick="{{ col.onClick }}" style="background: {{ col.bg }}; color: {{ col.color }}; border-color: {{ col.border }};">{{ col.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+
+          <!-- ======= TEXT CARD ======= -->
+          <sc-if value="{{ isTextCard }}" hint-placeholder-val="{{ true }}">
+            <div>
+              <label class="lbl">Text shown to the learner</label>
+              <div class="fmtbar">
+                <sc-for list="{{ cardTextTools }}" as="t" hint-placeholder-count="6">
+                  <button class="fmtbtn" onClick="{{ t.onClick }}" style="font-weight: {{ t.weight }}; font-style: {{ t.style }};">{{ t.label }}</button>
+                </sc-for>
+              </div>
+              <textarea class="fld" id="fld-card-text" rows="7" value="{{ cardTextEn }}" onChange="{{ onCardTextEn }}" placeholder="Explain the rule in plain language, then show what it looks like."></textarea>
+              <div class="hint">{{ markupHint }}</div>
+            </div>
+          </sc-if>
+
+          <!-- ======= EXERCISE CARD ======= -->
+          <sc-if value="{{ isExerciseCard }}" hint-placeholder-val="{{ false }}">
+            <div>
+              <label class="lbl">Prompt — English</label>
+              <div class="fmtbar">
+                <sc-for list="{{ promptTools }}" as="t" hint-placeholder-count="6">
+                  <button class="fmtbtn" onClick="{{ t.onClick }}" style="font-weight: {{ t.weight }}; font-style: {{ t.style }};">{{ t.label }}</button>
+                </sc-for>
+              </div>
+              <textarea class="fld" id="fld-prompt" rows="3" value="{{ promptEn }}" onChange="{{ onPromptEn }}" placeholder="What the learner is asked to do"></textarea>
+              <div class="hint">{{ markupHint }}</div>
+            </div>
+            <div>
+              <label class="lbl">Prompt — Sinhala</label>
+              <input class="fld si" value="{{ promptSi }}" onChange="{{ onPromptSi }}"/>
+            </div>
+
+            <sc-if value="{{ isMcq }}" hint-placeholder-val="{{ true }}">
+              <div>
+                <label class="lbl">Options — click the circle to mark the correct answer</label>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                  <sc-for list="{{ options }}" as="opt" hint-placeholder-count="3">
+                    <div class="row">
+                      <div onClick="{{ opt.onSetCorrect }}" style="width: 22px; height: 22px; border-radius: 50%; border: 2px solid {{ opt.ringColor }}; background: {{ opt.ringFill }}; cursor: pointer; flex-shrink: 0;"></div>
+                      <input class="fld" style="flex: 1;" value="{{ opt.en }}" onChange="{{ opt.onEn }}" placeholder="Option (English)"/>
+                      <input class="fld si" style="flex: 1;" value="{{ opt.si }}" onChange="{{ opt.onSi }}" placeholder="Sinhala"/>
+                      <button class="iconbtn" onClick="{{ opt.onRemove }}">✕</button>
+                    </div>
+                  </sc-for>
+                  <button class="addbtn" onClick="{{ onAddOption }}">+ Add option</button>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ isGapFill }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div>
+                  <label class="lbl">Sentence — type ___ (three underscores) where the blank goes</label>
+                  <input class="fld" value="{{ gapTemplate }}" onChange="{{ onGapTemplate }}" placeholder="We ___ English every day."/>
+                </div>
+                <div>
+                  <label class="lbl">Accepted answers — comma separated</label>
+                  <input class="fld" value="{{ gapAccept }}" onChange="{{ onGapAccept }}" placeholder="watch, watches"/>
+                </div>
+                <div>
+                  <label class="lbl">Choice chips shown to the learner — comma separated, leave blank for free typing</label>
+                  <input class="fld" value="{{ gapChoices }}" onChange="{{ onGapChoices }}" placeholder="watch, watches, watching"/>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ isDragOrder }}" hint-placeholder-val="{{ false }}">
+              <div>
+                <label class="lbl">Tokens in their correct order — the learner sees them shuffled</label>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                  <sc-for list="{{ tokens }}" as="tok" hint-placeholder-count="3">
+                    <div class="row">
+                      <div style="width: 22px; font-size: 12px; font-weight: 700; color: #B5AFD4; text-align: center; flex-shrink: 0;">{{ tok.n }}</div>
+                      <input class="fld" style="flex: 1;" value="{{ tok.text }}" onChange="{{ tok.onChange }}" placeholder="Word or phrase"/>
+                      <button class="iconbtn" onClick="{{ tok.onUp }}">↑</button>
+                      <button class="iconbtn" onClick="{{ tok.onDown }}">↓</button>
+                      <button class="iconbtn" onClick="{{ tok.onRemove }}">✕</button>
+                    </div>
+                  </sc-for>
+                  <button class="addbtn" onClick="{{ onAddToken }}">+ Add token</button>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ isMatch }}" hint-placeholder-val="{{ false }}">
+              <div>
+                <label class="lbl">Pairs — the learner drags the right column onto the left</label>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                  <sc-for list="{{ pairs }}" as="pair" hint-placeholder-count="3">
+                    <div class="row">
+                      <input class="fld si" style="flex: 1;" value="{{ pair.left }}" onChange="{{ pair.onLeft }}" placeholder="Left (e.g. Sinhala)"/>
+                      <span style="color: #B5AFD4; font-size: 14px; flex-shrink: 0;">↔</span>
+                      <input class="fld" style="flex: 1;" value="{{ pair.right }}" onChange="{{ pair.onRight }}" placeholder="Right (e.g. English)"/>
+                      <button class="iconbtn" onClick="{{ pair.onRemove }}">✕</button>
+                    </div>
+                  </sc-for>
+                  <button class="addbtn" onClick="{{ onAddPair }}">+ Add pair</button>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ isFreeText }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div>
+                  <label class="lbl">Accepted answers — one per line</label>
+                  <textarea class="fld" rows="4" value="{{ freeAccept }}" onChange="{{ onFreeAccept }}" placeholder="I go to school"></textarea>
+                </div>
+                <div class="row" style="gap: 20px;">
+                  <div class="row" onClick="{{ onToggleLower }}" style="cursor: pointer;">
+                    <div style="width: 18px; height: 18px; border-radius: 5px; border: 2px solid {{ lowerRing }}; background: {{ lowerFill }};"></div>
+                    <span style="font-size: 13px; font-weight: 600;">Ignore capitalisation</span>
+                  </div>
+                  <div class="row" onClick="{{ onTogglePunct }}" style="cursor: pointer;">
+                    <div style="width: 18px; height: 18px; border-radius: 5px; border: 2px solid {{ punctRing }}; background: {{ punctFill }};"></div>
+                    <span style="font-size: 13px; font-weight: 600;">Ignore punctuation</span>
+                  </div>
+                </div>
+              </div>
+            </sc-if>
+
+            <div style="height: 1px; background: #E3DEF5;"></div>
+            <div>
+              <label class="lbl">Feedback when correct</label>
+              <input class="fld" value="{{ okFeedback }}" onChange="{{ onOkFeedback }}" placeholder="Correct! Subject → Verb → Object."/>
+            </div>
+            <div>
+              <label class="lbl">Feedback when wrong</label>
+              <input class="fld" value="{{ badFeedback }}" onChange="{{ onBadFeedback }}" placeholder="Not quite — try again."/>
+            </div>
+          </sc-if>
+
+          <!-- ---- commit ---- -->
+          <sc-if value="{{ isComposing }}" hint-placeholder-val="{{ true }}">
+            <button class="savebtn" onClick="{{ onAddAsCard }}" style="align-self: flex-start; margin-top: 4px;">+ Add as card</button>
+          </sc-if>
+          <sc-if value="{{ isEditingCard }}" hint-placeholder-val="{{ false }}">
+            <div class="row" style="gap: 10px; margin-top: 4px;">
+              <button class="savebtn" onClick="{{ onNewCard }}">+ New card</button>
+              <button class="delbtn" onClick="{{ onDeleteCard }}" style="background: {{ cardDelBg }}; color: {{ cardDelColor }}; border-color: {{ cardDelBorder }};">{{ cardDelLabel }}</button>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+    </div>
+
+    <!-- ================= PANE 3 — LEARNER PREVIEW =================
+         The two-column card grid. This is the layout the learner actually gets:
+         left/right cards pin to a column and pack in author order, a full-width
+         card spans both and breaks the run. Clicking a card opens it in the
+         editor pane on the left. -->
+    <div style="width: 520px; flex-shrink: 0; background: white; border-left: 1px solid #E3DEF5; overflow-y: auto; padding: 20px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <span style="font-size: 11px; font-weight: 700; color: #6B6580; letter-spacing: 0.06em;">LEARNER PREVIEW</span>
+        <div onClick="{{ onToggleKey }}" class="row" style="cursor: pointer;">
+          <div style="width: 30px; height: 18px; border-radius: 999px; background: {{ keyTrack }}; position: relative;">
+            <div style="position: absolute; top: 2px; left: {{ keyKnob }}; width: 14px; height: 14px; border-radius: 50%; background: white;"></div>
+          </div>
+          <span style="font-size: 11px; font-weight: 700; color: #6B6580;">Answer key</span>
+        </div>
+      </div>
+
+      <sc-if value="{{ hasHolder }}" hint-placeholder-val="{{ true }}">
+        <div style="background: #F7F5FF; border-radius: 18px; padding: 18px; min-height: 340px;">
+          <div style="font-size: 11px; font-weight: 700; color: #6C4FF6; letter-spacing: 0.05em; margin-bottom: 12px;">{{ previewStageLabel }}</div>
+
+          <sc-if value="{{ showLessonHead }}" hint-placeholder-val="{{ false }}">
+            <div style="font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 19px; line-height: 1.3;">{{ lessonHeading }}</div>
+            <sc-if value="{{ hasLessonSi }}" hint-placeholder-val="{{ true }}">
+              <div class="si" style="font-size: 14px; font-weight: 600; color: #6B6580; margin-top: 3px; margin-bottom: 14px;">{{ lessonTitleSi }}</div>
+            </sc-if>
+          </sc-if>
+
+          <div class="pvgrid">
+            <sc-for list="{{ pvCards }}" as="pc" hint-placeholder-count="3">
+              <div style="grid-column: {{ pc.gridColumn }}; min-width: 0;">
+                <div onClick="{{ pc.onSelect }}" style="background: {{ pc.bg }}; border: 2px solid {{ pc.border }}; border-radius: 14px; padding: 13px; cursor: pointer;">
+                  <div class="pvhead">
+                    <span class="cardbadge" style="background: {{ pc.badge }};">{{ pc.typeShort }}</span>
+                    <span style="font-size: 10px; font-weight: 700; color: #B5AFD4;">{{ pc.columnLabel }}</span>
+                    <div class="moves">
+                      <div class="movebtn" onClick="{{ pc.onPrev }}" style="color: {{ pc.prevColor }};">←</div>
+                      <div class="movebtn" onClick="{{ pc.onNext }}" style="color: {{ pc.nextColor }};">→</div>
+                      <div class="movebtn delcard" onClick="{{ pc.onDelete }}" title="{{ pc.delTitle }}" style="color: {{ pc.delColor }}; background: {{ pc.delBg }};">✕</div>
+                    </div>
+                  </div>
+
+                  <!-- prompt / body: shared by every card type -->
+                  <div style="font-size: 14px; line-height: 1.5;">
+                    <sc-for list="{{ pc.blocks }}" as="b" hint-placeholder-count="1">
+                      <sc-if value="{{ b.isImage }}" hint-placeholder-val="{{ false }}">
+                        <img src="{{ b.src }}" alt="{{ b.alt }}" style="display: block; max-width: 100%; border-radius: 10px; margin: 0 0 8px;"/>
+                      </sc-if>
+                      <sc-if value="{{ b.isText }}" hint-placeholder-val="{{ true }}">
+                        <div style="display: flex; gap: 7px; margin-bottom: 5px;">
+                          <sc-if value="{{ b.hasMarker }}" hint-placeholder-val="{{ false }}">
+                            <span style="line-height: 1.5; color: #6C4FF6; font-weight: 700; flex-shrink: 0;">{{ b.marker }}</span>
+                          </sc-if>
+                          <div style="line-height: 1.5; min-width: 0;"><sc-for list="{{ b.runs }}" as="r" hint-placeholder-count="1"><sc-if value="{{ r.isLink }}" hint-placeholder-val="{{ false }}"><a href="{{ r.href }}" target="_blank" rel="noopener" style="font-weight: {{ r.weight }}; font-style: {{ r.italic }}; text-decoration: underline;">{{ r.text }}</a></sc-if><sc-if value="{{ r.plain }}" hint-placeholder-val="{{ true }}"><span style="font-weight: {{ r.weight }}; font-style: {{ r.italic }};">{{ r.text }}</span></sc-if></sc-for></div>
+                        </div>
+                      </sc-if>
+                    </sc-for>
+                    <sc-if value="{{ pc.isEmpty }}" hint-placeholder-val="{{ false }}">
+                      <span style="color: #B5AFD4; font-weight: 700;">{{ pc.emptyNote }}</span>
+                    </sc-if>
+                  </div>
+
+                  <sc-if value="{{ pc.isMcq }}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; flex-direction: column; gap: 7px; margin-top: 10px;">
+                      <sc-for list="{{ pc.options }}" as="opt" hint-placeholder-count="3">
+                        <div style="background: {{ opt.pvBg }}; border: 2px solid {{ opt.pvBorder }}; border-radius: 11px; padding: 9px 12px; font-size: 13px; font-weight: 600;">{{ opt.en }}</div>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+
+                  <sc-if value="{{ pc.isGapFill }}" hint-placeholder-val="{{ false }}">
+                    <div style="background: white; border-radius: 11px; padding: 12px; font-size: 14px; line-height: 1.9; margin-top: 10px;">
+                      {{ pc.gapBefore }}<span style="display: inline-block; min-width: 62px; border-bottom: 2.5px solid {{ pc.gapUnderline }}; text-align: center; color: #6C4FF6; font-weight: 700;">{{ pc.gapShown }}</span>{{ pc.gapAfter }}
+                    </div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px;">
+                      <sc-for list="{{ pc.chips }}" as="chip" hint-placeholder-count="3">
+                        <div style="background: white; border: 2px solid {{ chip.border }}; border-radius: 999px; padding: 6px 12px; font-size: 12.5px; font-weight: 600;">{{ chip.text }}</div>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+
+                  <sc-if value="{{ pc.isDragOrder }}" hint-placeholder-val="{{ false }}">
+                    <div style="border: 2px dashed #D8D3EE; border-radius: 11px; min-height: 44px; margin: 10px 0 10px; display: flex; align-items: center; justify-content: center; font-size: 11.5px; color: #B5AFD4; font-weight: 600;">Drop the words here in order</div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 7px;">
+                      <sc-for list="{{ pc.shuffled }}" as="tok" hint-placeholder-count="3">
+                        <div style="background: white; border: 2px solid #D8D3EE; border-radius: 10px; padding: 7px 11px; font-size: 13px; font-weight: 700; box-shadow: 0 2px 0 #E3DEF5;">{{ tok.text }}</div>
+                      </sc-for>
+                    </div>
+                    <sc-if value="{{ pc.showAnswer }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-top: 10px; font-size: 11.5px; color: #3E8E5B; font-weight: 700;">Answer: {{ pc.answer }}</div>
+                    </sc-if>
+                  </sc-if>
+
+                  <sc-if value="{{ pc.isMatch }}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 7px;">
+                        <sc-for list="{{ pc.pairs }}" as="pair" hint-placeholder-count="3">
+                          <div class="si" style="background: white; border: 2px solid #D8D3EE; border-radius: 10px; padding: 8px 10px; font-size: 12.5px; font-weight: 600;">{{ pair.left }}</div>
+                        </sc-for>
+                      </div>
+                      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 7px;">
+                        <sc-for list="{{ pc.rights }}" as="r" hint-placeholder-count="3">
+                          <div style="background: #ECE8FB; border: 2px solid #D8D3EE; border-radius: 10px; padding: 8px 10px; font-size: 12.5px; font-weight: 600;">{{ r.text }}</div>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-if>
+
+                  <sc-if value="{{ pc.isFreeText }}" hint-placeholder-val="{{ false }}">
+                    <div style="background: white; border: 2px solid #D8D3EE; border-radius: 11px; padding: 12px; min-height: 70px; font-size: 13px; color: #B5AFD4; margin-top: 10px;">Type your answer…</div>
+                    <sc-if value="{{ pc.showAnswer }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-top: 9px; font-size: 11.5px; color: #3E8E5B; font-weight: 700; line-height: 1.6;">Accepts: {{ pc.answer }}</div>
+                    </sc-if>
+                  </sc-if>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <sc-if value="{{ pvEmpty }}" hint-placeholder-val="{{ false }}">
+            <div style="border: 2px dashed #D8D3EE; border-radius: 14px; padding: 28px 18px; text-align: center; color: #9B94BE; font-size: 12.5px; font-weight: 600; line-height: 1.6;">{{ pvEmptyNote }}</div>
+          </sc-if>
+
+          <!-- a lesson runs its exercises after its own cards -->
+          <sc-if value="{{ showLessonHead }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size: 11px; font-weight: 700; color: #6B6580; letter-spacing: 0.05em; margin: 18px 0 10px;">{{ previewExHeading }}</div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <sc-for list="{{ previewExercises }}" as="pe" hint-placeholder-count="2">
+                <div onClick="{{ pe.onSelect }}" style="background: white; border: 1.5px solid #E3DEF5; border-radius: 12px; padding: 10px 12px; display: flex; align-items: center; gap: 9px; cursor: pointer;">
+                  <span style="font-size: 11px; font-weight: 800; color: #B5AFD4; flex-shrink: 0;">{{ pe.n }}</span>
+                  <span class="cardbadge" style="background: {{ pe.badge }};">{{ pe.typeShort }}</span>
+                  <span style="font-size: 12.5px; font-weight: 600; color: {{ pe.color }}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ pe.label }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <div style="margin-top: 18px; background: #6C4FF6; color: white; border-radius: 999px; padding: 12px; text-align: center; font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 15px; box-shadow: 0 4px 0 #4B3AC7;">{{ previewCta }}</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ previewIdle }}" hint-placeholder-val="{{ false }}">
+        <div style="background: #F7F5FF; border-radius: 18px; padding: 28px 20px; text-align: center; color: #9B94BE; font-size: 13px; font-weight: 600; line-height: 1.6;">Select a lesson or an exercise in the tree to preview it as a learner sees it.</div>
+      </sc-if>
+    </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+// Content comes from the shared global object in curriculum.js.
+// normaliseCurriculum() upgrades anything still stored in the pre-cards shape.
+const CURRICULUM = window.normaliseCurriculum(window.loadCurriculum());
+const TYPE_META = window.TYPE_META;
+const CARD_COLUMNS = window.CARD_COLUMNS;
+const ensureCards = window.ensureCards;
+const syncLessonFromCards = window.syncLessonFromCards;
+const cardGridColumn = window.cardGridColumn;
+
+// Default payload for each type — used when an admin switches a card's type.
+const DEFAULT_PAYLOAD = window.emptyPayload;
+
+const TYPE_COLOR = { mcq: '#6C4FF6', gap_fill: '#0FA593', drag_order: '#B37E00', match: '#FF4D5E', free_text: '#2FAE63', text: '#4A4560' };
+const CARD_SHORT = (t) => (t === 'text' ? 'TEXT' : TYPE_META[t].short);
+const UNLOCK_LABEL = { always: 'Open to everyone', afterStage: 'After the previous course', minXp: 'At an XP threshold' };
+
+const clone = (o) => JSON.parse(JSON.stringify(o));
+const csvIn = (s) => s.split(',').map(x => x.trim()).filter(Boolean);
+const slug = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const uniqueId = (base, taken) => {
+  let id = base, n = 2;
+  while (taken.indexOf(id) !== -1) { id = base + '-' + n; n++; }
+  return id;
+};
+// Exercise ids are unique across the WHOLE curriculum, not just their lesson —
+// attempt rows reference an exercise by id alone, so a duplicate anywhere would
+// merge two exercises' history.
+const allExerciseIds = (c) =>
+  c.stages.reduce((a, s) => a.concat(s.lessons.reduce((b, l) => b.concat(l.exercises.map(e => e.id)), [])), []);
+
+// A delete needs a second click to go through — there is no undo once the draft
+// is saved. Deleting a container takes its children with it, so the armed label
+// spells out what is about to go rather than just asking again.
+const plural = (n, word) => n + ' ' + word + (n === 1 ? '' : 's');
+const delStyle = (armed, takesWith) => ({
+  label: !armed ? 'Delete' : (takesWith ? 'Click again — also deletes ' + takesWith : 'Click again to delete'),
+  bg: armed ? '#FF4D5E' : 'white',
+  color: armed ? 'white' : '#C2354A',
+  border: armed ? '#FF4D5E' : '#F2C9D0',
+});
+// Lightweight markup lives in curriculum.js so the editor preview and the
+// learner pages render authored text exactly the same way.
+const inlineRuns = window.inlineRuns;
+const plainText = window.plainText;
+const parseRich = window.parseRich;
+
+// ---- toolbar ---------------------------------------------------------------
+// Each button rewrites the raw markup around the current selection. With nothing
+// selected it drops in a sample and selects it, so a button press always leaves
+// something to type over rather than a bare pair of asterisks.
+const TOOLS = [
+  { key: 'bold', label: 'B', weight: '800', style: 'normal' },
+  { key: 'italic', label: 'I', weight: '600', style: 'italic' },
+  { key: 'link', label: 'Link', weight: '700', style: 'normal' },
+  { key: 'image', label: 'Image', weight: '700', style: 'normal' },
+  { key: 'bullets', label: '• List', weight: '700', style: 'normal' },
+  { key: 'numbers', label: '1. List', weight: '700', style: 'normal' },
+];
+const WRAPS = {
+  bold: { open: '**', close: '**', sample: 'bold text' },
+  italic: { open: '*', close: '*', sample: 'italic text' },
+};
+const MARKUP_HINT = '**bold**  ·  *italic*  ·  [text](https://…)  ·  ![caption](assets/photo.png)  ·  - bullet  ·  1. step';
+
+function applyMarkup(kind, text, start, end) {
+  const sel = text.slice(start, end);
+
+  if (kind === 'bullets' || kind === 'numbers') {
+    // Markers only mean anything at the start of a line, so snap to line bounds.
+    const from = text.lastIndexOf('\n', Math.max(0, start - 1)) + 1;
+    let to = text.indexOf('\n', end);
+    if (to < 0) to = text.length;
+    const blank = !text.slice(from, to).trim();
+    const body = blank ? 'List item' : text.slice(from, to);
+    const marked = body.split('\n').map((line, i) => {
+      const bare = line.replace(/^\s*(?:[-*+]|\d+[.)])\s+/, '');
+      return (kind === 'bullets' ? '- ' : (i + 1) + '. ') + bare;
+    }).join('\n');
+    const next = text.slice(0, from) + marked + text.slice(to);
+    const lead = kind === 'bullets' ? 2 : 3;
+    return blank
+      ? { text: next, from: from + lead, to: from + marked.length }
+      : { text: next, from: from + marked.length, to: from + marked.length };
+  }
+
+  if (kind === 'image') {
+    // Images are their own block, so land on the next line boundary.
+    let at = text.indexOf('\n', end);
+    if (at < 0) at = text.length;
+    const lead = (at === 0 || !text.slice(0, at).trim()) ? '' : '\n';
+    const caption = 'Caption';
+    const snippet = lead + '![' + caption + '](assets/mascot_elephant.png)';
+    const capAt = at + lead.length + 2;
+    return { text: text.slice(0, at) + snippet + text.slice(at), from: capAt, to: capAt + caption.length };
+  }
+
+  if (kind === 'link') {
+    const body = sel || 'link text';
+    const url = 'https://example.com';
+    const next = text.slice(0, start) + '[' + body + '](' + url + ')' + text.slice(end);
+    // With text already selected the URL is what still needs typing, and vice versa.
+    const urlAt = start + 1 + body.length + 2;
+    return sel
+      ? { text: next, from: urlAt, to: urlAt + url.length }
+      : { text: next, from: start + 1, to: start + 1 + body.length };
+  }
+
+  const w = WRAPS[kind];
+  const body = sel || w.sample;
+  const next = text.slice(0, start) + w.open + body + w.close + text.slice(end);
+  const from = start + w.open.length;
+  return { text: next, from, to: from + body.length };
+}
+
+const seededShuffle = (arr, seed) => {
+  const a = arr.slice();
+  let s = seed;
+  for (let i = a.length - 1; i > 0; i--) {
+    s = (s * 9301 + 49297) % 233280;
+    const j = Math.floor((s / 233280) * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
+
+// ---- node factories --------------------------------------------------------
+// Shared by the "+ Add" buttons and by the ?new= handoff from the dashboard, so
+// a course created either way has exactly the same shape.
+// A brand-new course / lesson starts blank — no "New course" text for the admin
+// to select and delete before typing the real name. The placeholder id below is
+// replaced with a slug of the title by finaliseDraft() on the first save.
+const makeStage = (c) => {
+  const prev = c.stages[c.stages.length - 1];
+  return {
+    id: uniqueId('new-course', c.stages.map(s => s.id)),
+    order: c.stages.length + 1,
+    title: { en: '', si: '' },
+    theme: { from: '#A78BFA', to: '#6C4FF6' },
+    unlock: prev ? { kind: 'afterStage', stageId: prev.id } : { kind: 'always' },
+    lessons: [],
+  };
+};
+const makeLesson = (st) => ({
+  id: uniqueId((slug(st.title.en) || 'course') + '-lesson', st.lessons.map(l => l.id)),
+  order: st.lessons.length + 1, kind: 'teach',
+  title: { en: '', si: '' },
+  explanation: { en: '', si: '' },
+  exercises: [],
+  cards: [],
+});
+// An exercise starts empty — it is a set of cards, and the admin adds the first
+// one from the composer.
+const makeExercise = (c, ls) => ({
+  id: uniqueId((slug(ls.title.en) || 'lesson') + '-ex', allExerciseIds(c)),
+  type: 'text',
+  prompt: { en: '', si: '' },
+  feedback: { correct: { en: '', si: '' }, incorrect: { en: '', si: '' } },
+  payload: {},
+  cards: [],
+});
+
+// Card ids only need to be unique inside their container.
+const makeCardIn = (holder, type, column) => window.makeCard(
+  uniqueId((holder.id || 'card') + '-c', (holder.cards || []).map(x => x.id)), type, column);
+
+// Shared with the dashboard, which can reorder courses too. See curriculum.js.
+const repairUnlocks = window.repairUnlocks;
+
+// An id is permanent once progress records reference it, so a draft that has
+// never been saved is the last safe moment to derive a readable one from the
+// title. After this the id is frozen and renaming the course no longer moves it.
+function finaliseDraft(c, draft) {
+  if (!draft) return null;
+  const st = c.stages.find(s => s.id === draft.stageId);
+  if (!st) return null;
+
+  if (draft.kind === 'lesson') {
+    const ls = st.lessons.find(l => l.id === draft.lessonId);
+    if (!ls) return null;
+    const others = st.lessons.filter(l => l.id !== ls.id).map(l => l.id);
+    ls.id = uniqueId(slug(ls.title.en) || 'lesson', others);
+    return { stageId: st.id, lessonId: ls.id, exerciseId: null, cardId: null };
+  }
+
+  const others = c.stages.filter(s => s.id !== st.id).map(s => s.id);
+  const oldId = st.id;
+  st.id = uniqueId(slug(st.title.en) || 'new-course', others);
+  // Nothing can point at a course this new, but keep the rules consistent anyway.
+  c.stages.forEach(s => {
+    if (s.unlock && s.unlock.kind === 'afterStage' && s.unlock.stageId === oldId) s.unlock.stageId = st.id;
+  });
+  return { stageId: st.id, lessonId: null, exerciseId: null, cardId: null };
+}
+
+// Deep-link support: Course Editor.dc.html?stage=…&lesson=…&exercise=…
+// plus the dashboard handoff: ?new=course | ?new=lesson&stage=…
+function readQuery() {
+  try {
+    const sp = new URLSearchParams(window.location.search);
+    return { stageId: sp.get('stage'), lessonId: sp.get('lesson'), exerciseId: sp.get('exercise'), isNew: sp.get('new') };
+  } catch (e) { return {}; /* no location — fall through to defaults */ }
+}
+
+// The dashboard's "+ Add course / lesson" buttons do not write anything; they
+// send the admin here and the node is built in memory as one unsaved change.
+// Save draft is what actually commits it to the curriculum.
+function applyNewParam(cur, q) {
+  if (q.isNew === 'course') {
+    const st = makeStage(cur);
+    cur.stages.push(st);
+    return { kind: 'course', stageId: st.id, lessonId: null, exerciseId: null, cardId: null };
+  }
+  if (q.isNew === 'lesson') {
+    const st = q.stageId ? cur.stages.find(s => s.id === q.stageId) : cur.stages[0];
+    if (!st) return null;
+    const ls = makeLesson(st);
+    st.lessons.push(ls);
+    return { kind: 'lesson', stageId: st.id, lessonId: ls.id, exerciseId: null, cardId: null };
+  }
+  return null;
+}
+
+function initialSelection(cur, q) {
+  // A param only narrows the selection if it actually RESOLVED. An id that was
+  // supplied but matches nothing (stale link, deleted content) is treated as
+  // absent, so the editor falls all the way back instead of stranding the admin
+  // on a pane for content that isn't there.
+  const matchedStage = q.stageId ? cur.stages.find(s => s.id === q.stageId) : null;
+  const stage = matchedStage || cur.stages[0];
+  if (!stage) return { stageId: null, lessonId: null, exerciseId: null };
+  if (matchedStage && !q.lessonId) return { stageId: stage.id, lessonId: null, exerciseId: null };
+
+  const matchedLesson = q.lessonId ? stage.lessons.find(l => l.id === q.lessonId) : null;
+  const lesson = matchedLesson || stage.lessons[0];
+  if (!lesson) return { stageId: stage.id, lessonId: null, exerciseId: null };
+  if (matchedLesson && !q.exerciseId) return { stageId: stage.id, lessonId: lesson.id, exerciseId: null };
+
+  const matchedEx = q.exerciseId ? lesson.exercises.find(e => e.id === q.exerciseId) : null;
+  const ex = matchedEx || lesson.exercises[0];
+  return { stageId: stage.id, lessonId: lesson.id, exerciseId: ex ? ex.id : null };
+}
+
+class Component extends DCLogic {
+  state = (() => {
+    const q = readQuery();
+    const draft = applyNewParam(CURRICULUM, q);
+    const sel = draft
+      ? { stageId: draft.stageId, lessonId: draft.lessonId, exerciseId: null }
+      : initialSelection(CURRICULUM, q);
+    const expanded = {};
+    CURRICULUM.stages.forEach(s => { expanded[s.id] = s.id === sel.stageId; });
+    return {
+      curriculum: CURRICULUM, sel: { ...sel, cardId: null }, expanded, draft,
+      dirty: draft ? 1 : 0, saved: false, showKey: false, pendingDelete: null,
+      // The card being composed but not yet added. It lives outside the
+      // curriculum so an abandoned draft card never reaches the learner.
+      compose: window.makeCard('compose', 'text', 'full'),
+    };
+  })();
+
+  // ---- selection -----------------------------------------------------------
+  // Every selection change disarms a pending delete, so a half-pressed Delete
+  // can never land on whatever the admin navigated to next.
+  // Moving to a different container abandons whatever was half-composed for the
+  // old one, so a card can never be added to somewhere the admin has left.
+  freshCompose = () => window.makeCard('compose', 'text', 'full');
+
+  selectStage = (stageId) => this.setState(s => ({
+    sel: { stageId, lessonId: null, exerciseId: null, cardId: null },
+    expanded: { ...s.expanded, [stageId]: !s.expanded[stageId] },
+    pendingDelete: null, compose: this.freshCompose(),
+  }));
+  selectLesson = (stageId, lessonId) => this.setState({
+    sel: { stageId, lessonId, exerciseId: null, cardId: null },
+    pendingDelete: null, compose: this.freshCompose(),
+  });
+  selectExercise = (stageId, lessonId, exerciseId) => this.setState({
+    sel: { stageId, lessonId, exerciseId, cardId: null },
+    pendingDelete: null, compose: this.freshCompose(),
+  });
+  // Clicking a card in the preview loads it into the editor pane.
+  selectCard = (cardId) => this.setState(s => ({ sel: { ...s.sel, cardId }, pendingDelete: null }));
+  // Back to composing a new card for the same container.
+  newCard = () => this.setState(s => ({
+    sel: { ...s.sel, cardId: null }, pendingDelete: null, compose: this.freshCompose(),
+  }));
+  toggleKey = () => this.setState(s => ({ showKey: !s.showKey }));
+
+  save = () => {
+    const c = clone(this.state.curriculum);
+    // A course/lesson opened via ?new= only gets its real id here — this is the
+    // save that puts it on the dashboard, and the last moment the id is free.
+    const sel = finaliseDraft(c, this.state.draft);
+    const ok = window.saveCurriculum(c);
+    this.setState(s => ({
+      curriculum: c,
+      sel: sel || s.sel,
+      expanded: sel ? { ...s.expanded, [sel.stageId]: true } : s.expanded,
+      draft: null, dirty: 0, saved: ok,
+    }));
+  };
+
+  // ---- lookups -------------------------------------------------------------
+  curStage = (c) => (c || this.state.curriculum).stages.find(s => s.id === this.state.sel.stageId) || null;
+  curLesson = (c) => { const st = this.curStage(c); return st ? (st.lessons.find(l => l.id === this.state.sel.lessonId) || null) : null; };
+  curExercise = (c) => { const l = this.curLesson(c); return l ? (l.exercises.find(e => e.id === this.state.sel.exerciseId) || null) : null; };
+  // Cards hang off whichever node is selected: the exercise if there is one,
+  // otherwise the lesson itself.
+  curHolder = (c) => this.curExercise(c) || this.curLesson(c);
+  curCard = (c) => {
+    const h = this.curHolder(c);
+    return h ? ((h.cards || []).find(x => x.id === this.state.sel.cardId) || null) : null;
+  };
+
+  // ---- generic edit helpers ------------------------------------------------
+  // Cards own the content, so every edit re-derives the legacy fields the
+  // dashboard still reads.
+  edit = (mutator) => {
+    const c = clone(this.state.curriculum);
+    mutator(c);
+    const ls = this.curLesson(c);
+    if (ls) syncLessonFromCards(ls);
+    this.setState(s => ({ curriculum: c, dirty: s.dirty + 1, saved: false }));
+  };
+
+  // The composer form is bound to ONE card shape, which is either the card being
+  // edited (live, inside the curriculum) or the unsaved `compose` buffer. Every
+  // field handler below goes through here so the two modes share one form.
+  activeCard = () => (this.state.sel.cardId ? this.curCard() : this.state.compose);
+  editCard = (mutator) => {
+    if (!this.state.sel.cardId) {
+      const next = clone(this.state.compose);
+      mutator(next, next.payload);
+      this.setState({ compose: next });
+      return;
+    }
+    this.edit(c => { const card = this.curCard(c); if (card) mutator(card, card.payload); });
+  };
+  // Kept for the payload editors, which all speak (card, payload).
+  editExercise = (mutator) => this.editCard(mutator);
+
+  // ---- structure: add / delete lessons and exercises ------------------------
+  // These change the shape of the tree, so unlike `edit` they also move the
+  // selection onto (or off) the affected node.
+  // `expand` reveals the branch the selection landed in — right when adding,
+  // wrong when merely reordering, which must not pop a collapsed course open.
+  structuralEdit = (mutator, expand) => {
+    const c = clone(this.state.curriculum);
+    const sel = mutator(c);
+    if (!sel) return;
+    if (sel.lessonId) {
+      const st = c.stages.find(s => s.id === sel.stageId);
+      const ls = st && st.lessons.find(l => l.id === sel.lessonId);
+      if (ls) syncLessonFromCards(ls);
+    }
+    this.setState(s => ({
+      curriculum: c, sel,
+      expanded: expand === false || !sel.stageId ? s.expanded : { ...s.expanded, [sel.stageId]: true },
+      dirty: s.dirty + 1, saved: false, pendingDelete: null,
+    }));
+  };
+
+  addLesson = (stageId) => this.structuralEdit(c => {
+    const st = c.stages.find(s => s.id === stageId);
+    if (!st) return null;
+    const lesson = makeLesson(st);
+    st.lessons.push(lesson);
+    return { stageId, lessonId: lesson.id, exerciseId: null, cardId: null };
+  });
+
+  addExercise = (stageId, lessonId) => this.structuralEdit(c => {
+    const st = c.stages.find(s => s.id === stageId);
+    const ls = st && st.lessons.find(l => l.id === lessonId);
+    if (!ls) return null;
+    const ex = makeExercise(c, ls);
+    ls.exercises.push(ex);
+    return { stageId, lessonId, exerciseId: ex.id, cardId: null };
+  });
+
+  // ---- structure: cards ----------------------------------------------------
+  // Commit the composed card into the selected lesson or exercise, then reset
+  // the composer so the pane is ready for the next one.
+  addComposedCard = () => {
+    const { stageId, lessonId, exerciseId } = this.state.sel;
+    const draftCard = this.state.compose;
+    const c = clone(this.state.curriculum);
+    const st = c.stages.find(s => s.id === stageId);
+    const ls = st && st.lessons.find(l => l.id === lessonId);
+    if (!ls) return;
+    const holder = exerciseId ? ls.exercises.find(e => e.id === exerciseId) : ls;
+    if (!holder) return;
+    if (!Array.isArray(holder.cards)) holder.cards = [];
+    const card = clone(draftCard);
+    card.id = uniqueId((holder.id || 'card') + '-c', holder.cards.map(x => x.id));
+    holder.cards.push(card);
+    syncLessonFromCards(ls);
+    this.setState(s => ({
+      curriculum: c, dirty: s.dirty + 1, saved: false, pendingDelete: null,
+      compose: this.freshCompose(),
+      // Stay on the composer, ready for the next card.
+      sel: { ...s.sel, cardId: null },
+    }));
+  };
+
+  // Takes the id so a card can be deleted straight from the preview grid without
+  // opening it first. Arming is keyed per card, so arming one and then clicking
+  // another deletes nothing.
+  deleteCard = (cardId) => this.requestDelete('card:' + cardId, () => this.structuralEdit(c => {
+    const { stageId, lessonId, exerciseId } = this.state.sel;
+    const holder = this.curHolder(c);
+    if (!holder) return null;
+    holder.cards = (holder.cards || []).filter(x => x.id !== cardId);
+    // If the deleted card was the one open in the composer, fall back to composing.
+    const stillOpen = this.state.sel.cardId === cardId ? null : this.state.sel.cardId;
+    return { stageId, lessonId, exerciseId, cardId: stillOpen };
+  }, false));
+
+  // d is -1 (earlier) or +1 (later) in the card order, which is also the order
+  // the two-column grid fills.
+  moveCard = (cardId, d) => this.structuralEdit(c => {
+    const holder = this.curHolder(c);
+    if (!holder) return null;
+    const i = (holder.cards || []).findIndex(x => x.id === cardId);
+    if (!this.swap(holder.cards, i, d)) return null;
+    return this.state.sel;
+  }, false);
+
+  // ---- structure: reordering ------------------------------------------------
+  // d is -1 (up) or +1 (down). A move at either end is a no-op, not an error.
+  // The selection is left where it was — the admin keeps editing the same node.
+  swap = (list, i, d) => {
+    const j = i + d;
+    if (i < 0 || j < 0 || j >= list.length) return false;
+    const tmp = list[i]; list[i] = list[j]; list[j] = tmp;
+    return true;
+  };
+
+  moveStage = (stageId, d) => this.structuralEdit(c => {
+    const i = c.stages.findIndex(s => s.id === stageId);
+    if (!this.swap(c.stages, i, d)) return null;
+    c.stages.forEach((s, k) => { s.order = k + 1; });
+    repairUnlocks(c);
+    return this.state.sel;
+  }, false);
+
+  moveLesson = (stageId, lessonId, d) => this.structuralEdit(c => {
+    const st = c.stages.find(s => s.id === stageId);
+    if (!st) return null;
+    const i = st.lessons.findIndex(l => l.id === lessonId);
+    if (!this.swap(st.lessons, i, d)) return null;
+    st.lessons.forEach((l, k) => { l.order = k + 1; });
+    return this.state.sel;
+  }, false);
+
+  moveExercise = (stageId, lessonId, exerciseId, d) => this.structuralEdit(c => {
+    const st = c.stages.find(s => s.id === stageId);
+    const ls = st && st.lessons.find(l => l.id === lessonId);
+    if (!ls) return null;
+    const i = ls.exercises.findIndex(e => e.id === exerciseId);
+    if (!this.swap(ls.exercises, i, d)) return null;
+    return this.state.sel;
+  }, false);
+
+  // First click arms, second click deletes.
+  requestDelete = (what, run) => {
+    if (this.state.pendingDelete !== what) {
+      this.setState({ pendingDelete: what });
+      return;
+    }
+    run();
+  };
+
+  // Removing a course orphans any `afterStage` rule that pointed at it, so the
+  // unlock chain is repaired here exactly as it is after a reorder.
+  deleteStage = () => this.requestDelete('course', () => this.structuralEdit(c => {
+    const { stageId } = this.state.sel;
+    const i = c.stages.findIndex(s => s.id === stageId);
+    if (i < 0) return null;
+    c.stages.splice(i, 1);
+    c.stages.forEach((s, k) => { s.order = k + 1; });
+    repairUnlocks(c);
+    // Land on the course that slid into its place, or the new last one.
+    const next = c.stages[Math.min(i, c.stages.length - 1)];
+    return { stageId: next ? next.id : null, lessonId: null, exerciseId: null, cardId: null };
+  }));
+
+  deleteLesson = () => this.requestDelete('lesson', () => this.structuralEdit(c => {
+    const { stageId, lessonId } = this.state.sel;
+    const st = c.stages.find(s => s.id === stageId);
+    if (!st) return null;
+    st.lessons = st.lessons.filter(l => l.id !== lessonId);
+    st.lessons.forEach((l, i) => { l.order = i + 1; });
+    return { stageId, lessonId: null, exerciseId: null, cardId: null };
+  }));
+
+  deleteExercise = () => this.requestDelete('exercise', () => this.structuralEdit(c => {
+    const { stageId, lessonId, exerciseId } = this.state.sel;
+    const st = c.stages.find(s => s.id === stageId);
+    const ls = st && st.lessons.find(l => l.id === lessonId);
+    if (!ls) return null;
+    ls.exercises = ls.exercises.filter(e => e.id !== exerciseId);
+    return { stageId, lessonId, exerciseId: null, cardId: null };
+  }));
+
+  // ---- stage / lesson fields ----------------------------------------------
+  onStageTitleEn = (e) => { const v = e.target.value; this.edit(c => { this.curStage(c).title.en = v; }); };
+  onStageTitleSi = (e) => { const v = e.target.value; this.edit(c => { this.curStage(c).title.si = v; }); };
+  onLessonTitleEn = (e) => { const v = e.target.value; this.edit(c => { this.curLesson(c).title.en = v; }); };
+  onLessonTitleSi = (e) => { const v = e.target.value; this.edit(c => { this.curLesson(c).title.si = v; }); };
+  // ---- card shell (type, column, text body) --------------------------------
+  onCardColumn = (col) => this.editCard(card => { card.column = col; });
+  onCardTextEn = (e) => { const v = e.target.value; this.editCard(card => { card.body.en = v; }); };
+  onCardTextSi = (e) => { const v = e.target.value; this.editCard(card => { card.body.si = v; }); };
+
+  // ---- formatting toolbar ---------------------------------------------------
+  // The textarea is controlled by state, so the caret has to be put back after
+  // React re-renders it — otherwise it snaps to the end on every button press.
+  format = (fieldId, kind, current, commit) => {
+    const el = typeof document !== 'undefined' ? document.getElementById(fieldId) : null;
+    const text = current || '';
+    const start = el ? el.selectionStart : text.length;
+    const end = el ? el.selectionEnd : text.length;
+    const next = applyMarkup(kind, text, start, end);
+    commit(next.text);
+    if (el && typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => {
+        try { el.focus(); el.setSelectionRange(next.from, next.to); } catch (e) { /* detached */ }
+      });
+    }
+  };
+
+  tools = (fieldId, current, commit) => TOOLS.map(t => ({
+    label: t.label, weight: t.weight, style: t.style,
+    onClick: () => this.format(fieldId, t.key, current, commit),
+  }));
+
+  // ---- shared exercise-card fields -----------------------------------------
+  onPromptEn = (e) => { const v = e.target.value; this.editCard(card => { card.prompt.en = v; }); };
+  onPromptSi = (e) => { const v = e.target.value; this.editCard(card => { card.prompt.si = v; }); };
+  onOkFeedback = (e) => { const v = e.target.value; this.editCard(card => { card.feedback.correct.en = v; }); };
+  onBadFeedback = (e) => { const v = e.target.value; this.editCard(card => { card.feedback.incorrect.en = v; }); };
+
+  // Switching a card's type swaps its whole shape: text cards carry a body,
+  // exercise cards a prompt / payload / feedback. Fields the new type does not
+  // use are dropped rather than left behind as dead data.
+  onTypeChange = (e) => {
+    const t = e.target.value;
+    this.editCard(card => {
+      if (card.type === t) return;
+      card.type = t;
+      if (t === 'text') {
+        if (!card.body) card.body = { en: (card.prompt && card.prompt.en) || '', si: '' };
+        delete card.prompt; delete card.payload; delete card.feedback;
+      } else {
+        if (!card.prompt) card.prompt = { en: (card.body && card.body.en) || '', si: '' };
+        if (!card.feedback) card.feedback = { correct: { en: '', si: '' }, incorrect: { en: '', si: '' } };
+        card.payload = DEFAULT_PAYLOAD[t]();
+        delete card.body;
+      }
+    });
+  };
+
+  // ---- mcq -----------------------------------------------------------------
+  addOption = () => this.editExercise((ex, p) => p.options.push({ en: '', si: '' }));
+  removeOption = (i) => this.editExercise((ex, p) => {
+    p.options.splice(i, 1);
+    if (p.correctIndex >= p.options.length) p.correctIndex = Math.max(0, p.options.length - 1);
+  });
+  setCorrect = (i) => this.editExercise((ex, p) => { p.correctIndex = i; });
+  setOption = (i, lang, v) => this.editExercise((ex, p) => { p.options[i][lang] = v; });
+
+  // ---- gap fill ------------------------------------------------------------
+  onGapTemplate = (e) => { const v = e.target.value; this.editExercise((ex, p) => { p.template.en = v; }); };
+  onGapAccept = (e) => { const v = csvIn(e.target.value); this.editExercise((ex, p) => { p.accept = v; }); };
+  onGapChoices = (e) => { const v = csvIn(e.target.value); this.editExercise((ex, p) => { p.choices = v; }); };
+
+  // ---- drag order ----------------------------------------------------------
+  addToken = () => this.editExercise((ex, p) => p.tokens.push({ en: '', si: '' }));
+  removeToken = (i) => this.editExercise((ex, p) => p.tokens.splice(i, 1));
+  setToken = (i, v) => this.editExercise((ex, p) => { p.tokens[i].en = v; });
+  moveToken = (i, d) => this.editExercise((ex, p) => {
+    const j = i + d;
+    if (j < 0 || j >= p.tokens.length) return;
+    [p.tokens[i], p.tokens[j]] = [p.tokens[j], p.tokens[i]];
+  });
+
+  // ---- match ---------------------------------------------------------------
+  addPair = () => this.editExercise((ex, p) => p.pairs.push({ left: '', right: '' }));
+  removePair = (i) => this.editExercise((ex, p) => p.pairs.splice(i, 1));
+  setPair = (i, side, v) => this.editExercise((ex, p) => { p.pairs[i][side] = v; });
+
+  // ---- free text -----------------------------------------------------------
+  onFreeAccept = (e) => {
+    const v = e.target.value.split('\n').map(x => x.trim()).filter(Boolean);
+    this.editExercise((ex, p) => { p.accept = v; });
+  };
+  toggleLower = () => this.editExercise((ex, p) => { p.normalize.lowercase = !p.normalize.lowercase; });
+  togglePunct = () => this.editExercise((ex, p) => { p.normalize.stripPunctuation = !p.normalize.stripPunctuation; });
+
+  renderVals() {
+    const { curriculum, sel, expanded, dirty, saved, showKey, pendingDelete, draft, compose } = this.state;
+    const stage = this.curStage();
+    const lesson = this.curLesson();
+    const ex = this.curExercise();
+    const holder = this.curHolder();
+    // The composer edits either the selected card or the unsaved compose buffer;
+    // every form binding below reads from this one object.
+    const card = this.activeCard();
+    const editingCard = !!sel.cardId && !!this.curCard();
+    const type = card ? card.type : 'text';
+    const p = card && card.payload ? card.payload : {};
+
+    // Move buttons sit inside rows that select on click, so they must swallow
+    // the click — otherwise reordering a course would also toggle it open.
+    const MOVE_ON = '#6B6580', MOVE_OFF = '#DED7F8';
+    const stop = (e, run) => { if (e && e.stopPropagation) e.stopPropagation(); run(); };
+
+    // Titles are blank until the admin types one, so every place that shows a
+    // name needs a stand-in — an unnamed row must still be findable in the tree.
+    const stageName = (s) => s.title.en || '(untitled course)';
+    const lessonName = (l) => l.title.en || '(untitled lesson)';
+
+    const tree = curriculum.stages.map((st, si) => ({
+      label: stageName(st),
+      upColor: si > 0 ? MOVE_ON : MOVE_OFF,
+      downColor: si < curriculum.stages.length - 1 ? MOVE_ON : MOVE_OFF,
+      onUp: (e) => stop(e, () => this.moveStage(st.id, -1)),
+      onDown: (e) => stop(e, () => this.moveStage(st.id, 1)),
+      caret: expanded[st.id] ? '▾' : '▸',
+      dot: st.theme.to,
+      expanded: !!expanded[st.id],
+      bg: sel.stageId === st.id && !sel.lessonId ? '#ECE8FB' : 'transparent',
+      color: sel.stageId === st.id && !sel.lessonId ? '#6C4FF6' : '#1E1B2E',
+      onSelect: () => this.selectStage(st.id),
+      onAddLesson: () => this.addLesson(st.id),
+      lessons: st.lessons.map((ls, li) => ({
+        label: lessonName(ls),
+        upColor: li > 0 ? MOVE_ON : MOVE_OFF,
+        downColor: li < st.lessons.length - 1 ? MOVE_ON : MOVE_OFF,
+        onUp: (e) => stop(e, () => this.moveLesson(st.id, ls.id, -1)),
+        onDown: (e) => stop(e, () => this.moveLesson(st.id, ls.id, 1)),
+        icon: ls.kind === 'checkpoint' ? '◆' : '◻',
+        bg: sel.lessonId === ls.id && !sel.exerciseId ? '#ECE8FB' : 'transparent',
+        color: sel.lessonId === ls.id && !sel.exerciseId ? '#6C4FF6' : '#4A4560',
+        onSelect: () => this.selectLesson(st.id, ls.id),
+        onAddExercise: () => this.addExercise(st.id, ls.id),
+        exercises: ls.exercises.map((x, xi) => ({
+          label: plainText(x.prompt.en) || '(untitled)',
+          typeShort: TYPE_META[x.type].short,
+          badge: TYPE_COLOR[x.type],
+          bg: sel.exerciseId === x.id ? '#ECE8FB' : 'transparent',
+          color: sel.exerciseId === x.id ? '#6C4FF6' : '#6B6580',
+          upColor: xi > 0 ? MOVE_ON : MOVE_OFF,
+          downColor: xi < ls.exercises.length - 1 ? MOVE_ON : MOVE_OFF,
+          onSelect: () => this.selectExercise(st.id, ls.id, x.id),
+          onUp: (e) => stop(e, () => this.moveExercise(st.id, ls.id, x.id, -1)),
+          onDown: (e) => stop(e, () => this.moveExercise(st.id, ls.id, x.id, 1)),
+        })),
+      })),
+    }));
+
+    const options = (type === 'mcq' ? p.options : []).map((o, i) => ({
+      en: o.en, si: o.si,
+      ringColor: p.correctIndex === i ? '#3ECF6E' : '#D8D3EE',
+      ringFill: p.correctIndex === i ? '#3ECF6E' : 'white',
+      pvBg: showKey && p.correctIndex === i ? '#E3F9EB' : 'white',
+      pvBorder: showKey && p.correctIndex === i ? '#3ECF6E' : '#D8D3EE',
+      onSetCorrect: () => this.setCorrect(i),
+      onEn: (e) => this.setOption(i, 'en', e.target.value),
+      onSi: (e) => this.setOption(i, 'si', e.target.value),
+      onRemove: () => this.removeOption(i),
+    }));
+
+    const tpl = type === 'gap_fill' ? (p.template.en || '') : '';
+
+    const tokens = (type === 'drag_order' ? p.tokens : []).map((t, i) => ({
+      n: i + 1, text: t.en,
+      onChange: (e) => this.setToken(i, e.target.value),
+      onUp: () => this.moveToken(i, -1),
+      onDown: () => this.moveToken(i, 1),
+      onRemove: () => this.removeToken(i),
+    }));
+
+    const pairs = (type === 'match' ? p.pairs : []).map((pr, i) => ({
+      left: pr.left, right: pr.right,
+      onLeft: (e) => this.setPair(i, 'left', e.target.value),
+      onRight: (e) => this.setPair(i, 'right', e.target.value),
+      onRemove: () => this.removePair(i),
+    }));
+
+    const stageExCount = stage ? stage.lessons.reduce((n, l) => n + l.exercises.length, 0) : 0;
+
+    // ---- learner preview: the two-column card grid ---------------------------
+    // One view model per card, fully rendered. Each carries its own answer data
+    // rather than reading the shared `options` / `tokens` above, because the grid
+    // shows every card at once while the composer only ever edits one.
+    const holderCards = holder ? (holder.cards || []) : [];
+    const pvCards = holderCards.map((cd, ci) => {
+      const q = cd.payload || {};
+      const isSelected = sel.cardId === cd.id;
+      const vm = {
+        id: cd.id,
+        gridColumn: cardGridColumn(cd),
+        columnLabel: cd.column === 'full' ? 'Full width' : (cd.column === 'right' ? 'Right' : 'Left'),
+        typeShort: CARD_SHORT(cd.type),
+        badge: TYPE_COLOR[cd.type],
+        border: isSelected ? '#6C4FF6' : '#E3DEF5',
+        bg: isSelected ? '#F7F5FF' : 'white',
+        onSelect: () => this.selectCard(cd.id),
+        isText: cd.type === 'text',
+        isMcq: cd.type === 'mcq',
+        isGapFill: cd.type === 'gap_fill',
+        isDragOrder: cd.type === 'drag_order',
+        isMatch: cd.type === 'match',
+        isFreeText: cd.type === 'free_text',
+        prevColor: ci > 0 ? MOVE_ON : MOVE_OFF,
+        nextColor: ci < holderCards.length - 1 ? MOVE_ON : MOVE_OFF,
+        onPrev: (e) => stop(e, () => this.moveCard(cd.id, -1)),
+        onNext: (e) => stop(e, () => this.moveCard(cd.id, 1)),
+        // Two clicks, like every other delete here — the first arms it.
+        onDelete: (e) => stop(e, () => this.deleteCard(cd.id)),
+        delColor: pendingDelete === 'card:' + cd.id ? 'white' : '#C2354A',
+        delBg: pendingDelete === 'card:' + cd.id ? '#FF4D5E' : 'transparent',
+        delTitle: pendingDelete === 'card:' + cd.id ? 'Click again to delete this card' : 'Delete this card',
+      };
+
+      if (cd.type === 'text') {
+        const body = (cd.body && cd.body.en) || '';
+        vm.blocks = body ? parseRich(body) : [];
+        vm.isEmpty = !body;
+        vm.emptyNote = '(empty text card)';
+        return vm;
+      }
+
+      const promptEn = (cd.prompt && cd.prompt.en) || '';
+      vm.blocks = promptEn ? parseRich(promptEn) : [];
+      vm.isEmpty = !promptEn;
+      vm.emptyNote = '(no prompt yet)';
+
+      if (cd.type === 'mcq') {
+        vm.options = (q.options || []).map((o, i) => ({
+          en: o.en || '(empty option)',
+          pvBg: showKey && q.correctIndex === i ? '#E3F9EB' : 'white',
+          pvBorder: showKey && q.correctIndex === i ? '#3ECF6E' : '#D8D3EE',
+        }));
+      } else if (cd.type === 'gap_fill') {
+        const t = (q.template && q.template.en) || '';
+        const at = t.indexOf('___');
+        vm.gapBefore = at >= 0 ? t.slice(0, at) : t;
+        vm.gapAfter = at >= 0 ? t.slice(at + 3) : '';
+        vm.gapShown = showKey ? ((q.accept || [])[0] || '') : '';
+        vm.gapUnderline = showKey ? '#3ECF6E' : '#B5AFD4';
+        vm.chips = (q.choices || []).map(x => ({
+          text: x,
+          border: showKey && (q.accept || []).includes(x) ? '#3ECF6E' : '#D8D3EE',
+        }));
+      } else if (cd.type === 'drag_order') {
+        const toks = q.tokens || [];
+        vm.shuffled = seededShuffle(toks.map(x => ({ text: x.en || '…' })), toks.length * 17 + 3);
+        vm.showAnswer = showKey;
+        vm.answer = toks.map(x => x.en).join(' ');
+      } else if (cd.type === 'match') {
+        const prs = q.pairs || [];
+        vm.pairs = prs.map(x => ({ left: x.left || '…' }));
+        vm.rights = seededShuffle(prs.map(x => ({ text: x.right || '…' })), prs.length * 23 + 5);
+      } else if (cd.type === 'free_text') {
+        vm.showAnswer = showKey;
+        vm.answer = (q.accept || []).join(' · ');
+      }
+      return vm;
+    });
+
+    // The lesson preview also lists the exercises that follow its own cards.
+    const lessonExercises = lesson ? lesson.exercises : [];
+    const previewExercises = lessonExercises.map((x, i) => ({
+      n: i + 1,
+      typeShort: CARD_SHORT(x.type),
+      badge: TYPE_COLOR[x.type],
+      label: plainText(x.prompt.en) || '(no cards yet)',
+      color: x.prompt.en ? '#1E1B2E' : '#B5AFD4',
+      onSelect: () => this.selectExercise(stage.id, lesson.id, x.id),
+    }));
+
+    const stDel = delStyle(pendingDelete === 'course',
+      stage && stage.lessons.length ? plural(stage.lessons.length, 'lesson') : '');
+    const lsDel = delStyle(pendingDelete === 'lesson',
+      lesson && lesson.exercises.length ? plural(lesson.exercises.length, 'exercise') : '');
+    const exDel = delStyle(pendingDelete === 'exercise',
+      ex && ex.cards.length ? plural(ex.cards.length, 'card') : '');
+    const cardDel = delStyle(pendingDelete === 'card:' + sel.cardId);
+
+    // ---- composer bindings ---------------------------------------------------
+    const columns = CARD_COLUMNS.map(col => ({
+      label: col.label,
+      bg: card && card.column === col.key ? '#6C4FF6' : 'white',
+      color: card && card.column === col.key ? 'white' : '#4A4560',
+      border: card && card.column === col.key ? '#6C4FF6' : '#E3DEF5',
+      onClick: () => this.onCardColumn(col.key),
+    }));
+
+    return {
+      breadcrumb: [stage && stageName(stage), lesson && lessonName(lesson)].filter(Boolean).join(' › ') || '—',
+      dirtyLabel: dirty === 0 ? (saved ? 'Draft saved' : 'No changes') : `${dirty} unsaved change${dirty === 1 ? '' : 's'}`,
+      dirtyColor: dirty === 0 ? (saved ? '#3E8E5B' : '#6B6580') : '#B37E00',
+      onSave: this.save,
+      tree,
+
+      isStage: !!stage && !lesson,
+      // Lesson and exercise panes both end in the same card composer.
+      isLesson: !!lesson && !ex,
+      isExercise: !!ex,
+      isEmpty: !stage,
+      hasHolder: !!holder,
+      previewIdle: !lesson,
+
+      stageHeading: stage ? stageName(stage) : '',
+      stageIdShown: draft && draft.kind === 'course' ? '' : (stage ? stage.id : ''),
+      stageIdLabel: draft && draft.kind === 'course'
+        ? 'Course ID — generated from the title when you save'
+        : 'Course ID — referenced by progress records, not editable',
+      stageTitleEn: stage ? stage.title.en : '',
+      stageTitleSi: stage ? stage.title.si : '',
+      stageLessonCount: stage ? stage.lessons.length : 0,
+      stageExCount,
+      stageUnlock: stage ? (UNLOCK_LABEL[stage.unlock.kind] || stage.unlock.kind) : '',
+      onStageTitleEn: this.onStageTitleEn, onStageTitleSi: this.onStageTitleSi,
+      onAddLessonHere: () => { if (stage) this.addLesson(stage.id); },
+      onDeleteStage: this.deleteStage,
+      stDelLabel: stDel.label, stDelBg: stDel.bg, stDelColor: stDel.color, stDelBorder: stDel.border,
+
+      lessonHeading: lesson ? lessonName(lesson) : '',
+      lessonTitleEn: lesson ? lesson.title.en : '',
+      lessonTitleSi: lesson ? lesson.title.si : '',
+      lessonExCount: lesson ? lesson.exercises.length : 0,
+      onLessonTitleEn: this.onLessonTitleEn, onLessonTitleSi: this.onLessonTitleSi,
+      onAddExerciseHere: () => { if (stage && lesson) this.addExercise(stage.id, lesson.id); },
+      hasLessonSi: !!(lesson && lesson.title.si),
+      markupHint: MARKUP_HINT,
+      previewExercises,
+      previewExHeading: previewExercises.length
+        ? 'THEN ' + plural(previewExercises.length, 'EXERCISE').toUpperCase()
+        : 'NO EXERCISES YET',
+      // The lesson preview carries the lesson's own title and its exercise list;
+      // an exercise preview is just its cards and a Check button.
+      showLessonHead: !!lesson && !ex,
+      previewCta: ex ? 'Check' : (previewExercises.length ? 'Go to exercise' : 'Nothing to practise yet'),
+      onDeleteLesson: this.deleteLesson,
+      lsDelLabel: lsDel.label, lsDelBg: lsDel.bg, lsDelColor: lsDel.color, lsDelBorder: lsDel.border,
+
+      exTitle: ex ? (plainText(ex.prompt.en) || '(untitled exercise)') : '',
+      exCardCount: ex ? ex.cards.length : 0,
+      onDeleteExercise: this.deleteExercise,
+      exDelLabel: exDel.label, exDelBg: exDel.bg, exDelColor: exDel.color, exDelBorder: exDel.border,
+
+      // ---- card composer ----
+      composerHeading: editingCard ? 'Edit card' : 'Add a card',
+      composerNote: editingCard
+        ? 'Changes apply to this card straight away.'
+        : 'Fill this in, choose a column, then add it to the preview.',
+      isComposing: !editingCard,
+      isEditingCard: editingCard,
+      cardType: type,
+      onTypeChange: this.onTypeChange,
+      columns,
+      onAddAsCard: this.addComposedCard,
+      onNewCard: this.newCard,
+      onDeleteCard: () => this.deleteCard(sel.cardId),
+      cardDelLabel: cardDel.label, cardDelBg: cardDel.bg, cardDelColor: cardDel.color, cardDelBorder: cardDel.border,
+
+      isTextCard: type === 'text',
+      isExerciseCard: type !== 'text',
+      cardTextEn: card && card.body ? card.body.en : '',
+      onCardTextEn: this.onCardTextEn,
+      cardTextTools: this.tools('fld-card-text', card && card.body ? card.body.en : '',
+        (v) => this.editCard(x => { x.body.en = v; })),
+
+      promptEn: card && card.prompt ? card.prompt.en : '',
+      promptSi: card && card.prompt ? card.prompt.si : '',
+      onPromptEn: this.onPromptEn, onPromptSi: this.onPromptSi,
+      promptTools: this.tools('fld-prompt', card && card.prompt ? card.prompt.en : '',
+        (v) => this.editCard(x => { x.prompt.en = v; })),
+      okFeedback: card && card.feedback ? card.feedback.correct.en : '',
+      badFeedback: card && card.feedback ? card.feedback.incorrect.en : '',
+      onOkFeedback: this.onOkFeedback, onBadFeedback: this.onBadFeedback,
+
+      // ---- learner preview grid ----
+      pvCards,
+      pvEmpty: holderCards.length === 0,
+      pvEmptyNote: ex
+        ? 'This exercise has no cards yet. Build one on the left and add it.'
+        : 'This lesson has no cards yet. Build one on the left and add it.',
+
+      isMcq: type === 'mcq',
+      isGapFill: type === 'gap_fill',
+      isDragOrder: type === 'drag_order',
+      isMatch: type === 'match',
+      isFreeText: type === 'free_text',
+
+      options, onAddOption: this.addOption,
+
+      gapTemplate: tpl,
+      gapAccept: type === 'gap_fill' ? (p.accept || []).join(', ') : '',
+      gapChoices: type === 'gap_fill' ? (p.choices || []).join(', ') : '',
+      onGapTemplate: this.onGapTemplate, onGapAccept: this.onGapAccept, onGapChoices: this.onGapChoices,
+
+      tokens, onAddToken: this.addToken,
+
+      pairs, onAddPair: this.addPair,
+
+      freeAccept: type === 'free_text' ? (p.accept || []).join('\n') : '',
+      onFreeAccept: this.onFreeAccept,
+      lowerRing: type === 'free_text' && p.normalize.lowercase ? '#6C4FF6' : '#D8D3EE',
+      lowerFill: type === 'free_text' && p.normalize.lowercase ? '#6C4FF6' : 'white',
+      punctRing: type === 'free_text' && p.normalize.stripPunctuation ? '#6C4FF6' : '#D8D3EE',
+      punctFill: type === 'free_text' && p.normalize.stripPunctuation ? '#6C4FF6' : 'white',
+      onToggleLower: this.toggleLower, onTogglePunct: this.togglePunct,
+
+      showKey,
+      onToggleKey: this.toggleKey,
+      keyTrack: showKey ? '#6C4FF6' : '#D8D3EE',
+      keyKnob: showKey ? '14px' : '2px',
+      previewStageLabel: stage ? `COURSE ${stage.order} · ${stageName(stage).toUpperCase()}` : '',
+    };
+  }
+}
+</script>
+</body>
+</html>

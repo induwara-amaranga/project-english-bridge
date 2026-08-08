@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Project Notes — Duolingo-style Homepage</title>
+  <style>body{font-family:Arial,Helvetica,sans-serif;line-height:1.5;max-width:900px;margin:2rem auto;padding:0 1rem}h1,h2{color:#111}pre{background:#f3f3f3;padding:1rem;overflow:auto}</style>
+</head>
+<body>
+<article>
+<h1>Project Notes: Duolingo-style English Learning Homepage</h1>
+<p><strong>Audience:</strong> CSE students — architecture, file layout, coding patterns, and how to run/extend the project.</p>
+
+<h2>1. High-level overview</h2>
+<ul>
+<li>This workspace contains a small multi-page web project plus a sub-app <code>cosmic-planet-course-map</code> (a Vite + React + TypeScript single-page app) under <code>uploads/cosmic-planet-course-map/src</code>.</li>
+<li>The top-level HTML files (e.g., <em>Duolingo Style Homepage.dc.html</em>, <em>Course Dashboard.dc.html</em>) are page templates and static views using plain HTML/CSS/JS.</li>
+<li>Shared scripts and data are in <em>curriculum.js</em>, <em>parent-link.js</em>, <em>support.js</em> and other sibling JS files.</li>
+</ul>
+
+<h2>2. Files &amp; directories to know</h2>
+<ul>
+<li><strong>Duolingo Style Homepage.dc.html</strong> — main landing page. Contains markup and references to local assets.</li>
+<li><strong>curriculum.js</strong> — likely contains course data and structures used by multiple pages.</li>
+<li><strong>parent-link.js</strong>, <strong>support.js</strong> — helper scripts for navigation, analytics, or UI helpers.</li>
+<li><strong>uploads/cosmic-planet-course-map/</strong> — standalone Vite app (React + TypeScript): <ul><li><em>package.json</em> — npm scripts and dependencies.</li><li><em>tsconfig.json, vite.config.ts</em> — TypeScript + dev server config.</li><li><em>src/</em> — app source: <em>App.tsx, main.tsx, components/, data/, lib/</em>.</li><li><em>src/components/</em> — modular UI components (e.g., <em>CourseMap.tsx</em>, <em>PlanetNode.tsx</em>).</li></ul></li>
+</ul>
+
+<h2>3. How the code is organized and written</h2>
+<ul>
+<li>Plain HTML pages: Structure content with semantic HTML; small inline or external scripts handle page-level behaviors.</li>
+<li>Vanilla JS helpers: <em>curriculum.js</em> and <em>support.js</em> appear to export or attach global objects to manage data and interactions across multiple HTML pages.</li>
+<li>React app (<em>cosmic-planet-course-map</em>): Uses TypeScript + React functional components.</li>
+<li><em>App.tsx</em> glues the app and routes (if any).</li>
+<li><em>components/</em> contain single-responsibility components; follow the pattern: presentational + small stateful parents.</li>
+<li><em>lib/sound.ts</em> centralizes audio/sfx logic.</li>
+</ul>
+
+<h2>4. Coding conventions &amp; best practices used (and suggested)</h2>
+<ul>
+<li>Use descriptive component/file names: <em>PlanetNode.tsx</em> is specific to the UI element.</li>
+<li>Keep components small: Each component should have one responsibility (render node, modal, header, etc.).</li>
+<li>Type safety: <em>types.ts</em> defines domain types — prefer explicit types for props and state in TSX files.</li>
+<li>Centralize side-effects: Keep audio, localStorage, or network code in dedicated helper modules (<em>lib/</em>).</li>
+<li>Assets: Place images, sounds, and static JSON under <em>assets/</em> and reference them by relative URLs.</li>
+<li>Avoid global mutable state in page scripts; prefer module-scoped state or simple stores.</li>
+</ul>
+
+<h2>5. Data flow and runtime behavior</h2>
+<ul>
+<li>Static pages load <em>curriculum.js</em> or other scripts that attach data (global or module exports) to the window, then render UI using DOM APIs.</li>
+<li>React sub-app imports <em>courses.ts</em> and renders UI declaratively. Props flow from parent to child; components use local <code>useState</code> for ephemeral UI state.</li>
+<li>Events (clicks, modal open/close) are handled by component handlers or small utilities.</li>
+</ul>
+
+<h2>6. How to run the React app locally</h2>
+<pre><code>cd "uploads/cosmic-planet-course-map"
+npm install
+npm run dev
+</code></pre>
+
+<p>Open the printed local URL (Vite prints it, usually <em>http://localhost:5173</em>).</p>
+
+<h2>7. How to build a production bundle (React app)</h2>
+<pre><code>cd "uploads/cosmic-planet-course-map"
+npm run build
+# output will be in dist/
+</code></pre>
+
+<h2>8. How to extend or contribute (practical tips)</h2>
+<ul>
+<li>When adding new components, add a new file under <em>src/components/</em> and export it as default. Keep props typed and minimal.</li>
+<li>Add unit tests for pure logic modules (e.g., <em>lib/sound.ts</em>) using a test runner like Vitest or Jest.</li>
+<li>Document data shape in <em>types.ts</em> and update <em>src/data/courses.ts</em> when course content changes.</li>
+<li>For global scripts (non-React pages), avoid polluting <em>window</em> — export a function and call it from inline script tags.</li>
+</ul>
+
+<h2>9. Common tasks a CSE student might do</h2>
+<ul>
+<li>Add a new lesson node: modify <em>src/data/courses.ts</em> and add a matching <em>PlanetNode</em> rendering case.</li>
+<li>Add scoring or persistence: create a small storage module that wraps <code>localStorage</code> and exports typed getters/setters.</li>
+<li>Add accessibility: ensure interactive elements use <code>button</code> elements, provide <code>aria-*</code> attributes, and keyboard handlers.</li>
+</ul>
+
+<h2>10. Converting these notes to PDF</h2>
+<ul>
+<li>Open this HTML in a browser and Print → Save as PDF.</li>
+<li>Or use <code>pandoc</code> to convert the Markdown file to PDF: <pre><code>pandoc docs\project-notes.md -o docs\project-notes.pdf
+</code></pre></li>
+</ul>
+
+<h2>11. Next steps and suggestions</h2>
+<ul>
+<li>Add a <em>README.md</em> at repo root with run/build instructions and a link to <em>docs/project-notes.md</em>.</li>
+<li>Add a small <em>CONTRIBUTING.md</em> describing coding style and PR process.</li>
+<li>Add basic tests and an npm <em>preview</em> script for static pages.</li>
+</ul>
+
+<hr>
+<p>Generated for quick reference; ask me to (1) convert this to PDF here if you want me to attempt it, (2) add a README, or (3) extract a developer quickstart script.</p>
+</article>
+</body>
+</html>

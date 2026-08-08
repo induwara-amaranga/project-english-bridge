@@ -1,0 +1,6 @@
+{
+  "name": "Cosmic Planet Course Map",
+  "description": "An interactive, gamified space-themed learning pathway where completing lessons unlocks new celestial planets, stars, and galaxies.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./curriculum.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Inter:wght@400;500;600;700&family=Noto+Sans+Sinhala:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; background: #F7F5FF; }
+    * { box-sizing: border-box; }
+    a { color: #6C4FF6; text-decoration: none; }
+    a:hover { color: #5539E0; }
+    textarea { font-family: 'Inter', sans-serif; }
+    .si { font-family: 'Noto Sans Sinhala', 'Inter', sans-serif; }
+    /* ---- the two-column card grid ---- */
+    .cardgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+    .cardcell { min-width: 0; }
+    .col-left  { grid-column: 1; }
+    .col-right { grid-column: 2; }
+    .col-full  { grid-column: 1 / -1; }
+    @media (max-width: 760px) {
+      .cardgrid { grid-template-columns: 1fr; }
+      .col-left, .col-right, .col-full { grid-column: 1 / -1; }
+    }
+    .card { background: white; border-radius: 20px; padding: 22px; }
+    .opt { text-align: left; width: 100%; border-radius: 14px; padding: 14px 18px; font-size: 15px; font-weight: 600;
+           font-family: 'Inter', sans-serif; cursor: pointer; }
+    .tok { border-radius: 12px; padding: 9px 14px; font-size: 14px; font-weight: 700; cursor: pointer;
+           font-family: 'Inter', sans-serif; }
+    .chip { border-radius: 999px; padding: 8px 15px; font-size: 13px; font-weight: 600; cursor: pointer;
+            font-family: 'Inter', sans-serif; }
+    .slot { border: 2px dashed #D8D3EE; border-radius: 12px; min-height: 52px; padding: 8px;
+            display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .ans { width: 100%; border: 2px solid #D8D3EE; border-radius: 12px; padding: 12px; font-size: 15px;
+           min-height: 84px; outline: none; }
+    .ans:focus { border-color: #6C4FF6; }
+  </style>
+</helmet>
+
+<div style="font-family: 'Inter', sans-serif; background: #F7F5FF; color: #1E1B2E; min-height: 100vh;">
+
+  <div style="background: #6C4FF6; padding: 20px 24px;">
+    <div style="max-width: 940px; margin: 0 auto; display: flex; align-items: center; gap: 14px;">
+      <a href="{{ backHref }}" style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.22); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 3L5 9L11 15" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.75); letter-spacing: 0.04em;">STAGE {{ stageNumber }} · EXERCISE</div>
+        <div style="font-weight: 700; font-size: 16px; color: white;">Question {{ qNumber }} of {{ qTotal }}</div>
+      </div>
+      <a href="{{ backHref }}" style="margin-left: auto; background: rgba(255,255,255,0.18); color: white; border-radius: 10px; padding: 9px 16px; font-weight: 700; font-size: 13px; flex-shrink: 0;">Go to lessons</a>
+    </div>
+    <div style="max-width: 940px; margin: 14px auto 0; height: 8px; border-radius: 999px; background: rgba(255,255,255,0.25); overflow: hidden;">
+      <div style="height: 100%; border-radius: 999px; background: #FFD976; width: {{ progressPct }}%; transition: width 0.3s;"></div>
+    </div>
+  </div>
+
+  <div style="max-width: 940px; margin: 0 auto; padding: 32px 24px 64px; display: flex; flex-direction: column; gap: 22px;">
+
+    <sc-if value="{{ isRunning }}" hint-placeholder-val="{{ true }}">
+      <div class="cardgrid">
+        <sc-for list="{{ cards }}" as="c" hint-placeholder-count="3">
+          <div class="{{ c.cellClass }}">
+            <div class="card">
+
+              <!-- prompt / body -->
+              <div style="font-size: 16px; line-height: 1.7;">
+                <sc-for list="{{ c.blocks }}" as="b" hint-placeholder-count="1">
+                  <sc-if value="{{ b.isImage }}" hint-placeholder-val="{{ false }}">
+                    <img src="{{ b.src }}" alt="{{ b.alt }}" style="display: block; max-width: 100%; border-radius: 12px; margin: 0 0 10px;"/>
+                  </sc-if>
+                  <sc-if value="{{ b.isText }}" hint-placeholder-val="{{ true }}">
+                    <div style="display: flex; gap: 8px; margin-bottom: 6px;">
+                      <sc-if value="{{ b.hasMarker }}" hint-placeholder-val="{{ false }}">
+                        <span style="line-height: 1.7; color: #6C4FF6; font-weight: 700; flex-shrink: 0;">{{ b.marker }}</span>
+                      </sc-if>
+                      <div style="line-height: 1.7; min-width: 0;"><sc-for list="{{ b.runs }}" as="r" hint-placeholder-count="1"><sc-if value="{{ r.isLink }}" hint-placeholder-val="{{ false }}"><a href="{{ r.href }}" target="_blank" rel="noopener" style="font-weight: {{ r.weight }}; font-style: {{ r.italic }}; text-decoration: underline;">{{ r.text }}</a></sc-if><sc-if value="{{ r.plain }}" hint-placeholder-val="{{ true }}"><span style="font-weight: {{ r.weight }}; font-style: {{ r.italic }};">{{ r.text }}</span></sc-if></sc-for></div>
+                    </div>
+                  </sc-if>
+                </sc-for>
+              </div>
+
+              <!-- ======= MCQ ======= -->
+              <sc-if value="{{ c.isMcq }}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 14px;">
+                  <sc-for list="{{ c.options }}" as="opt" hint-placeholder-count="3">
+                    <button class="opt" onClick="{{ opt.onPick }}" style="background: {{ opt.bg }}; border: 2px solid {{ opt.border }}; color: #1E1B2E;">{{ opt.text }}</button>
+                  </sc-for>
+                </div>
+              </sc-if>
+
+              <!-- ======= GAP FILL ======= -->
+              <sc-if value="{{ c.isGapFill }}" hint-placeholder-val="{{ false }}">
+                <div style="background: #F7F5FF; border-radius: 12px; padding: 14px; font-size: 15px; line-height: 1.9; margin-top: 14px;">
+                  {{ c.gapBefore }}<span style="display: inline-block; min-width: 74px; text-align: center; border-bottom: 2.5px solid {{ c.gapUnderline }}; color: #6C4FF6; font-weight: 700;">{{ c.gapFilled }}</span>{{ c.gapAfter }}
+                </div>
+                <sc-if value="{{ c.hasChips }}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px;">
+                    <sc-for list="{{ c.chips }}" as="chip" hint-placeholder-count="3">
+                      <button class="chip" onClick="{{ chip.onPick }}" style="background: {{ chip.bg }}; border: 2px solid {{ chip.border }};">{{ chip.text }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ c.typeIn }}" hint-placeholder-val="{{ false }}">
+                  <input class="ans" style="min-height: 0; margin-top: 12px;" value="{{ c.typed }}" onChange="{{ c.onType }}" placeholder="Type the missing word"/>
+                </sc-if>
+              </sc-if>
+
+              <!-- ======= DRAG TO ORDER — click to build, click again to remove ======= -->
+              <sc-if value="{{ c.isDragOrder }}" hint-placeholder-val="{{ false }}">
+                <div class="slot" style="margin: 14px 0 12px;">
+                  <sc-for list="{{ c.picked }}" as="tok" hint-placeholder-count="2">
+                    <button class="tok" onClick="{{ tok.onRemove }}" style="background: #ECE8FB; border: 2px solid #6C4FF6;">{{ tok.text }}</button>
+                  </sc-for>
+                  <sc-if value="{{ c.nonePicked }}" hint-placeholder-val="{{ true }}">
+                    <span style="font-size: 12px; color: #B5AFD4; font-weight: 600; padding: 0 6px;">Tap the words in the right order</span>
+                  </sc-if>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                  <sc-for list="{{ c.pool }}" as="tok" hint-placeholder-count="3">
+                    <button class="tok" onClick="{{ tok.onPick }}" style="background: white; border: 2px solid #D8D3EE; box-shadow: 0 2px 0 #E3DEF5;">{{ tok.text }}</button>
+                  </sc-for>
+                </div>
+              </sc-if>
+
+              <!-- ======= MATCH — tap left, then its partner on the right ======= -->
+              <sc-if value="{{ c.isMatch }}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; gap: 12px; margin-top: 14px;">
+                  <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 9px;">
+                    <sc-for list="{{ c.lefts }}" as="l" hint-placeholder-count="3">
+                      <button class="tok si" onClick="{{ l.onPick }}" style="text-align: left; background: {{ l.bg }}; border: 2px solid {{ l.border }};">{{ l.text }}<span style="float: right; color: #6C4FF6;">{{ l.tag }}</span></button>
+                    </sc-for>
+                  </div>
+                  <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 9px;">
+                    <sc-for list="{{ c.rights }}" as="r" hint-placeholder-count="3">
+                      <button class="tok" onClick="{{ r.onPick }}" style="text-align: left; background: {{ r.bg }}; border: 2px solid {{ r.border }};">{{ r.text }}<span style="float: right; color: #6C4FF6;">{{ r.tag }}</span></button>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+
+              <!-- ======= FREE TEXT ======= -->
+              <sc-if value="{{ c.isFreeText }}" hint-placeholder-val="{{ false }}">
+                <textarea class="ans" style="margin-top: 14px;" value="{{ c.typed }}" onChange="{{ c.onType }}" placeholder="Type your answer…"></textarea>
+              </sc-if>
+
+              <sc-if value="{{ c.isEmpty }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size: 15px; color: #B5AFD4; font-weight: 600;">{{ c.emptyNote }}</div>
+              </sc-if>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{ showFeedback }}" hint-placeholder-val="{{ false }}">
+        <div style="background: {{ feedbackBg }}; border: 1px solid {{ feedbackBorder }}; border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px;">
+          <p style="margin: 0; font-size: 15px; line-height: 1.6; font-weight: 700; color: {{ feedbackColor }};">{{ feedbackText }}</p>
+          <button onClick="{{ onNext }}" style="align-self: flex-end; background: #6C4FF6; color: white; border: none; border-radius: 12px; padding: 12px 28px; font-weight: 700; font-size: 15px; font-family: 'Baloo 2', sans-serif; cursor: pointer;">{{ nextLabel }}</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showCheck }}" hint-placeholder-val="{{ true }}">
+        <button onClick="{{ onCheck }}" style="align-self: center; background: {{ checkBg }}; color: white; border: none; border-radius: 14px; padding: 15px 44px; font-weight: 800; font-size: 17px; font-family: 'Baloo 2', sans-serif; cursor: {{ checkCursor }}; box-shadow: 0 6px 0 {{ checkShadow }};">Check</button>
+      </sc-if>
+    </sc-if>
+
+    <sc-if value="{{ isComplete }}" hint-placeholder-val="{{ false }}">
+      <div class="card" style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 32px;">
+        <div style="width: 64px; height: 64px; border-radius: 50%; background: #FFF3D6; display: flex; align-items: center; justify-content: center;">
+          <svg width="30" height="30" viewBox="0 0 22 22" fill="none"><path d="M5 11.5L9.5 16L17 6" stroke="#FFB800" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h2 style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 22px; margin: 0;">Exercise complete!</h2>
+        <div style="font-size: 15px; color: #6B6580; font-weight: 600;">{{ scoreLine }}</div>
+        <a href="{{ backHref }}" style="background: #6C4FF6; color: white; border-radius: 14px; padding: 14px 32px; font-weight: 800; font-size: 16px; font-family: 'Baloo 2', sans-serif; box-shadow: 0 6px 0 #5539E0;">Back to lessons</a>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isEmptyLesson }}" hint-placeholder-val="{{ false }}">
+      <div class="card" style="text-align: center; color: #9B94BE; font-size: 15px; font-weight: 600; line-height: 1.7;">
+        This lesson has no exercises yet.
+        <div style="margin-top: 14px;"><a href="{{ backHref }}">Back to lessons</a></div>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+// The exercise player. An exercise is a set of cards; the interactive ones are
+// answered in place and graded together when Check is pressed. Content comes
+// from the shared curriculum object, so it always matches the Course Editor.
+const CURRICULUM = window.normaliseCurriculum(window.loadCurriculum());
+const parseRich = window.parseRich;
+
+const COL_CLASS = { left: 'cardcell col-left', right: 'cardcell col-right', full: 'cardcell col-full' };
+const INTERACTIVE = ['mcq', 'gap_fill', 'drag_order', 'match', 'free_text'];
+
+function pick(list, raw) {
+  if (!list.length) return null;
+  if (raw) {
+    const found = list.find(x => x.id === raw);
+    if (found) return found;
+    const n = parseInt(raw, 10);
+    if (n >= 1) return list[Math.min(n, list.length) - 1];
+  }
+  return list[0];
+}
+
+function resolve() {
+  let sp;
+  try { sp = new URLSearchParams(window.location.search); } catch (e) { sp = new URLSearchParams(''); }
+  const stage = pick(CURRICULUM.stages, sp.get('stage'));
+  const lesson = stage ? pick(stage.lessons, sp.get('lesson')) : null;
+  return { stage, lesson, stageIndex: stage ? CURRICULUM.stages.indexOf(stage) + 1 : 1 };
+}
+
+// Free-text and typed gap answers are compared under the normalisation the
+// author chose, so "I go to school." can match "i go to school".
+function norm(s, rules) {
+  let out = String(s == null ? '' : s).trim();
+  if (!rules || rules.lowercase !== false) out = out.toLowerCase();
+  if (!rules || rules.stripPunctuation !== false) out = out.replace(/[.,!?;:'"()]/g, '');
+  return out.replace(/\s+/g, ' ');
+}
+
+const seededShuffle = (arr, seed) => {
+  const a = arr.slice();
+  let s = seed;
+  for (let i = a.length - 1; i > 0; i--) {
+    s = (s * 9301 + 49297) % 233280;
+    const j = Math.floor((s / 233280) * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
+
+const { stage, lesson, stageIndex } = resolve();
+const EXERCISES = lesson ? (lesson.exercises || []) : [];
+
+class Component extends DCLogic {
+  // `answers` is keyed by card id so one exercise can hold several interactive
+  // cards and each keeps its own working state.
+  state = { qIndex: 0, answers: {}, checked: false, correctCount: 0, complete: false };
+
+  answerFor = (card) => {
+    const a = this.state.answers[card.id];
+    if (a !== undefined) return a;
+    if (card.type === 'drag_order') return [];
+    if (card.type === 'match') return { pending: null, pairs: {} };
+    return null;
+  };
+
+  setAnswer = (cardId, value) => {
+    if (this.state.checked) return;
+    this.setState(s => ({ answers: Object.assign({}, s.answers, { [cardId]: value }) }));
+  };
+
+  // ---- per-type input handlers ----
+  pickOption = (card, i) => this.setAnswer(card.id, i);
+  pickChip = (card, text) => this.setAnswer(card.id, text);
+  typeAnswer = (card, e) => this.setAnswer(card.id, e.target.value);
+
+  pickToken = (card, i) => {
+    const cur = this.answerFor(card);
+    if (cur.indexOf(i) !== -1) return;
+    this.setAnswer(card.id, cur.concat([i]));
+  };
+  removeToken = (card, i) => {
+    const cur = this.answerFor(card);
+    this.setAnswer(card.id, cur.filter(x => x !== i));
+  };
+
+  // Match works in two taps: choose a left item, then the right one it belongs
+  // with. Tapping an already-paired item clears that pair.
+  pickLeft = (card, li) => {
+    const cur = this.answerFor(card);
+    const pairs = Object.assign({}, cur.pairs);
+    if (pairs[li] !== undefined) { delete pairs[li]; this.setAnswer(card.id, { pending: null, pairs }); return; }
+    this.setAnswer(card.id, { pending: li, pairs });
+  };
+  pickRight = (card, ri) => {
+    const cur = this.answerFor(card);
+    const pairs = Object.assign({}, cur.pairs);
+    // A right item can only belong to one left item.
+    Object.keys(pairs).forEach(k => { if (pairs[k] === ri) delete pairs[k]; });
+    if (cur.pending === null || cur.pending === undefined) return;
+    pairs[cur.pending] = ri;
+    this.setAnswer(card.id, { pending: null, pairs });
+  };
+
+  // ---- grading ----
+  gradeCard = (card) => {
+    const q = card.payload || {};
+    const a = this.answerFor(card);
+    if (card.type === 'mcq') return a !== null && a === q.correctIndex;
+    if (card.type === 'gap_fill') {
+      const accept = q.accept || [];
+      return accept.some(x => norm(x, null) === norm(a, null));
+    }
+    if (card.type === 'drag_order') {
+      const toks = q.tokens || [];
+      return a.length === toks.length && a.every((v, i) => v === i);
+    }
+    if (card.type === 'match') {
+      const prs = q.pairs || [];
+      return prs.length > 0 && prs.every((_, i) => a.pairs[i] === i);
+    }
+    if (card.type === 'free_text') {
+      const accept = q.accept || [];
+      return accept.some(x => norm(x, q.normalize) === norm(a, q.normalize));
+    }
+    return true;
+  };
+
+  interactiveCards = () => {
+    const ex = EXERCISES[this.state.qIndex];
+    return ex ? (ex.cards || []).filter(c => INTERACTIVE.indexOf(c.type) !== -1) : [];
+  };
+
+  answered = () => {
+    const cards = this.interactiveCards();
+    if (!cards.length) return true;
+    return cards.every(c => {
+      const a = this.answerFor(c);
+      if (c.type === 'drag_order') return a.length > 0;
+      if (c.type === 'match') return Object.keys(a.pairs).length > 0;
+      if (c.type === 'free_text' || c.type === 'gap_fill') return !!(a && String(a).trim());
+      return a !== null && a !== undefined;
+    });
+  };
+
+  check = () => {
+    if (this.state.checked || !this.answered()) return;
+    const allRight = this.interactiveCards().every(this.gradeCard);
+    this.setState(s => ({ checked: true, correctCount: s.correctCount + (allRight ? 1 : 0) }));
+  };
+
+  next = () => {
+    const nextIndex = this.state.qIndex + 1;
+    if (nextIndex >= EXERCISES.length) { this.setState({ complete: true }); return; }
+    this.setState({ qIndex: nextIndex, answers: {}, checked: false });
+  };
+
+  renderVals() {
+    const { qIndex, checked, complete, correctCount } = this.state;
+    const backHref = 'Stage Lessons.dc.html?stage=' + stageIndex;
+
+    if (!stage || !lesson || !EXERCISES.length) {
+      return {
+        stageNumber: stageIndex, qNumber: 0, qTotal: 0, progressPct: 0,
+        isRunning: false, isComplete: false, isEmptyLesson: true,
+        cards: [], backHref, showCheck: false, showFeedback: false,
+      };
+    }
+
+    const ex = EXERCISES[qIndex];
+    const interactive = this.interactiveCards();
+    // An exercise is right when every interactive card on it is right.
+    const allRight = checked && interactive.every(this.gradeCard);
+    const primary = interactive[0] || null;
+
+    const cards = (ex.cards || []).map(cd => {
+      const q = cd.payload || {};
+      const isText = cd.type === 'text';
+      const src = isText ? (cd.body && cd.body.en) : (cd.prompt && cd.prompt.en);
+      const a = this.answerFor(cd);
+      const vm = {
+        cellClass: COL_CLASS[cd.column] || COL_CLASS.full,
+        blocks: src ? parseRich(src) : [],
+        isEmpty: !src,
+        emptyNote: isText ? '(empty card)' : '(no prompt yet)',
+        isMcq: cd.type === 'mcq',
+        isGapFill: cd.type === 'gap_fill',
+        isDragOrder: cd.type === 'drag_order',
+        isMatch: cd.type === 'match',
+        isFreeText: cd.type === 'free_text',
+      };
+
+      if (cd.type === 'mcq') {
+        vm.options = (q.options || []).map((o, i) => {
+          let bg = '#F7F5FF', border = 'transparent';
+          if (checked) {
+            if (i === q.correctIndex) { bg = '#E3F9EB'; border = '#3ECF6E'; }
+            else if (i === a) { bg = '#FFE9E5'; border = '#FF6B4A'; }
+          } else if (i === a) { bg = '#ECE8FB'; border = '#6C4FF6'; }
+          return { text: o.en || '…', bg, border, onPick: () => this.pickOption(cd, i) };
+        });
+      } else if (cd.type === 'gap_fill') {
+        const t = (q.template && q.template.en) || '';
+        const at = t.indexOf('___');
+        const choices = q.choices || [];
+        vm.gapBefore = at >= 0 ? t.slice(0, at) : t;
+        vm.gapAfter = at >= 0 ? t.slice(at + 3) : '';
+        vm.gapFilled = a || '';
+        vm.gapUnderline = !checked ? '#B5AFD4' : (this.gradeCard(cd) ? '#3ECF6E' : '#FF6B4A');
+        vm.hasChips = choices.length > 0;
+        vm.typeIn = choices.length === 0;
+        vm.typed = a || '';
+        vm.onType = (e) => this.typeAnswer(cd, e);
+        vm.chips = choices.map(text => {
+          let bg = 'white', border = '#D8D3EE';
+          if (checked && (q.accept || []).indexOf(text) !== -1) { bg = '#E3F9EB'; border = '#3ECF6E'; }
+          else if (text === a) { bg = '#ECE8FB'; border = '#6C4FF6'; }
+          return { text, bg, border, onPick: () => this.pickChip(cd, text) };
+        });
+      } else if (cd.type === 'drag_order') {
+        const toks = q.tokens || [];
+        // The pool is shuffled once per token set, so it is stable across renders.
+        const order = seededShuffle(toks.map((t, i) => i), toks.length * 17 + 3);
+        vm.picked = a.map(i => ({ text: toks[i].en || '…', onRemove: () => this.removeToken(cd, i) }));
+        vm.nonePicked = a.length === 0;
+        vm.pool = order.filter(i => a.indexOf(i) === -1)
+          .map(i => ({ text: toks[i].en || '…', onPick: () => this.pickToken(cd, i) }));
+      } else if (cd.type === 'match') {
+        const prs = q.pairs || [];
+        const rightOrder = seededShuffle(prs.map((_, i) => i), prs.length * 23 + 5);
+        const labelFor = (li) => String.fromCharCode(65 + li);
+        vm.lefts = prs.map((pr, li) => {
+          const done = a.pairs[li] !== undefined;
+          let bg = 'white', border = '#D8D3EE';
+          if (checked) { bg = a.pairs[li] === li ? '#E3F9EB' : '#FFE9E5'; border = a.pairs[li] === li ? '#3ECF6E' : '#FF6B4A'; }
+          else if (a.pending === li) { bg = '#ECE8FB'; border = '#6C4FF6'; }
+          else if (done) { bg = '#F7F5FF'; border = '#B7A6FF'; }
+          return { text: pr.left || '…', bg, border, tag: done ? labelFor(li) : '', onPick: () => this.pickLeft(cd, li) };
+        });
+        vm.rights = rightOrder.map(ri => {
+          const ownerKey = Object.keys(a.pairs).find(k => a.pairs[k] === ri);
+          let bg = '#ECE8FB', border = '#D8D3EE';
+          if (checked && ownerKey !== undefined) {
+            const ok = Number(ownerKey) === ri;
+            bg = ok ? '#E3F9EB' : '#FFE9E5'; border = ok ? '#3ECF6E' : '#FF6B4A';
+          } else if (ownerKey !== undefined) { bg = '#F7F5FF'; border = '#B7A6FF'; }
+          return {
+            text: prs[ri].right || '…', bg, border,
+            tag: ownerKey !== undefined ? labelFor(Number(ownerKey)) : '',
+            onPick: () => this.pickRight(cd, ri),
+          };
+        });
+      } else if (cd.type === 'free_text') {
+        vm.typed = a || '';
+        vm.onType = (e) => this.typeAnswer(cd, e);
+      }
+      return vm;
+    });
+
+    const ready = this.answered();
+    const fb = primary ? primary.feedback : null;
+    return {
+      stageNumber: stageIndex,
+      qNumber: qIndex + 1,
+      qTotal: EXERCISES.length,
+      progressPct: Math.round(((qIndex + (checked ? 1 : 0)) / EXERCISES.length) * 100),
+      backHref,
+
+      isRunning: !complete,
+      isComplete: complete,
+      isEmptyLesson: false,
+      cards,
+
+      showCheck: !checked,
+      onCheck: this.check,
+      checkBg: ready ? '#6C4FF6' : '#C6BFE4',
+      checkShadow: ready ? '#5539E0' : '#ADA5CE',
+      checkCursor: ready ? 'pointer' : 'not-allowed',
+
+      showFeedback: checked,
+      feedbackText: !fb ? (allRight ? 'Correct.' : 'Not quite.')
+        : (allRight
+            ? (fb.correct.en || 'Correct.')
+            : (fb.incorrect.en || 'Not quite — have another look.')),
+      feedbackBg: allRight ? '#E3F9EB' : '#FFE9E5',
+      feedbackBorder: allRight ? '#3ECF6E' : '#FF6B4A',
+      feedbackColor: allRight ? '#1F7A44' : '#B23A20',
+      nextLabel: qIndex + 1 >= EXERCISES.length ? 'Finish' : 'Next question',
+      onNext: this.next,
+
+      scoreLine: correctCount + ' of ' + EXERCISES.length + ' right',
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./parent-link.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; background: #F7F5FF; }
+    * { box-sizing: border-box; }
+    a { color: #6C4FF6; text-decoration: none; }
+    input { font-family: 'Inter', sans-serif; }
+    input::placeholder { color: #A8A0C7; }
+    .card { background: white; border-radius: 20px; padding: 24px; }
+  </style>
+</helmet>
+
+<div style="font-family: 'Inter', sans-serif; background: #F7F5FF; color: #1E1B2E; min-height: 100vh;">
+
+  <!-- ================= HEADER ================= -->
+  <div style="background: #6C4FF6; padding: 24px;">
+    <div style="max-width: 640px; margin: 0 auto; display: flex; align-items: center; gap: 14px;">
+      <a href="Profile.dc.html" style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.22); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 3L5 9L11 15" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+      <div>
+        <div style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 22px; color: white;">Parent access</div>
+        <div style="font-size: 13px; color: rgba(255,255,255,0.8); font-weight: 600; margin-top: 2px;">{{ headerSub }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="max-width: 640px; margin: 0 auto; padding: 24px 24px 64px; display: flex; flex-direction: column; gap: 18px;">
+
+    <!-- ================= HOW IT WORKS ================= -->
+    <div class="card">
+      <div style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 17px; margin-bottom: 4px;">How it works</div>
+      <div style="font-size: 13px; color: #6B6580; font-weight: 600; margin-bottom: 18px;">You stay in control — a parent only ever sees what you invite them to see.</div>
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <sc-for list="{{ steps }}" as="s" hint-placeholder-count="4">
+          <div style="display: flex; align-items: flex-start; gap: 12px;">
+            <div style="width: 26px; height: 26px; border-radius: 50%; background: {{ s.bg }}; color: {{ s.fg }}; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">{{ s.n }}</div>
+            <div style="font-size: 14px; line-height: 1.55; color: {{ s.color }}; font-weight: {{ s.weight }}; padding-top: 3px;">{{ s.text }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- ================= STEP 2 — INVITE ================= -->
+    <sc-if value="{{ isNone }}" hint-placeholder-val="{{ true }}">
+      <div class="card">
+        <div style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 17px; margin-bottom: 4px;">Invite a parent</div>
+        <div style="font-size: 13.5px; color: #6B6580; font-weight: 600; line-height: 1.6; margin-bottom: 18px;">Enter their email address or phone number. We'll send them an invitation — they can only see your progress after they accept it.</div>
+        <form onSubmit="{{ onInvite }}" style="display: flex; flex-direction: column; gap: 10px;">
+          <input value="{{ contact }}" onChange="{{ onContactChange }}" placeholder="parent@example.com or +94 71 234 5678" style="font-size: 16px; padding: 14px 18px; border-radius: 999px; border: 2px solid {{ inputBorder }}; outline: none;"/>
+          <sc-if value="{{ showError }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size: 13px; font-weight: 600; color: #C2354A; padding-left: 4px;">{{ errorText }}</div>
+          </sc-if>
+          <button type="submit" style="background: {{ inviteBg }}; color: white; border: none; border-radius: 999px; padding: 15px; font-weight: 700; font-size: 16px; font-family: 'Baloo 2', sans-serif; cursor: {{ inviteCursor }}; box-shadow: 0 5px 0 {{ inviteShadow }}; margin-top: 4px;">Send invitation</button>
+        </form>
+      </div>
+    </sc-if>
+
+    <!-- ================= STEP 3 — PENDING ================= -->
+    <sc-if value="{{ isInvited }}" hint-placeholder-val="{{ false }}">
+      <div class="card" style="border: 2px solid #FFE1A0; background: #FFF9EC;">
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+          <div style="width: 28px; height: 28px; border-radius: 50%; background: #FFB800; color: white; font-size: 15px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">!</div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 17px; color: #6B4E00;">Waiting for them to accept</div>
+            <div style="font-size: 13.5px; line-height: 1.6; color: #6B4E00; margin-top: 4px;">We sent an invitation to <b>{{ contact }}</b>. Until they accept it, nobody can see your progress.</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap;">
+          <button onClick="{{ onResend }}" style="background: white; border: 1.5px solid #E3DEF5; border-radius: 999px; padding: 9px 16px; font-size: 13px; font-weight: 700; color: #4A4560; cursor: pointer; font-family: 'Inter', sans-serif;">Resend invitation</button>
+          <button onClick="{{ onCancel }}" style="background: white; border: 1.5px solid #F2C9D0; border-radius: 999px; padding: 9px 16px; font-size: 13px; font-weight: 700; color: #C2354A; cursor: pointer; font-family: 'Inter', sans-serif;">Cancel invitation</button>
+        </div>
+      </div>
+
+      <div style="background: #ECE8FB; border-radius: 16px; padding: 16px 18px;">
+        <div style="font-size: 12.5px; font-weight: 700; color: #4A4560; margin-bottom: 10px;">PROTOTYPE ONLY — the real invitation is a signed link sent by email or SMS.</div>
+        <button onClick="{{ onAccept }}" style="background: #6C4FF6; color: white; border: none; border-radius: 999px; padding: 10px 18px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif;">Simulate the parent accepting</button>
+      </div>
+    </sc-if>
+
+    <!-- ================= STEP 4 — ACCEPTED ================= -->
+    <sc-if value="{{ isAccepted }}" hint-placeholder-val="{{ false }}">
+      <div class="card" style="border: 2px solid #A8E6C0; background: #F1FCF5;">
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+          <div style="width: 28px; height: 28px; border-radius: 50%; background: #2FAE63; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg width="16" height="16" viewBox="0 0 22 22" fill="none"><path d="M5 11.5L9.5 16L17 6" stroke="white" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 17px; color: #1B6B3A;">Parent connected</div>
+            <div style="font-size: 13.5px; line-height: 1.6; color: #1B6B3A; margin-top: 4px;"><b>{{ contact }}</b> accepted the invitation and can now see your progress.</div>
+          </div>
+        </div>
+        <a href="Parent Dashboard.dc.html" style="display: block; text-align: center; background: #6C4FF6; color: white; border-radius: 999px; padding: 15px; font-weight: 700; font-size: 16px; font-family: 'Baloo 2', sans-serif; box-shadow: 0 5px 0 #4B3AC7; margin-top: 18px;">Open parent dashboard</a>
+      </div>
+
+      <div class="card">
+        <div style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 16px; margin-bottom: 10px;">What they can see</div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <sc-for list="{{ visibility }}" as="v" hint-placeholder-count="4">
+            <div style="display: flex; align-items: flex-start; gap: 10px; font-size: 13.5px; line-height: 1.6; color: {{ v.color }};">
+              <span style="font-weight: 800; flex-shrink: 0;">{{ v.mark }}</span>
+              <span>{{ v.text }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <button onClick="{{ onRevoke }}" style="background: white; border: 1.5px solid #F2C9D0; border-radius: 999px; padding: 9px 16px; font-size: 13px; font-weight: 700; color: #C2354A; cursor: pointer; font-family: 'Inter', sans-serif; margin-top: 16px;">{{ revokeLabel }}</button>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const STEPS = [
+  'Create an account, or use the one your school gave you.',
+  "Enter a parent's email address or phone number.",
+  'They receive an invitation.',
+  'Once they accept, they can see your progress.',
+];
+
+// What a connected parent may and may not see. Stated on the child's side too,
+// so the trade is visible to the person doing the inviting.
+const VISIBILITY = [
+  { ok: true, text: 'XP earned, streak, and which stage you are on' },
+  { ok: true, text: 'How much of the course you have completed' },
+  { ok: false, text: 'Your individual answers or the mistakes you made' },
+  { ok: false, text: 'Anything you write in the essay and letter tasks' },
+];
+
+class Component extends DCLogic {
+  state = (() => {
+    const link = window.loadParentLink();
+    return { link, contact: link.contact || '', error: '', armRevoke: false };
+  })();
+
+  persist = (link, extra) => {
+    window.saveParentLink(link);
+    this.setState(Object.assign({ link }, extra || {}));
+  };
+
+  onContactChange = (e) => this.setState({ contact: e.target.value, error: '' });
+
+  onInvite = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const contact = this.state.contact.trim();
+    const channel = window.parentContactChannel(contact);
+    if (!channel) {
+      this.setState({ error: contact ? 'That does not look like an email address or phone number.' : 'Enter an email address or phone number first.' });
+      return;
+    }
+    this.persist({ status: 'invited', contact, channel, invitedAt: Date.now(), acceptedAt: null }, { error: '' });
+  };
+
+  onResend = () => this.persist(Object.assign({}, this.state.link, { invitedAt: Date.now() }));
+  onCancel = () => this.persist(JSON.parse(JSON.stringify(window.PARENT_LINK_DEFAULT)), { contact: '', error: '' });
+
+  // Stands in for the parent opening the emailed link and accepting.
+  onAccept = () => this.persist(Object.assign({}, this.state.link, { status: 'accepted', acceptedAt: Date.now() }));
+
+  // Revoking is destructive for the parent, so it takes a second click.
+  onRevoke = () => {
+    if (!this.state.armRevoke) { this.setState({ armRevoke: true }); return; }
+    this.persist(JSON.parse(JSON.stringify(window.PARENT_LINK_DEFAULT)), { contact: '', armRevoke: false });
+  };
+
+  renderVals() {
+    const { link, contact, error, armRevoke } = this.state;
+    const status = link.status;
+    // The step list doubles as a progress indicator: done steps go solid.
+    const reached = status === 'accepted' ? 4 : status === 'invited' ? 3 : 2;
+    const valid = !!window.parentContactChannel(contact);
+
+    return {
+      headerSub: status === 'accepted'
+        ? 'Connected to ' + link.contact
+        : status === 'invited' ? 'Invitation sent — waiting to be accepted' : 'Invite a parent to follow your progress',
+
+      steps: STEPS.map((text, i) => {
+        const n = i + 1;
+        const done = n <= reached;
+        return {
+          n: String(n), text,
+          bg: done ? '#6C4FF6' : '#ECE8FB',
+          fg: done ? 'white' : '#9B94BE',
+          color: done ? '#1E1B2E' : '#6B6580',
+          weight: n === reached ? '700' : '500',
+        };
+      }),
+
+      isNone: status === 'none',
+      isInvited: status === 'invited',
+      isAccepted: status === 'accepted',
+
+      contact: status === 'none' ? contact : link.contact,
+      onContactChange: this.onContactChange,
+      onInvite: this.onInvite,
+      showError: !!error,
+      errorText: error,
+      inputBorder: error ? '#F2C9D0' : '#D8D3EE',
+      inviteBg: valid ? '#6C4FF6' : '#C6BFE4',
+      inviteShadow: valid ? '#4B3AC7' : '#ADA5CE',
+      inviteCursor: valid ? 'pointer' : 'not-allowed',
+
+      onResend: this.onResend,
+      onCancel: this.onCancel,
+      onAccept: this.onAccept,
+
+      visibility: VISIBILITY.map(v => ({
+        mark: v.ok ? '✓' : '✕',
+        text: v.text,
+        color: v.ok ? '#1E1B2E' : '#6B6580',
+      })),
+      onRevoke: this.onRevoke,
+      revokeLabel: armRevoke ? 'Click again to remove access' : 'Remove parent access',
+    };
+  }
+}
+</script>
+</body>
+</html>

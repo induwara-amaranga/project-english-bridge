@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Englisher — code architecture</title>
+</head>
+<body>
+
+    <h1>Englisher — code architecture</h1>
+    
+    <p>A description of how the prototype is actually built, as of the current working tree.<br>
+    Written from the source, not from the design docs, so it records what the code does<br>
+    rather than what it was meant to do.</p>
+    
+    <hr>
+    
+    <h2>1. What the system is</h2>
+    
+    <p>Englisher is a bilingual (English / Sinhala) English-learning web app for Sinhala speakers, with three audiences:</p>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Audience</th>
+                <th>Screens</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Learner</strong></td>
+                <td>Homepage, Sign Up, Sign In, Placement Test, Course Roadmap, Course Map, Stage Lessons, Lesson, Exercise, Guided Essay, Solo Essay, Formal Letter, Progress, Profile</td>
+            </tr>
+            <tr>
+                <td><strong>Parent</strong></td>
+                <td>Parent Access, Parent Dashboard</td>
+            </tr>
+            <tr>
+                <td><strong>Admin</strong></td>
+                <td>Course Dashboard, Course Editor</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <p>It currently exists as a <strong>client-only prototype</strong>: 17 standalone HTML pages, no build step, no server, no authentication. Persistence is <code>localStorage</code>. There is no backend, but the code marks where one belongs (see §6).</p>
+    
+    <p><strong>Size:</strong> 4,811 lines across the 17 page files, plus 2,340 lines of shared JavaScript.</p>
+    
+    <hr>
+    
+    <h2>2. Runtime architecture</h2>
+    
+    <p>Every page is a self-contained HTML document with the same four-part shape:</p>
+    
+    <pre><code>&lt;head&gt;       loads shared modules, then the runtime
+&lt;x-dc&gt;       &lt;helmet&gt; for page CSS, then the markup template
+&lt;script      class Component extends DCLogic { state; renderVals() }
+ type="text/x-dc"&gt;</code></pre>
+    
+    <p><code>support.js</code> (1,912 lines, <strong>generated</strong> — the header says <code>GENERATED from dc-runtime/src/*.ts</code>) is a template runtime. It:</p>
+    
+    <ol>
+        <li>pulls <strong>React 18.3.1</strong> and <strong>ReactDOM</strong> from <code>unpkg.com</code> at page load,</li>
+        <li>parses the <code>&lt;x-dc&gt;</code> markup — a string template language with <code>{{ expr }}</code> interpolation, <code>&lt;sc-for list as&gt;</code> loops and <code>&lt;sc-if value&gt;</code> conditionals,</li>
+        <li>compiles it to React elements and mounts with <code>createRoot</code>,</li>
+        <li>exposes <code>DCLogic</code>, a React class component the page subclasses.</li>
+    </ol>
+    
+    <pre><code class="language-mermaid">flowchart LR
+  subgraph Page["one .dc.html page"]
+    T["&amp;lt;x-dc&amp;gt; template&lt;br/&gt;{{ }} · sc-for · sc-if"]
+    L["class Component extends DCLogic&lt;br/&gt;state · setState · renderVals()"]
+  end
+  R["support.js&lt;br/&gt;template runtime"]
+  RE["React 18.3.1 + ReactDOM&lt;br/&gt;(CDN, runtime)"]
+  L -- "renderVals() returns a flat&lt;br/&gt;bag of values" --&gt; T
+  T --&gt; R
+  R --&gt; RE
+  RE --&gt; DOM["DOM"]</code></pre>
+    
+    <p><strong>The pages are already React underneath.</strong> <code>renderVals()</code> is the render method; <code>state</code> / <code>setState</code> are React's. What is bespoke is the template language and the fact that a page's entire view is driven by one flat object of primitives and callbacks.</p>
+    
+    <p><strong>Implication:</strong> React is fetched from a CDN at runtime, so pages require internet access and are not offline-capable or self-hosted.</p>
+    
+    <hr>
+    
+    <h2>3. Module structure</h2>
+    
+    <p>Three shared modules sit under the pages. There is no bundler and no <code>import</code> — modules communicate through <code>window</code>.</p>
+    
+    <pre><code class="language-mermaid">flowchart TD
+  SUP["support.js — runtime&lt;br/&gt;(all 17 pages)"]
+  CUR["curriculum.js — content model&lt;br/&gt;18 exports"]
+  PL["parent-link.js — parent link state&lt;br/&gt;4 exports"]
+
+  CUR --&gt; CE["Course Editor"]
+  CUR --&gt; CD["Course Dashboard"]
+  CUR --&gt; LES["Lesson"]
+  CUR --&gt; EX["Exercise"]
+
+  PL --&gt; PA["Parent Access"]
+  PL --&gt; PD["Parent Dashboard"]
+  PL --&gt; PRO["Profile"]
+
+  SUP -.-&gt; OTHER["the other 10 pages&lt;br/&gt;content hardcoded per page"]
+
+  style CUR fill:#ECE8FB,stroke:#6C4FF6
+  style PL fill:#ECE8FB,stroke:#6C4FF6
+  style OTHER fill:#FFE9E5,stroke:#FF6B4A</code></pre>
+    
+    <h3><code>curriculum.js</code> — the content model (376 lines)</h3>
+    
+    <p>The most important file in the project. It owns:</p>
+    
+    <ul>
+        <li><code>CURRICULUM_DEFAULT</code> — the seed content tree</li>
+        <li><code>TYPE_META</code> — the exercise-type registry, the single place a type is declared</li>
+        <li><strong>Card helpers</strong> — <code>makeCard</code>, <code>ensureCards</code>, <code>syncLessonFromCards</code>, <code>syncExerciseFromCards</code>, <code>normaliseCurriculum</code>, <code>cardGridColumn</code></li>
+        <li><strong>Markup helpers</strong> — <code>parseRich</code>, <code>inlineRuns</code>, <code>plainText</code> for the lightweight <code>**bold** *italic* [link]() ![img]() - bullet</code> syntax</li>
+        <li><strong>Persistence</strong> — <code>loadCurriculum</code>, <code>saveCurriculum</code></li>
+        <li><code>repairUnlocks</code> — keeps stage unlock rules consistent after reordering</li>
+    </ul>
+    
+    <p>It is plain ES5-style JavaScript with no dependency on the runtime, so it is the one part of the codebase that ports to any framework unchanged.</p>
+    
+    <h3><code>parent-link.js</code> — parent link state (52 lines)</h3>
+    
+    <p>A small, well-shaped module: one state object (<code>status</code>, <code>contact</code>, <code>channel</code>, timestamps), load/save, and <code>parentContactChannel</code> for validating an email or phone. Shared correctly by all three pages that need it.</p>
+    
+    <hr>
+    
+    <h2>4. Content model</h2>
+    
+    <p>A lesson and an exercise are both <strong>an ordered list of cards</strong>, each card holding one thing and declaring which column it occupies.</p>
+    
+    <pre><code class="language-mermaid">erDiagram
+  CURRICULUM ||--o{ STAGE : stages
+  STAGE ||--o{ LESSON : lessons
+  LESSON ||--o{ CARD : cards
+  LESSON ||--o{ EXERCISE : exercises
+  EXERCISE ||--o{ CARD : cards
+
+  STAGE { string id  int order  object title  object unlock  object theme }
+  LESSON { string id  int order  string kind  object title }
+  EXERCISE { string id  string type_derived }
+  CARD { string id  string type  string column  object body_or_prompt  object payload  object feedback }</code></pre>
+    
+    <ul>
+        <li><code>type</code> is <code>text</code> or one of the five exercise types in <code>TYPE_META</code> (<code>mcq</code>, <code>gap_fill</code>, <code>drag_order</code>, <code>match</code>, <code>free_text</code>).</li>
+        <li><code>column</code> is <code>left</code>, <code>right</code> or <code>full</code>; <code>full</code> spans both and breaks the run so the columns stay level. Rendering uses CSS grid auto-placement rather than pre-splitting the list into rows.</li>
+        <li>Ids are <strong>stable slugs, never array indices</strong>, so reordering never invalidates a learner's progress rows.</li>
+    </ul>
+    
+    <h3>Backward compatibility</h3>
+    
+    <p><code>cards</code> is the source of truth. The pre-cards fields — <code>lesson.explanation</code> and an exercise's own <code>type</code> / <code>prompt</code> / <code>payload</code> / <code>feedback</code> — are <strong>re-derived</strong> on every edit by <code>syncLessonFromCards</code>. Older content is migrated on load by <code>ensureCards</code>, which is idempotent. This is why the Course Dashboard still works without knowing cards exist.</p>
+    
+    <hr>
+    
+    <h2>5. State and persistence</h2>
+    
+    <p>Two independent slices, two <code>localStorage</code> keys:</p>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Key</th>
+                <th>Owner</th>
+                <th>Written by</th>
+                <th>Read by</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>englisher.curriculum.draft</code></td>
+                <td><code>curriculum.js</code></td>
+                <td>Course Editor (Save draft)</td>
+                <td>Editor, Dashboard, Lesson, Exercise</td>
+            </tr>
+            <tr>
+                <td><code>englisher.parent.link</code></td>
+                <td><code>parent-link.js</code></td>
+                <td>Parent Access</td>
+                <td>Parent Access, Parent Dashboard, Profile</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <pre><code class="language-mermaid">flowchart LR
+  DEF["CURRICULUM_DEFAULT&lt;br/&gt;(seed)"] --&gt; LOAD["loadCurriculum()"]
+  LS[("localStorage&lt;br/&gt;englisher.curriculum.draft")] --&gt; LOAD
+  LOAD --&gt; NORM["normaliseCurriculum()&lt;br/&gt;migrate + derive"]
+  NORM --&gt; ED["Course Editor&lt;br/&gt;edit cards"]
+  ED -- "saveCurriculum()" --&gt; LS
+  NORM --&gt; LP["Lesson / Exercise&lt;br/&gt;render cards"]
+  NORM --&gt; DASH["Course Dashboard&lt;br/&gt;counts + checks"]</code></pre>
+    
+    <p>Within a page, state is a single React component's <code>state</code>. Editing follows a clone-mutate-set pattern (<code>edit(mutator)</code> in the Course Editor clones the whole curriculum, applies the change, re-derives, and calls <code>setState</code>). This is simple and predictable, and fine at this data size.</p>
+    
+    <p><strong>There is no session, no user identity, and no server.</strong> Learner progress is not persisted at all — it is hardcoded (see §7).</p>
+    
+    <hr>
+    
+    <h2>6. Where the backend belongs</h2>
+    
+    <p>The code marks its own seams. <code>curriculum.js</code> states that in production the content object is served by <code>GET /api/curriculum</code> and written back by <code>PUT /api/admin/curriculum</code>; analytics come from <code>GET /api/admin/analytics</code> and are explicitly <em>not</em> part of the content object, "because content is edited and analytics are observed". <code>parent-link.js</code> notes that its state is really a row in a <code>parent_links</code> table.</p>
+    
+    <p>Those three boundaries — content, analytics, parent links — plus authentication and learner progress are the whole of the missing server.</p>
+    
+    <hr>
+    
+    <h2>7. Findings</h2>
+    
+    <h3>Strengths</h3>
+    
+    <ul>
+        <li><strong>The content model is genuinely good.</strong> Stable slug ids, a type registry that new exercise types plug into without touching page code, idempotent migration, and derived legacy fields for compatibility. It is framework-agnostic and portable.</li>
+        <li><strong>Clean separation for the parts that are shared.</strong> <code>parent-link.js</code> is a textbook small module: one concern, three consumers, no duplication.</li>
+        <li><strong>The admin editor is a real application</strong>, not a mock — tree navigation, live preview, two-click armed deletes, reordering, and a draft/save cycle.</li>
+        <li><strong>Deliberate, documented design decisions</strong> throughout, including the API seams above.</li>
+    </ul>
+    
+    <h3>Weaknesses</h3>
+    
+    <p><strong>1. Content is duplicated across pages — and the copies disagree.</strong><br>
+    Only <strong>4 of 17 pages</strong> read <code>curriculum.js</code>. The rest hardcode their own content.</p>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Source</th>
+                <th>Stages</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>curriculum.js</code></td>
+                <td><strong>3</strong> — Tenses, Complex Sentences, Sinhala–English Translation</td>
+            </tr>
+            <tr>
+                <td>Course Roadmap</td>
+                <td><strong>8</strong></td>
+            </tr>
+            <tr>
+                <td>Progress</td>
+                <td><strong>8</strong></td>
+            </tr>
+            <tr>
+                <td>Stage Lessons</td>
+                <td><strong>8</strong></td>
+            </tr>
+            <tr>
+                <td>Parent Dashboard</td>
+                <td><strong>8</strong></td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <p>Five independent copies of the stage list, and the authored curriculum disagrees with every page that displays it. Editing a course title in the admin editor changes nothing on the roadmap.</p>
+    
+    <p><strong>2. Learner progress is faked separately per page, inconsistently.</strong></p>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Page</th>
+                <th>Constants</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Course Roadmap</td>
+                <td><code>DEMO_XP 240</code>, <code>DEMO_STREAK 7</code>, <code>CURRENT_STAGE 2</code>, <code>CURRENT_PCT 60</code></td>
+            </tr>
+            <tr>
+                <td>Progress</td>
+                <td><code>DEMO_XP 240</code>, <code>DEMO_STREAK 7</code>, <code>CURRENT_STAGE 2</code>, <code>CURRENT_PCT 60</code></td>
+            </tr>
+            <tr>
+                <td>Stage Lessons</td>
+                <td><code>CURRENT_STAGE 2</code>, <code>CURRENT_DONE 2</code></td>
+            </tr>
+            <tr>
+                <td>Parent Dashboard</td>
+                <td><code>TOTAL_XP 240</code>, <code>STREAK 5</code>, <code>CURRENT_STAGE 2</code>, <code>CURRENT_PCT 60</code></td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <p>The same learner has a <strong>7-day streak on Progress and a 5-day streak on the Parent Dashboard</strong>. There is no progress model — only four sets of constants that have already drifted apart.</p>
+    
+    <p><strong>3. No design tokens in code.</strong> <strong>739 hardcoded hex colours</strong> across the 17 pages (145 in the Course Editor alone). The palette exists as variables in Figma (<code>Englisher/Color</code>, <code>Englisher/Layout</code>) but nothing exports it, so every colour change is a find-and-replace across the codebase.</p>
+    
+    <p><strong>4. No component reuse.</strong> Every button, card, field and nav bar is written inline in each page. Figma has proper components with variants (Button, TextField, StepCard, Settings row); the code has none.</p>
+    
+    <p><strong>5. Nothing is testable.</strong> No modules, no exports, no build, no test runner. Logic worth testing — <code>parseRich</code>, the card migration, exercise grading — is reachable only by loading a page in a browser.</p>
+    
+    <p><strong>6. The runtime is a dead end for production.</strong> No routing, no code splitting, no build step, and React fetched from a CDN at page load.</p>
+    
+    <hr>
+    
+    <h2>8. Assessment</h2>
+    
+    <p>The project has a <strong>strong data layer wrapped in a prototype shell</strong>. The content model, the type registry and the migration logic are production-quality thinking. Everything above them — rendering, state, styling, navigation — is prototype scaffolding that has reached its ceiling: a 1,450-line page written in a bespoke template language, five copies of the same content, and 739 loose colour literals.</p>
+    
+    <p>The most valuable, most portable asset is <code>curriculum.js</code>. The least valuable is the markup.</p>
+    
+    <h3>Recommended order of work</h3>
+    
+    <ol>
+        <li><strong>Make the pages read the curriculum.</strong> Deleting the four duplicate stage lists is the single highest-value change available, and it can be done inside the current prototype.</li>
+        <li><strong>Introduce a progress model</strong> — one module, one shape, one source — replacing the four sets of demo constants.</li>
+        <li><strong>Export the Figma variables as design tokens</strong> and replace the 739 literals.</li>
+        <li><strong>Then</strong> move to a real frontend, keeping <code>curriculum.js</code> as the typed API contract. Order: schema → learner flow → auth and persistence → admin editor last.</li>
+    </ol>
+    
+    <p>Steps 1–3 are worth doing regardless of whether a rewrite happens, and they make a rewrite substantially cheaper if it does.</p>
+    
+    <hr>
+    
+    <h2>Appendix — file inventory</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>File</th>
+                <th style="text-align: right;">Lines</th>
+                <th>Reads</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Course Editor.dc.html</td>
+                <td style="text-align: right;">1,450</td>
+                <td>curriculum</td>
+            </tr>
+            <tr>
+                <td>Exercise.dc.html</td>
+                <td style="text-align: right;">489</td>
+                <td>curriculum</td>
+            </tr>
+            <tr>
+                <td>Course Dashboard.dc.html</td>
+                <td style="text-align: right;">331</td>
+                <td>curriculum</td>
+            </tr>
+            <tr>
+                <td>Course Roadmap.dc.html</td>
+                <td style="text-align: right;">315</td>
+                <td>—</td>
+            </tr>
+            <tr>
+                <td>Lesson.dc.html</td>
+                <td style="text-align: right;">253</td>
+                <td>curriculum</td>
+            </tr>
+            <tr>
+                <td>Placement Test.dc.html</td>
+                <td style="text-align: right;">235</td>
+                <td>—</td>
+            </tr>
+            <tr>
+                <td>Parent Access.dc.html</td>
+                <td style="text-align: right;">231</td>
+                <td>parent-link</td>
+            </tr>
+            <tr>
+                <td>Stage Lessons.dc.html</td>
+                <td style="text-align: right;">224</td>
+                <td>—</td>
+            </tr>
+            <tr>
+                <td>Duolingo Style Homepage.dc.html</td>
+                <td style="text-align: right;">211</td>
+                <td>—</td>
+            </tr>
+            <tr>
+                <td>Sign Up.dc.html</td>
+                <td style="text-align: right;">158</td>
+                <td>—</td>
+            </tr>
+            <tr>
+                <td>Parent Dashboard.dc.html</td>
+                <td style="text-align: right;">151</td>
+                <td>parent-link</td>
+            </tr>
+            <tr>
+                <td>Sign In.dc.html</td>
+                <td style="text-align: right;">146</td>
+                <td>—</td>
+            </tr>
+            <tr>
+                <td>Progress.dc.html</td>
+                <td style="text-align: right;">142</td>
+                <td>—</td>
+            </tr>
+            <tr>
+                <td>Profile.dc.html</td>
+                <td style="text-align: right;">136</td>
+                <td>parent-link</td>
+            </tr>
+            <tr>
+                <td>Formal Letter.dc.html</td>
+                <td style="text-align: right;">114</td>
+                <td>—</td>
+            </tr>
+            <tr>
+                <td>Solo Essay.dc.html</td>
+                <td style="text-align: right;">114</td>
+                <td>—</td>
+            </tr>
+            <tr>
+                <td>Guided Essay.dc.html</td>
+                <td style="text-align: right;">111</td>
+                <td>—</td>
+            </tr>
+            <tr>
+                <td><strong>support.js</strong></td>
+                <td style="text-align: right;">1,912</td>
+                <td>runtime (generated)</td>
+            </tr>
+            <tr>
+                <td><strong>curriculum.js</strong></td>
+                <td style="text-align: right;">376</td>
+                <td>shared</td>
+            </tr>
+            <tr>
+                <td><strong>parent-link.js</strong></td>
+                <td style="text-align: right;">52</td>
+                <td>shared</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <p>Related: <a href="FIGMA.md">FIGMA.md</a> maps these screens to the design file.</p>
+
+</body>
+</html>

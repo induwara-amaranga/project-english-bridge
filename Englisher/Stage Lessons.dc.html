@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Inter:wght@400;500;600;700&family=Noto+Sans+Sinhala:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; background: #FFFFFF; }
+    * { box-sizing: border-box; }
+    a { color: #FFD976; text-decoration: none; }
+    @keyframes float-node { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+    @keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(255,184,0,0.5); } 100% { box-shadow: 0 0 0 14px rgba(255,184,0,0); } }
+  </style>
+</helmet>
+
+<div style="font-family: 'Inter', sans-serif; color: white; min-height: 100vh; position: relative; overflow: hidden; background: #FFFFFF; padding-bottom: 60px;">
+
+  <div style="position: relative; z-index: 2; background: #6C4FF6; padding: 24px 24px 32px;">
+    <div style="position: relative; display: flex; align-items: flex-start; justify-content: center;">
+      <div style="width: 100%; max-width: 640px; display: flex; align-items: center; gap: 14px;">
+        <div style="width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="white"><circle cx="11" cy="7" r="4"/><path d="M3 20c0-4 3.5-7 8-7s8 3 8 7" /></svg>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.22); border-radius: 999px; padding: 8px 14px;">
+            <div style="width: 16px; height: 16px; background: #FFB800; clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);"></div>
+            <span style="color: white; font-weight: 700; font-size: 14px;">240 XP</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.22); border-radius: 999px; padding: 8px 14px;">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="#FF6B4A"><path d="M8 1C8 1 5 5 5 9C5 11.5 6.5 13.5 8 13.5C9.5 13.5 11 11.5 11 9C11 7.5 10.3 6.5 9.7 6.5C9.7 8 9 9 8.3 9C9 6.5 8 4.5 8 1Z"/></svg>
+            <span style="color: white; font-weight: 700; font-size: 14px;">7-day streak</span>
+          </div>
+        </div>
+      </div>
+      <button onClick="{{ toggleLang }}" style="position: absolute; right: 0; top: 0; display: flex; align-items: center; gap: 8px; background: #ECE8FB; border: none; border-radius: 999px; padding: 6px; cursor: pointer;">
+        <span style="padding: 6px 12px; border-radius: 999px; font-weight: 700; font-size: 13px; background: {{ enChipBg }}; color: {{ enChipColor }};">EN</span>
+        <span style="padding: 6px 12px; border-radius: 999px; font-weight: 700; font-size: 13px; background: {{ siChipBg }}; color: {{ siChipColor }};">SI</span>
+      </button>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; top: 100px; bottom: 0; z-index: 0; overflow: hidden;">
+    <img src="assets/stage_bg_planets.png" alt="" style="width: 100%; height: 100%; min-height: 1006px; object-fit: cover; object-position: center top; opacity: 0.7;"/>
+  </div>
+
+  <div style="position: relative; z-index: 2; max-width: 640px; margin: 0 auto; padding: 24px 24px 0;">
+    <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 28px;">
+      <a href="Course Roadmap.dc.html" style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; backdrop-filter: blur(4px);">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 3L5 9L11 15" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.7); letter-spacing: 0.06em;">STAGE {{ stageNumber }} · WORLD</div>
+        <h1 style="font-family: {{ titleFont }}; font-weight: 800; font-size: 24px; line-height: 1.3; margin: 2px 0 0; text-shadow: 0 2px 12px rgba(0,0,0,0.4);">{{ stageTitle }}</h1>
+      </div>
+      <div style="width: 60px; height: 60px; border-radius: 50%; background: {{ planetGradient }}; margin-left: auto; flex-shrink: 0; position: relative; box-shadow: {{ planetGlow }};">
+        <div style="position: absolute; top: 9px; left: 11px; width: 18px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.4);"></div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 42px; padding-bottom: 40px; position: relative;">
+      <svg style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 0;" width="240" height="{{ pathHeight }}" viewBox="0 0 240 {{ pathHeight }}">
+        <path d="{{ connectorPath }}" stroke="#3F3A55" stroke-width="3" stroke-dasharray="2 12" stroke-linecap="round" fill="none"/>
+      </svg>
+      <sc-for list="{{ lessons }}" as="lesson" hint-placeholder-count="5">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; transform: translateX({{ lesson.offset }}px); position: relative; z-index: 1;">
+          <div style="position: relative;">
+            <sc-if value="{{ lesson.isNext }}" hint-placeholder-val="{{ true }}">
+              <div style="position: absolute; inset: 0; border-radius: 50%; animation: pulse-ring 1.8s ease-out infinite;"></div>
+            </sc-if>
+            <button onClick="{{ lesson.onClick }}" style="width: 78px; height: 78px; border-radius: 50%; background: {{ lesson.bg }}; border: 4px solid {{ lesson.border }}; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: {{ lesson.shadow }}; animation: {{ lesson.floatAnim }}; position: relative;">
+              <div style="position: absolute; top: 10px; left: 14px; width: 20px; height: 11px; border-radius: 50%; background: rgba(255,255,255,0.28);"></div>
+              <sc-if value="{{ lesson.isCheckpoint }}" hint-placeholder-val="{{ false }}">
+                <svg width="32" height="32" viewBox="0 0 30 30" fill="white"><path d="M15 3L18 11H27L20 16.5L22.5 25L15 20L7.5 25L10 16.5L3 11H12Z"/></svg>
+              </sc-if>
+              <sc-if value="{{ lesson.isLocked }}" hint-placeholder-val="{{ false }}">
+                <svg width="28" height="28" viewBox="0 0 20 20" fill="none"><rect x="5" y="9" width="10" height="8" rx="2" fill="white" opacity="0.85"/><path d="M7 9V6.5C7 4.5 8.3 3 10 3C11.7 3 13 4.5 13 6.5V9" stroke="white" stroke-width="1.8" fill="none" opacity="0.85"/></svg>
+              </sc-if>
+              <sc-if value="{{ lesson.isDone }}" hint-placeholder-val="{{ false }}">
+                <svg width="30" height="30" viewBox="0 0 22 22" fill="none"><path d="M5 11.5L9.5 16L17 6" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </sc-if>
+              <sc-if value="{{ lesson.isNext }}" hint-placeholder-val="{{ true }}">
+                <svg width="28" height="28" viewBox="0 0 26 26" fill="white"><path d="M8 5L20 13L8 21Z"/></svg>
+              </sc-if>
+            </button>
+          </div>
+          <span style="height: 20px; line-height: 20px; font-size: 13px; font-weight: 700; text-align: center; color: {{ lesson.labelColor }}; text-shadow: 0 1px 6px rgba(0,0,0,0.5);">{{ lesson.label }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const STAGES = [
+  { en: 'Tenses', si: 'කාල වචන' },
+  { en: 'Complex Sentences', si: 'සංකීර්ණ වාක්‍ය' },
+  { en: 'Adjectives, Adverbs & Prepositions', si: 'විශේෂණ, ක්‍රියා විශේෂණ සහ නිපාත' },
+  { en: 'Passive Voice', si: 'කර්ම කාරකය' },
+  { en: 'Sinhala–English Translation', si: 'සිංහල–ඉංග්‍රීසි පරිවර්තනය' },
+  { en: 'Guided Essays', si: 'මඟපෙන්වූ රචනා' },
+  { en: 'Solo Essays', si: 'ස්වාධීන රචනා' },
+  { en: 'Formal Letters', si: 'විධිමත් ලිපි' },
+];
+
+// Stages 6–8 finish with a writing task instead of a checkpoint exercise. These
+// screens already link back to `Stage Lessons.dc.html?stage=N`, so this closes
+// the loop they were built for.
+const STAGE_TASKS = {
+  6: 'Guided Essay.dc.html',
+  7: 'Solo Essay.dc.html',
+  8: 'Formal Letter.dc.html',
+};
+const PLANET_GRADIENTS = [
+  'radial-gradient(circle at 35% 30%, #6EE7A8, #2FAE63 70%)',
+  'radial-gradient(circle at 35% 30%, #6EF2E4, #0FA593 70%)',
+  'radial-gradient(circle at 35% 30%, #A78BFA, #6C4FF6 70%)',
+  'radial-gradient(circle at 35% 30%, #FF9B7E, #FF6B4A 70%)',
+  'radial-gradient(circle at 35% 30%, #FFD976, #FFB800 70%)',
+  'radial-gradient(circle at 35% 30%, #FF8B98, #FF4D5E 70%)',
+  'radial-gradient(circle at 35% 30%, #8C7BF0, #5539E0 70%)',
+  'radial-gradient(circle at 35% 30%, #8A84A8, #3A3550 70%)',
+];
+// Horizontal offsets of each node from the column centre, and the flex gap that
+// puts 150px between node centres — both read off the Figma connector path
+// (44:33), whose anchors sit at x 640/720/570/730/590 and y 269→869.
+const OFFSETS = [0, 80, -70, 90, -50];
+const V_STEP = 108;   // node (78) + gap (10) + label (20)
+const V_GAP = 42;     // V_STEP + V_GAP = 150px between node centres
+
+// Demo progress, kept in step with Course Roadmap's — otherwise the roadmap can
+// call a stage "completed" while this screen shows it half done.
+const CURRENT_STAGE = 2;
+const CURRENT_DONE = 2;
+
+// Course Roadmap already navigates into locked stages, so this screen matches
+// it: the lock styling still communicates progression, but every node opens for
+// review. Set to false once real progress gating replaces the demo constants —
+// then onClick falls back to blocking locked nodes.
+const PREVIEW_LOCKED = true;
+
+class Component extends DCLogic {
+  state = { stageIndex: 0, lang: 'en' };
+
+  componentDidMount() {
+    const params = new URLSearchParams(window.location.search);
+    const stage = parseInt(params.get('stage'), 10);
+    if (stage >= 1 && stage <= STAGES.length) this.setState({ stageIndex: stage - 1 });
+  }
+
+  toggleLang = () => this.setState(s => ({ lang: s.lang === 'en' ? 'si' : 'en' }));
+
+  renderVals() {
+    const idx = this.state.stageIndex;
+    const stage = STAGES[idx];
+    const isSi = this.state.lang === 'si';
+    // Finished stages show every node done — including the checkpoint, so a
+    // completed writing task can be reopened for review.
+    const stageNo = idx + 1;
+    const doneCount = stageNo < CURRENT_STAGE ? OFFSETS.length
+      : stageNo === CURRENT_STAGE ? CURRENT_DONE
+      : 0;
+    const lessons = OFFSETS.map((offset, i) => {
+      const isCheckpointRaw = i === OFFSETS.length - 1;
+      const isDone = i < doneCount;
+      const isNext = i === doneCount && !isCheckpointRaw;
+      const isLocked = i > doneCount;
+      const isCheckpoint = isCheckpointRaw && !isDone;
+      let bg, border, shadow, labelColor;
+      if (isDone) { bg = 'radial-gradient(circle at 35% 30%, #6EE7A8, #2FAE63 70%)'; border = 'rgba(255,255,255,0.5)'; shadow = '0 6px 0 rgba(0,0,0,0.2), 0 0 20px rgba(62,207,110,0.4)'; labelColor = '#D8FFE8'; }
+      else if (isNext) { bg = 'radial-gradient(circle at 35% 30%, #A78BFA, #6C4FF6 70%)'; border = '#FFD976'; shadow = '0 6px 0 rgba(0,0,0,0.25), 0 0 26px rgba(108,79,246,0.6)'; labelColor = 'white'; }
+      else if (isCheckpoint) { bg = 'radial-gradient(circle at 35% 30%, #FFD976, #FFB800 70%)'; border = 'rgba(255,255,255,0.5)'; shadow = '0 6px 0 rgba(0,0,0,0.22), 0 0 24px rgba(255,184,0,0.5)'; labelColor = '#FFEFC2'; }
+      else { bg = 'radial-gradient(circle at 35% 30%, #6B6480, #3A3550 70%)'; border = 'rgba(255,255,255,0.15)'; shadow = '0 4px 0 rgba(0,0,0,0.2)'; labelColor = 'rgba(255,255,255,0.5)'; }
+      return {
+        offset, isCheckpoint, isDone, isNext, isLocked, bg, border, shadow, labelColor,
+        floatAnim: (isNext || isCheckpoint) ? `float-node ${2.6 + i * 0.3}s ease-in-out infinite` : 'none',
+        label: isCheckpoint ? 'Checkpoint' : `Lesson ${i + 1}`,
+        onClick: (isLocked && !PREVIEW_LOCKED) ? undefined : () => {
+          // The writing stages end in a task screen rather than another lesson.
+          // Keyed on isCheckpointRaw, not isCheckpoint, so a finished checkpoint
+          // still reopens the task for review instead of falling back to a lesson.
+          const task = STAGE_TASKS[idx + 1];
+          window.location.href = (isCheckpointRaw && task)
+            ? task
+            : `Lesson.dc.html?stage=${idx + 1}&lesson=${i + 1}`;
+        },
+      };
+    });
+
+    const pathHeight = (OFFSETS.length - 1) * (V_STEP + V_GAP) + 78;
+    const pts = OFFSETS.map((o, i) => ({ x: 120 + o, y: i * (V_STEP + V_GAP) + 39 }));
+    let d = `M ${pts[0].x} ${pts[0].y}`;
+    for (let i = 1; i < pts.length; i++) {
+      const p = pts[i - 1], c = pts[i];
+      const midY = (p.y + c.y) / 2;
+      d += ` C ${p.x} ${midY}, ${c.x} ${midY}, ${c.x} ${c.y}`;
+    }
+
+    return {
+      stageNumber: idx + 1,
+      stageTitle: isSi ? stage.si : stage.en,
+      // Baloo 2 has no Sinhala coverage, so the SI title falls back to Noto.
+      titleFont: isSi ? "'Noto Sans Sinhala', 'Baloo 2', sans-serif" : "'Baloo 2', sans-serif",
+      planetGradient: PLANET_GRADIENTS[idx],
+      planetGlow: `0 0 24px 4px ${['#3ECF6E','#14D8C4','#6C4FF6','#FF6B4A','#FFB800','#FF4D5E','#5539E0','#3A3550'][idx]}66`,
+      lessons, pathHeight, connectorPath: d,
+      toggleLang: this.toggleLang,
+      enChipBg: isSi ? 'transparent' : '#FFFFFF',
+      enChipColor: isSi ? '#6B6580' : '#1E1B2E',
+      siChipBg: isSi ? '#FFFFFF' : 'transparent',
+      siChipColor: isSi ? '#1E1B2E' : '#6B6580',
+    };
+  }
+}
+</script>
+</body>
+</html>

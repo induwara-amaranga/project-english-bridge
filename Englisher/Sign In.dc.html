@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Inter:wght@400;500;600;700&family=Noto+Sans+Sinhala:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; background: #F7F5FF; }
+    * { box-sizing: border-box; }
+    a { color: #6C4FF6; text-decoration: none; }
+    a:hover { color: #5539E0; }
+    input::placeholder { color: #A8A0C7; }
+  </style>
+</helmet>
+
+<div style="font-family: {{ bodyFont }}; background: #F7F5FF; color: #1E1B2E; min-height: 100vh; display: flex; flex-direction: column;">
+
+  <nav style="display: flex; align-items: center; justify-content: space-between; padding: 20px 48px; max-width: 1280px; margin: 0 auto; width: 100%;">
+    <a href="Duolingo Style Homepage.dc.html" style="display: flex; align-items: center; gap: 10px;">
+      <div style="width: 36px; height: 36px; border-radius: 10px; background: #6C4FF6; display: flex; align-items: center; justify-content: center;">
+        <div style="width: 14px; height: 14px; border-radius: 50%; background: #F7F5FF;"></div>
+      </div>
+      <span style="font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 22px; color: #1E1B2E;">Englisher</span>
+    </a>
+    <button onClick="{{ toggleLang }}" style="display: flex; align-items: center; gap: 8px; background: #ECE8FB; border: none; border-radius: 999px; padding: 8px 6px; cursor: pointer;">
+      <span style="padding: 6px 12px; border-radius: 999px; font-weight: 700; font-size: 13px; background: {{ enChipBg }}; color: {{ enChipColor }};">EN</span>
+      <span style="padding: 6px 12px; border-radius: 999px; font-weight: 700; font-size: 13px; font-family: 'Noto Sans Sinhala', sans-serif; background: {{ siChipBg }}; color: {{ siChipColor }};">සිං</span>
+    </button>
+  </nav>
+
+  <div style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px 24px 64px;">
+    <div style="max-width: 440px; width: 100%;">
+      <h1 style="font-family: {{ headFont }}; font-weight: 800; font-size: 26px; margin: 0 0 12px; line-height: 1.35; text-align: center;">{{ framingLine }}</h1>
+
+      <form onSubmit="{{ handleSubmit }}" style="background: white; border-radius: 20px; padding: 32px; display: flex; flex-direction: column; gap: 18px; margin-top: 28px;">
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <label style="font-size: 14px; font-weight: 700; color: #4A4560;">{{ emailLabel }}</label>
+          <input type="email" value="{{ email }}" onChange="{{ onEmailChange }}" placeholder="{{ emailPlaceholder }}" style="font-size: 16px; padding: 14px 18px; border-radius: 999px; border: 2px solid #D8D3EE; font-family: 'Inter', sans-serif; outline: none;" style-focus="border-color: #6C4FF6;"/>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <label style="font-size: 14px; font-weight: 700; color: #4A4560;">{{ passwordLabel }}</label>
+          <input type="password" value="{{ password }}" onChange="{{ onPasswordChange }}" placeholder="{{ passwordPlaceholder }}" style="font-size: 16px; padding: 14px 18px; border-radius: 999px; border: 2px solid #D8D3EE; font-family: 'Inter', sans-serif; outline: none;" style-focus="border-color: #6C4FF6;"/>
+        </div>
+        <div style="text-align: right;">
+          <a href="#" style="font-size: 13px; font-weight: 600;">{{ forgotLabel }}</a>
+        </div>
+        <button type="submit" style="background: #6C4FF6; color: white; border: none; border-radius: 999px; padding: 16px; font-weight: 700; font-size: 16px; font-family: {{ headFont }}; cursor: pointer; box-shadow: 0 5px 0 #4B3AC7; margin-top: 8px;" style-hover="background: #5539E0;">{{ submitLabel }}</button>
+      </form>
+
+      <div style="display: flex; align-items: center; gap: 12px; margin-top: 22px;">
+        <div style="flex: 1; height: 1px; background: #D8D3EE;"></div>
+        <span style="font-size: 13px; font-weight: 600; color: #A8A0C7;">{{ orLabel }}</span>
+        <div style="flex: 1; height: 1px; background: #D8D3EE;"></div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 18px;">
+        <button onClick="{{ handleGoogle }}" style="display: flex; align-items: center; justify-content: center; gap: 10px; background: white; border: 2px solid #D8D3EE; border-radius: 999px; padding: 13px; font-weight: 700; font-size: 15px; font-family: {{ bodyFont }}; color: #1E1B2E; cursor: pointer;" style-hover="border-color: #6C4FF6;">
+          <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20.5H24v7h11.3C33.7 31.9 29.3 35 24 35c-6.1 0-11-4.9-11-11s4.9-11 11-11c2.8 0 5.3 1 7.3 2.7l5.4-5.4C33.5 7.1 29 5 24 5 13.5 5 5 13.5 5 24s8.5 19 19 19 19-8.5 19-19c0-1.3-.1-2.5-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l5.8 4.2C13.7 15.6 18.5 12.5 24 12.5c2.8 0 5.3 1 7.3 2.7l5.4-5.4C33.5 7.1 29 5 24 5 16.3 5 9.7 9.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 43c5.2 0 9.9-1.7 13.6-4.6l-6.3-5.3c-2 1.4-4.5 2.2-7.3 2.2-5.3 0-9.7-3.1-11.3-7.5l-5.9 4.5C9.5 38.5 16.2 43 24 43z"/><path fill="#1976D2" d="M43.6 20.5H42V20.5H24v7h11.3c-.8 2.3-2.2 4.2-4.1 5.6l6.3 5.3C41.4 35.3 43 30 43 24c0-1.3-.1-2.5-.4-3.5z"/></svg>
+          {{ googleLabel }}
+        </button>
+        <button onClick="{{ handleFacebook }}" style="display: flex; align-items: center; justify-content: center; gap: 10px; background: white; border: 2px solid #D8D3EE; border-radius: 999px; padding: 13px; font-weight: 700; font-size: 15px; font-family: {{ bodyFont }}; color: #1E1B2E; cursor: pointer;" style-hover="border-color: #6C4FF6;">
+          <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#1877F2" d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07c0 5.99 4.39 10.96 10.13 11.86v-8.4H7.09v-3.46h3.04V9.41c0-3 1.79-4.66 4.53-4.66 1.31 0 2.68.24 2.68.24v2.95h-1.51c-1.49 0-1.95.93-1.95 1.88v2.25h3.32l-.53 3.46h-2.79v8.4C19.61 23.03 24 18.06 24 12.07z"/></svg>
+          {{ facebookLabel }}
+        </button>
+      </div>
+
+      <div style="text-align: center; margin-top: 20px;">
+        <span style="font-size: 14px; color: #6B6580;">{{ noAccountLabel }}</span>
+        <a href="Sign Up.dc.html" style="font-weight: 700; font-size: 14px; margin-left: 4px;">{{ signUpLabel }}</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { lang: 'en', email: '', password: '' };
+
+  toggleLang = () => this.setState(s => ({ lang: s.lang === 'en' ? 'si' : 'en' }));
+  onEmailChange = (e) => this.setState({ email: e.target.value });
+  onPasswordChange = (e) => this.setState({ password: e.target.value });
+  handleSubmit = (e) => { e.preventDefault(); window.location.href = 'Course Roadmap.dc.html'; };
+  handleGoogle = () => { window.location.href = 'Course Roadmap.dc.html'; };
+  handleFacebook = () => { window.location.href = 'Course Roadmap.dc.html'; };
+
+  renderVals() {
+    const lang = this.state.lang;
+    const isSi = lang === 'si';
+    const bodyFont = isSi ? "'Noto Sans Sinhala', 'Inter', sans-serif" : "'Inter', sans-serif";
+    const headFont = isSi ? "'Noto Sans Sinhala', 'Baloo 2', sans-serif" : "'Baloo 2', sans-serif";
+
+    const copy = {
+      en: {
+        framing: 'Welcome back! Pick up right where you left off.',
+        emailLabel: 'Email address', emailPlaceholder: 'Email address',
+        passwordLabel: 'Password', passwordPlaceholder: 'Password',
+        forgot: 'Forgot password?',
+        submit: 'Sign in',
+        or: 'OR', google: 'Continue with Google', facebook: 'Continue with Facebook',
+        noAccount: "Don't have an account?", signUp: 'Sign up',
+      },
+      si: {
+        framing: 'නැවත සාදරයෙන් පිළිගනිමු! ඔබ නැවතුම් තැනින්ම ආරම්භ කරන්න.',
+        emailLabel: 'විද්‍යුත් තැපැල් ලිපිනය', emailPlaceholder: 'විද්‍යුත් තැපැල් ලිපිනය',
+        passwordLabel: 'මුරපදය', passwordPlaceholder: 'මුරපදය',
+        forgot: 'මුරපදය අමතකද?',
+        submit: 'පිවිසෙන්න',
+        or: 'හෝ', google: 'Google සමඟ ඉදිරියට යන්න', facebook: 'Facebook සමඟ ඉදිරියට යන්න',
+        noAccount: 'ගිණුමක් නැද්ද?', signUp: 'ලියාපදිංචි වන්න',
+      },
+    };
+    const c = copy[lang];
+
+    return {
+      bodyFont, headFont,
+      toggleLang: this.toggleLang,
+      framingLine: c.framing,
+      emailLabel: c.emailLabel, emailPlaceholder: c.emailPlaceholder,
+      passwordLabel: c.passwordLabel, passwordPlaceholder: c.passwordPlaceholder,
+      forgotLabel: c.forgot,
+      submitLabel: c.submit,
+      orLabel: c.or, googleLabel: c.google, facebookLabel: c.facebook,
+      noAccountLabel: c.noAccount, signUpLabel: c.signUp,
+      handleGoogle: this.handleGoogle, handleFacebook: this.handleFacebook,
+      email: this.state.email, password: this.state.password,
+      onEmailChange: this.onEmailChange, onPasswordChange: this.onPasswordChange,
+      handleSubmit: this.handleSubmit,
+      enChipBg: isSi ? 'transparent' : 'white',
+      enChipColor: isSi ? '#6B6580' : '#1E1B2E',
+      siChipBg: isSi ? 'white' : 'transparent',
+      siChipColor: isSi ? '#1E1B2E' : '#6B6580',
+    };
+  }
+}
+
+</script>
+</body>
+</html>
