@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Inter:wght@400;500;600;700&family=Noto+Sans+Sinhala:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; background: #F7F5FF; }
+    * { box-sizing: border-box; }
+    a { color: #6C4FF6; text-decoration: none; }
+  </style>
+</helmet>
+
+<div style="font-family: {{ bodyFont }}; background: #F7F5FF; color: #1E1B2E; min-height: 100vh; display: flex; flex-direction: column;">
+
+  <div style="display: flex; align-items: center; gap: 14px; padding: 20px 24px; max-width: 560px; margin: 0 auto; width: 100%;">
+    <div style="flex: 1; height: 8px; border-radius: 999px; background: #6C4FF6;"></div>
+    <div style="flex: 1; height: 8px; border-radius: 999px; background: #ECE8FB;"></div>
+    <div style="flex: 1; height: 8px; border-radius: 999px; background: #ECE8FB;"></div>
+    <div style="flex: 1; height: 8px; border-radius: 999px; background: #ECE8FB;"></div>
+    <button onClick="{{ toggleLang }}" style="background: #ECE8FB; border: none; border-radius: 999px; padding: 6px 12px; font-weight: 700; font-size: 12px; cursor: pointer; flex-shrink: 0; color: #6C4FF6;">{{ langToggleLabel }}</button>
+  </div>
+
+  <div style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px;">
+    <div style="max-width: 480px; width: 100%; text-align: center;">
+      <div style="font-size: 44px; margin-bottom: 8px;">🎯</div>
+      <h1 style="font-family: {{ headFont }}; font-weight: 800; font-size: 26px; margin: 0 0 8px;">{{ title }}</h1>
+      <p style="font-size: 15px; color: #6B6580; font-weight: 600; margin: 0 0 28px;">{{ subtitle }}</p>
+
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <sc-for list="{{ goals }}" as="goal" hint-placeholder-count="4">
+          <button onClick="{{ goal.onSelect }}" style="display: flex; align-items: center; gap: 14px; text-align: left; background: {{ goal.bg }}; border: 2px solid {{ goal.border }}; border-radius: 16px; padding: 16px 18px; cursor: pointer; font-family: {{ bodyFont }};">
+            <span style="font-size: 24px;">{{ goal.emoji }}</span>
+            <span style="font-weight: 700; font-size: 16px; color: {{ goal.textColor }};">{{ goal.label }}</span>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <div style="max-width: 480px; width: 100%; margin: 0 auto; padding: 0 24px 32px;">
+    <a href="Onboarding Language.dc.html" style="display: block; text-align: center; background: {{ continueBg }}; color: white; border: none; border-radius: 999px; padding: 16px; font-weight: 700; font-size: 16px; box-shadow: 0 5px 0 #4B3AC7;">{{ continueLabel }}</a>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { lang: 'en', selected: null };
+  toggleLang = () => this.setState(s => ({ lang: s.lang === 'en' ? 'si' : 'en' }));
+  select = (i) => this.setState({ selected: i });
+
+  renderVals() {
+    const lang = this.state.lang;
+    const isSi = lang === 'si';
+    const bodyFont = isSi ? "'Noto Sans Sinhala', 'Inter', sans-serif" : "'Inter', sans-serif";
+    const headFont = isSi ? "'Noto Sans Sinhala', 'Baloo 2', sans-serif" : "'Baloo 2', sans-serif";
+
+    const copy = {
+      en: {
+        title: 'Why are you learning English?',
+        subtitle: "We'll shape your course around this.",
+        goals: ['Pass an exam', 'Get a better job', 'Travel confidently', 'Just for myself'],
+        emojis: ['📝', '💼', '✈️', '🌱'],
+        continue: 'Continue',
+      },
+      si: {
+        title: 'ඔබ ඉංග්‍රීසි ඉගෙන ගන්නේ ඇයි?',
+        subtitle: 'මෙයට අනුව අපි ඔබේ පාඩම් සකසන්නෙමු.',
+        goals: ['විභාගයක් සමත් වීමට', 'වඩා හොඳ රැකියාවක් සඳහා', 'විශ්වාසයෙන් සංචාරය කිරීමට', 'මා වෙනුවෙන්ම'],
+        emojis: ['📝', '💼', '✈️', '🌱'],
+        continue: 'ඉදිරියට',
+      },
+    };
+    const c = copy[lang];
+    const sel = this.state.selected;
+
+    const goals = c.goals.map((label, i) => ({
+      label, emoji: c.emojis[i],
+      onSelect: () => this.select(i),
+      bg: sel === i ? '#ECE8FB' : 'white',
+      border: sel === i ? '#6C4FF6' : '#E4E0F5',
+      textColor: '#1E1B2E',
+    }));
+
+    return {
+      bodyFont, headFont, toggleLang: this.toggleLang,
+      langToggleLabel: isSi ? 'EN' : 'සිං',
+      title: c.title, subtitle: c.subtitle, goals,
+      continueLabel: c.continue,
+      continueBg: sel === null ? '#B5AFD4' : '#6C4FF6',
+    };
+  }
+}
+
+</script>
+</body>
+</html>

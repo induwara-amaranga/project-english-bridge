@@ -1,0 +1,57 @@
+/* Design tokens — extracted from the 739 hardcoded hex literals across the
+   17 prototype pages (see ARCHITECTURE.md, Weakness 3). One source now. */
+:root {
+  /* brand */
+  --c-primary: #6C4FF6;
+  --c-primary-hover: #5539E0;
+  --c-primary-shadow: #4B3AC7;
+  --c-primary-tint: #ECE8FB;
+  --c-primary-tint-2: #F7F5FF;
+  --c-primary-line: #D8D3EE;
+
+  /* ink */
+  --c-bg: #F7F5FF;
+  --c-surface: #FFFFFF;
+  --c-ink: #1E1B2E;
+  --c-ink-2: #4A4560;
+  --c-ink-soft: #6B6580;
+  --c-ink-faint: #9B94BE;
+  --c-ink-disabled: #B5AFD4;
+  --c-line: #E3DEF5;
+
+  /* disabled control */
+  --c-disabled: #C6BFE4;
+  --c-disabled-shadow: #ADA5CE;
+  --c-input-placeholder: #A8A0C7;
+
+  /* status */
+  --c-success: #3ECF6E;
+  --c-success-bg: #E3F9EB;
+  --c-success-ink: #1F7A44;
+  --c-success-ink-2: #2FAE63;
+  --c-danger: #FF6B4A;
+  --c-danger-2: #FF4D5E;
+  --c-danger-bg: #FFE9E5;
+  --c-danger-ink: #B23A20;
+  --c-danger-ink-2: #C2354A;
+  --c-warning: #FFB800;
+  --c-warning-bg: #FFF3D6;
+  --c-warning-ink: #B37E00;
+  --c-teal: #14D8C4;
+  --c-teal-2: #0FA593;
+
+  /* type */
+  --font-display: 'Baloo 2', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-si-body: 'Noto Sans Sinhala', 'Inter', sans-serif;
+  --font-si-display: 'Noto Sans Sinhala', 'Baloo 2', sans-serif;
+
+  /* shape */
+  --r-card: 20px;
+  --r-tile: 12px;
+  --r-pill: 999px;
+  --r-btn: 14px;
+
+  --shell-max: 640px;
+  --shell-max-wide: 940px;
+}

@@ -1,0 +1,35 @@
+/* Course Editor — ported class-for-class from Course Editor.dc.html so the
+   React rebuild matches the prototype's look, not just its behaviour. */
+
+.ed-shell { font-family: 'Inter', sans-serif; color: #1E1B2E; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+.ed-shell input, .ed-shell textarea, .ed-shell select { font-family: 'Inter', sans-serif; }
+.ed-shell input::placeholder, .ed-shell textarea::placeholder { color: #B5AFD4; }
+
+.fld { width: 100%; font-size: 13px; padding: 9px 12px; border-radius: 10px; border: 1.5px solid #E3DEF5; background: white; color: #1E1B2E; outline: none; }
+.fld:focus { border-color: #6C4FF6; }
+.lbl { font-size: 11px; font-weight: 700; color: #6B6580; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 6px; display: block; }
+.ed-row { display: flex; gap: 8px; align-items: center; }
+.iconbtn { width: 28px; height: 28px; border-radius: 8px; border: 1.5px solid #E3DEF5; background: white; color: #6B6580; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.iconbtn:hover { border-color: #6C4FF6; color: #6C4FF6; }
+.addbtn { align-self: flex-start; background: #ECE8FB; color: #6C4FF6; border: none; border-radius: 999px; padding: 8px 16px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; }
+.addbtn:hover { background: #DED7F8; }
+.savebtn { background: #6C4FF6; color: white; border: none; border-radius: 999px; padding: 9px 20px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Baloo 2', sans-serif; box-shadow: 0 3px 0 #4B3AC7; }
+.savebtn:hover { background: #5539E0; }
+.delbtn { border: 1.5px solid; border-radius: 999px; padding: 8px 14px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; white-space: nowrap; background: none; }
+.treeadd { display: flex; align-items: center; gap: 7px; border-radius: 10px; cursor: pointer; font-size: 12px; font-weight: 700; color: #9B94BE; background: none; border: none; width: 100%; text-align: left; }
+.treeadd:hover { background: #F2EFFC; color: #6C4FF6; }
+.fmtbar { display: flex; gap: 5px; margin-bottom: 6px; flex-wrap: wrap; }
+.fmtbtn { background: white; border: 1.5px solid #E3DEF5; border-radius: 8px; padding: 4px 9px; font-size: 12px; color: #4A4560; cursor: pointer; font-family: 'Inter', sans-serif; line-height: 1.5; }
+.fmtbtn:hover { border-color: #6C4FF6; color: #6C4FF6; background: #F7F5FF; }
+.hint { font-size: 11px; color: #9B94BE; margin-top: 5px; line-height: 1.6; }
+.hint code { font-family: ui-monospace, monospace; background: #F0EDFA; border-radius: 4px; padding: 1px 4px; }
+.moves { display: flex; gap: 1px; margin-left: auto; flex-shrink: 0; }
+.movebtn { width: 17px; height: 17px; display: flex; align-items: center; justify-content: center; border-radius: 5px; font-size: 10px; line-height: 1; cursor: pointer; background: none; border: none; }
+.movebtn:hover { background: #DED7F8; }
+.delcard:hover { background: #FFE9E5 !important; }
+.colsel { display: flex; gap: 6px; }
+.colbtn { flex: 1; min-width: 0; border: 1.5px solid #E3DEF5; border-radius: 10px; padding: 9px 6px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; background: white; }
+.pvgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: start; }
+.pvhead { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; }
+.cardbadge { font-size: 9px; font-weight: 700; color: white; border-radius: 5px; padding: 2px 5px; flex-shrink: 0; letter-spacing: 0.03em; }
+.treerow { display: flex; align-items: center; gap: 8px; border-radius: 10px; cursor: pointer; background: none; border: none; width: 100%; text-align: left; font-family: 'Inter', sans-serif; }

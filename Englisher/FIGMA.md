@@ -13,6 +13,10 @@ To pull a screen: `get_design_context` with the file key + the node ID below.
 | Homepage | `26:18` | [Duolingo Style Homepage.dc.html](Duolingo%20Style%20Homepage.dc.html) |
 | Sign Up | `32:20` | [Sign Up.dc.html](Sign%20Up.dc.html) |
 | Sign In | `69:50` | [Sign In.dc.html](Sign%20In.dc.html) |
+| Onboarding Goal | `171:191` | [Onboarding Goal.dc.html](Onboarding%20Goal.dc.html) |
+| Onboarding Language | `171:273` | [Onboarding Language.dc.html](Onboarding%20Language.dc.html) |
+| Onboarding Reminders | `171:223` | [Onboarding Reminders.dc.html](Onboarding%20Reminders.dc.html) |
+| Onboarding Walkthrough | `171:245` | [Onboarding Walkthrough.dc.html](Onboarding%20Walkthrough.dc.html) |
 | Placement Test | `43:33` | [Placement Test.dc.html](Placement%20Test.dc.html) |
 | Course Roadmap | `46:36` | [Course Roadmap.dc.html](Course%20Roadmap.dc.html) |
 | Course Map | `53:63` | — (longer variant of Course Roadmap; no code file) |
@@ -111,3 +115,30 @@ shipped pages still load Noto Sans Sinhala.
 - Figma has no CSS-grid equivalent, so the two-column grid is built as a vertical
   auto-layout of full-width rows, with side-by-side cards nested in a horizontal row.
   It matches visually; the responsive collapse below 760px exists only in code.
+- The four Onboarding frames sit in a new row below the main flow (x `7480`–`11920`,
+  y `2880`, under the Sign Up/Lesson/Exercise/Parent Dashboard columns) since they
+  weren't part of the file when the original row was laid out. Unlike most of the file,
+  they're bound to `Englisher/Color`/`Englisher/Layout` variables and the `Button`
+  component (`24:19`) rather than one-off hex/pixel values — worth matching this
+  pattern when new frames are added elsewhere.
+- The onboarding frames deliberately have **no site nav / brand header**, because the
+  `.dc.html` pages don't either — onboarding is a focused flow that starts straight at
+  the 4-segment progress bar. Don't "fix" this to match the other screens.
+- **The onboarding language toggle diverges from the rest of the file.** All four
+  onboarding frames use a single pill showing the language you'd switch *to* (`සිං` /
+  `EN`), and the four `.dc.html` pages mirror that. Every other screen (e.g. Placement
+  Test `43:33`) instead uses a segmented `Toggle` of `Seg EN` / `Seg SI` at 42×30.
+  Worth reconciling in one direction or the other.
+- **"Onboarding Reminders" no longer sets a reminder.** The frame and
+  `Onboarding Reminders.dc.html` are now a *streak-goal picker* (7 / 14 / 30 / 60 days);
+  the notification toggle and 🔔 that the name refers to were removed. The frame name,
+  file name and the `/onboarding/reminders` route in the proposed React flow all still
+  say "reminders" — rename together if renaming at all.
+- The Sinhala copy on the streak-goal options and on Reminders' heading/subheading was
+  written to fill the SI half of the bilingual copy deck and has **not** had
+  native-speaker review — same caveat the copy deck (`13:55`) already carries. Figma
+  holds only the EN side of this screen.
+- **Onboarding has no code-side route yet.** The four `.dc.html` prototypes exist and
+  now have matching Figma frames, but nothing in `app/src/features/learner` wires them
+  into the React app — see the "suggest an onboarding flow" thread for the proposed
+  `/onboarding/*` routes.
