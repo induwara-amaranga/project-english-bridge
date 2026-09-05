@@ -4,18 +4,22 @@ import { useCurriculum } from '../../hooks/useCurriculum';
 import { useProgress } from '../../hooks/useProgress';
 import { markLessonComplete } from '../../domain/progress';
 import { RichText } from '../../components/RichText';
+import { LangToggle } from '../../components/Primitives';
 import { LinkButton } from '../../components/Button';
-import { gradeCard, isAnswered, seededShuffle, type Answer, type DragOrderAnswer, type MatchAnswer } from '../../domain/grading';
-import type { Card, DragOrderPayload, GapFillPayload, MatchPayload, McqPayload } from '../../domain/types';
+import { gradeCard, isAnswered, seededShuffle, type Answer, type DragOrderAnswer, type MatchAnswer, type MultiSelectAnswer, type RubricAnswer } from '../../domain/grading';
+import type { Card, DragOrderPayload, EssayPayload, GapFillPayload, MatchPayload, McqPayload, MultiSelectPayload, RubricPayload } from '../../domain/types';
+import { CheckboxRow } from '../../components/Primitives';
 
 const COL_CLASS: Record<string, string> = { left: 'cardcell col-left', right: 'cardcell col-right', full: 'cardcell col-full' };
-type InteractiveCard = Extract<Card, { type: 'mcq' | 'gap_fill' | 'drag_order' | 'match' | 'free_text' }>;
+type InteractiveCard = Extract<Card, { type: 'mcq' | 'gap_fill' | 'drag_order' | 'match' | 'free_text' | 'multi_select' | 'essay' | 'rubric' }>;
 const isInteractive = (c: Card): c is InteractiveCard => c.type !== 'text';
 
 function defaultAnswer(card: Card): Answer {
   if (card.type === 'drag_order') return [];
   if (card.type === 'match') return { pending: null, pairs: {} };
   if (card.type === 'mcq') return null;
+  if (card.type === 'multi_select') return [];
+  if (card.type === 'rubric') return {};
   return '';
 }
 
@@ -35,6 +39,7 @@ export function ExercisePage() {
   const [checked, setChecked] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
   const [complete, setComplete] = useState(false);
+  const [lang, setLang] = useState<'en' | 'si'>('en');
 
   if (!stage || !lesson || exercises.length === 0) {
     return (
@@ -94,7 +99,10 @@ export function ExercisePage() {
             <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.75)', letterSpacing: '0.04em' }}>STAGE {stageIndex} · EXERCISE</div>
             <div style={{ fontWeight: 700, fontSize: 16, color: 'white' }}>Question {qIndex + 1} of {exercises.length}</div>
           </div>
-          <Link to={backHref} style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.18)', color: 'white', borderRadius: 10, padding: '9px 16px', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>Go to lessons</Link>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <LangToggle lang={lang} onToggle={() => setLang((l) => (l === 'en' ? 'si' : 'en'))} />
+            <Link to={backHref} style={{ background: 'rgba(255,255,255,0.18)', color: 'white', borderRadius: 10, padding: '9px 16px', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>Go to lessons</Link>
+          </div>
         </div>
         <div style={{ maxWidth: 940, margin: '14px auto 0', height: 8, borderRadius: 999, background: 'rgba(255,255,255,0.25)', overflow: 'hidden' }}>
           <div style={{ height: '100%', borderRadius: 999, background: '#FFD976', width: `${progressPct}%`, transition: 'width 0.3s' }} />
@@ -106,14 +114,18 @@ export function ExercisePage() {
           <>
             <div className="cardgrid">
               {(ex.cards || []).map((card) => (
-                <ExerciseCardView key={card.id} card={card} answer={answerFor(card)} setAnswer={(v) => setAnswer(card.id, v)} checked={checked} />
+                <ExerciseCardView key={card.id} card={card} answer={answerFor(card)} setAnswer={(v) => setAnswer(card.id, v)} checked={checked} lang={lang} />
               ))}
             </div>
 
             {checked && (
               <div style={{ background: allRight ? 'var(--c-success-bg)' : 'var(--c-danger-bg)', border: `1px solid ${allRight ? 'var(--c-success)' : 'var(--c-danger)'}`, borderRadius: 16, padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, fontWeight: 700, color: allRight ? 'var(--c-success-ink)' : 'var(--c-danger-ink)' }}>
-                  {!fb ? (allRight ? 'Correct.' : 'Not quite.') : allRight ? (fb.correct.en || 'Correct.') : (fb.incorrect.en || 'Not quite — have another look.')}
+                <p className={lang === 'si' ? 'si' : undefined} style={{ margin: 0, fontSize: 15, lineHeight: 1.6, fontWeight: 700, color: allRight ? 'var(--c-success-ink)' : 'var(--c-danger-ink)' }}>
+                  {!fb
+                    ? (allRight ? 'Correct.' : 'Not quite.')
+                    : allRight
+                      ? (lang === 'si' ? fb.correct.si || fb.correct.en : fb.correct.en) || 'Correct.'
+                      : (lang === 'si' ? fb.incorrect.si || fb.incorrect.en : fb.incorrect.en) || 'Not quite — have another look.'}
                 </p>
                 <button onClick={next} style={{ alignSelf: 'flex-end', background: 'var(--c-primary)', color: 'white', border: 'none', borderRadius: 12, padding: '12px 28px', fontWeight: 700, fontSize: 15, fontFamily: 'var(--font-display)', cursor: 'pointer' }}>
                   {qIndex + 1 >= exercises.length ? 'Finish' : 'Next question'}
@@ -146,13 +158,16 @@ export function ExercisePage() {
   );
 }
 
-function ExerciseCardView({ card, answer, setAnswer, checked }: { card: Card; answer: Answer; setAnswer: (v: Answer) => void; checked: boolean }) {
+function ExerciseCardView({ card, answer, setAnswer, checked, lang }: { card: Card; answer: Answer; setAnswer: (v: Answer) => void; checked: boolean; lang: 'en' | 'si' }) {
   const isText = card.type === 'text';
-  const src = isText ? card.body.en : card.prompt.en;
+  const si = lang === 'si';
+  // Only the prompt and feedback (above) switch language here — answer
+  // options/tokens/pairs stay in English regardless of the toggle.
+  const src = isText ? (si ? card.body.si || card.body.en : card.body.en) : (si ? card.prompt.si || card.prompt.en : card.prompt.en);
 
   return (
     <div className={COL_CLASS[card.column] || COL_CLASS.full}>
-      <div className="card">
+      <div className="card" style={card.border === false ? { background: 'var(--c-bg)' } : undefined}>
         {src ? <RichText src={src} /> : <div style={{ fontSize: 15, color: 'var(--c-ink-faint)', fontWeight: 600 }}>{isText ? '(empty card)' : '(no prompt yet)'}</div>}
 
         {card.type === 'mcq' && (() => {
@@ -270,6 +285,92 @@ function ExerciseCardView({ card, answer, setAnswer, checked }: { card: Card; an
         {card.type === 'free_text' && (
           <textarea value={(answer as string) || ''} onChange={(e) => setAnswer(e.target.value)} placeholder="Type your answer…" style={{ width: '100%', border: '2px solid var(--c-primary-line)', borderRadius: 12, padding: 12, fontSize: 15, minHeight: 84, marginTop: 14, outline: 'none', fontFamily: 'var(--font-body)' }} />
         )}
+
+        {card.type === 'multi_select' && (() => {
+          const p = card.payload as MultiSelectPayload;
+          const picked = (answer as MultiSelectAnswer) || [];
+          const toggle = (i: number) => setAnswer(picked.includes(i) ? picked.filter((x) => x !== i) : [...picked, i]);
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
+              {p.options.map((o, i) => {
+                const isCorrect = p.correctIndexes.includes(i);
+                const isPicked = picked.includes(i);
+                let bg = '#F7F5FF', border = 'transparent';
+                if (checked) {
+                  if (isCorrect) { bg = 'var(--c-success-bg)'; border = 'var(--c-success)'; }
+                  else if (isPicked) { bg = 'var(--c-danger-bg)'; border = 'var(--c-danger)'; }
+                } else if (isPicked) { bg = 'var(--c-primary-tint)'; border = 'var(--c-primary)'; }
+                return (
+                  <button key={i} onClick={() => toggle(i)} style={{ display: 'flex', alignItems: 'center', gap: 10, textAlign: 'left', width: '100%', borderRadius: 14, padding: '14px 18px', fontSize: 15, fontWeight: 600, fontFamily: 'var(--font-body)', cursor: 'pointer', background: bg, border: `2px solid ${border}`, color: 'var(--c-ink)' }}>
+                    <span style={{ width: 18, height: 18, borderRadius: 5, border: `2px solid ${isPicked ? 'var(--c-primary)' : 'var(--c-primary-line)'}`, background: isPicked ? 'var(--c-primary)' : 'white', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {isPicked && <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 6.5L4.5 9L10 3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+                    </span>
+                    {o.en || '…'}
+                  </button>
+                );
+              })}
+              <span style={{ fontSize: 12, color: 'var(--c-ink-faint)', fontWeight: 600 }}>Select all that apply.</span>
+            </div>
+          );
+        })()}
+
+        {card.type === 'essay' && (() => {
+          const p = card.payload as EssayPayload;
+          return (
+            <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {p.outline.length > 0 && (
+                <div style={{ background: '#F7F5FF', borderRadius: 12, padding: 14 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--c-primary)', letterSpacing: '0.05em', marginBottom: 8 }}>OUTLINE</div>
+                  <ol style={{ margin: 0, paddingLeft: 18, fontSize: 14, lineHeight: 1.7 }}>
+                    {p.outline.map((o, i) => <li key={i}>{(si ? o.si || o.en : o.en) || '…'}</li>)}
+                  </ol>
+                </div>
+              )}
+              {p.ideaBank.length > 0 && (
+                <div style={{ background: '#F7F5FF', borderRadius: 12, padding: 14 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--c-primary)', letterSpacing: '0.05em', marginBottom: 8 }}>IDEA BANK</div>
+                  <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14, lineHeight: 1.7 }}>
+                    {p.ideaBank.map((o, i) => <li key={i}>{(si ? o.si || o.en : o.en) || '…'}</li>)}
+                  </ul>
+                </div>
+              )}
+              <textarea
+                value={(answer as string) || ''} onChange={(e) => setAnswer(e.target.value)}
+                placeholder={si ? 'ඔබේ රචනය මෙහි ලියන්න…' : 'Write your response here…'}
+                style={{ width: '100%', border: '2px solid var(--c-primary-line)', borderRadius: 12, padding: 14, fontSize: 15, lineHeight: 1.7, minHeight: 220, outline: 'none', fontFamily: 'var(--font-body)' }}
+              />
+              {!!p.minWords && (
+                <span style={{ fontSize: 12, color: 'var(--c-ink-faint)', fontWeight: 600 }}>
+                  {((answer as string) || '').trim().split(/\s+/).filter(Boolean).length} / {p.minWords} words
+                </span>
+              )}
+            </div>
+          );
+        })()}
+
+        {card.type === 'rubric' && (() => {
+          const p = card.payload as RubricPayload;
+          const a = (answer as RubricAnswer) || {};
+          return (
+            <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {p.sections.map((section, si2) => (
+                <div key={si2}>
+                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14, marginBottom: 8 }}>{(si ? section.title.si || section.title.en : section.title.en) || '…'}</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {section.items.map((item, ii) => {
+                      const key = `${si2}-${ii}`;
+                      return (
+                        <CheckboxRow key={key} checked={!!a[key]} onToggle={() => setAnswer({ ...a, [key]: !a[key] })}>
+                          {(si ? item.si || item.en : item.en) || '…'}
+                        </CheckboxRow>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

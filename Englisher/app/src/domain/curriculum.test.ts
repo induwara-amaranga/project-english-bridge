@@ -2,10 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   CURRICULUM_DEFAULT,
   ensureCards,
-  inlineRuns,
   makeCard,
   normaliseCurriculum,
-  parseRich,
   pickByIdOrPosition,
   plainText,
   repairUnlocks,
@@ -17,34 +15,13 @@ function clone<T>(x: T): T {
   return JSON.parse(JSON.stringify(x));
 }
 
-describe('parseRich / inlineRuns', () => {
-  it('parses bold, italic and links', () => {
-    const runs = inlineRuns('**bold** and *italic* and [text](http://x)');
-    expect(runs.map((r) => r.text)).toEqual(['bold', ' and ', 'italic', ' and ', 'text']);
-    expect(runs[0].weight).toBe('700');
-    expect(runs[2].italic).toBe('italic');
-    expect(runs[4].isLink).toBe(true);
-    expect(runs[4].href).toBe('http://x');
-  });
-
-  it('treats a bare marker as an empty bullet', () => {
-    const blocks = parseRich('-\nsecond line');
-    expect(blocks[0]).toMatchObject({ isText: true, hasMarker: true, marker: '•' });
-  });
-
-  it('renumbers ordered lists starting from 1 each time the sequence breaks', () => {
-    const blocks = parseRich('1. a\n1. b\n\n1. c');
-    const markers = blocks.filter((b) => b.isText).map((b) => (b as { marker: string }).marker);
-    expect(markers).toEqual(['1.', '2.', '1.']);
-  });
-
-  it('does not turn "a * b * c" into italics (requires non-space after opening star)', () => {
-    const runs = inlineRuns('a * b * c');
-    expect(runs.every((r) => r.italic === 'normal')).toBe(true);
-  });
-
-  it('plainText strips markup and joins blocks with a space', () => {
+describe('plainText', () => {
+  it('strips markup and collapses lines to a single space', () => {
     expect(plainText('**Which** form?\nSecond line')).toBe('Which form? Second line');
+  });
+
+  it('strips links, images and list markers', () => {
+    expect(plainText('- [a link](http://x) and ![an image](http://y)')).toBe('a link and an image');
   });
 });
 

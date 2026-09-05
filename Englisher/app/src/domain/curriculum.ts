@@ -134,19 +134,19 @@ export const CURRICULUM_DEFAULT: Curriculum = {
       id: 'guided-essays', order: 6, title: { en: 'Guided Essays', si: 'මඟපෙන්වූ රචනා' },
       theme: { from: '#FF8B98', to: '#FF4D5E' },
       unlock: { kind: 'afterStage', stageId: 'translation' },
-      lessons: [], placeholder: true, taskHref: '/write/guided',
+      lessons: [], placeholder: true,
     },
     {
       id: 'solo-essays', order: 7, title: { en: 'Solo Essays', si: 'ස්වාධීන රචනා' },
       theme: { from: '#8C7BF0', to: '#5539E0' },
       unlock: { kind: 'afterStage', stageId: 'guided-essays' },
-      lessons: [], placeholder: true, taskHref: '/write/solo',
+      lessons: [], placeholder: true,
     },
     {
       id: 'formal-letters', order: 8, title: { en: 'Formal Letters', si: 'විධිමත් ලිපි' },
       theme: { from: '#8A84A8', to: '#3A3550' },
       unlock: { kind: 'afterStage', stageId: 'solo-essays' },
-      lessons: [], placeholder: true, taskHref: '/write/letter',
+      lessons: [], placeholder: true,
     },
   ],
 };
@@ -167,66 +167,22 @@ export const ANALYTICS = {
 };
 
 // ---------------------------------------------------------------------------
-// LIGHTWEIGHT MARKUP — **bold** *italic* [text](url) ![caption](path) - bullet
+// MARKUP — real CommonMark now (rendered by markdown-it, edited via Tiptap +
+// tiptap-markdown; see RichText.tsx and components/RichTextEditor.tsx). Cards
+// just store the markdown string in `body`/`prompt`.en/.si, unchanged.
 // ---------------------------------------------------------------------------
-export interface Run { text: string; href: string; isLink: boolean; plain: boolean; weight: '400' | '700'; italic: 'normal' | 'italic' }
-export type Block =
-  | { isImage: true; isText: false; src: string; alt: string }
-  | { isImage: false; isText: true; hasMarker: boolean; marker: string; runs: Run[] };
 
-const INLINE_RE = /(\*\*[\s\S]+?\*\*|\*[^*\s\n][^*\n]*?\*|!?\[[^\]\n]*\]\([^)\n]*\))/g;
-
-function mkRun(text: string, bold: boolean, italic: boolean, href: string | null): Run {
-  return { text, href: href || '', isLink: !!href, plain: !href, weight: bold ? '700' : '400', italic: italic ? 'italic' : 'normal' };
-}
-
-export function inlineRuns(text: string): Run[] {
-  const runs: Run[] = [];
-  String(text == null ? '' : text).split(INLINE_RE).forEach((part) => {
-    if (!part) return;
-    let m: RegExpExecArray | null;
-    if ((m = /^\*\*([\s\S]+)\*\*$/.exec(part))) runs.push(mkRun(m[1], true, false, null));
-    else if ((m = /^\*([^*]+)\*$/.exec(part))) runs.push(mkRun(m[1], false, true, null));
-    else if ((m = /^!\[([^\]]*)\]\([^)]*\)$/.exec(part))) runs.push(mkRun(m[1], false, false, null));
-    else if ((m = /^\[([^\]]*)\]\(([^)]*)\)$/.exec(part))) runs.push(mkRun(m[1] || m[2], false, false, m[2]));
-    else runs.push(mkRun(part, false, false, null));
-  });
-  return runs;
-}
-
+/** A short, single-line, markup-free preview — for tree rows and list
+ * summaries, not for actually rendering a card (see RichText for that). */
 export function plainText(src: string): string {
-  return parseRich(src)
-    .map((b) => (b.isImage ? b.alt || '(image)' : b.runs.map((r) => r.text).join('')))
-    .join(' ')
+  return String(src == null ? '' : src)
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/(\*\*|__)(.*?)\1/g, '$2')
+    .replace(/(\*|_)(.*?)\1/g, '$2')
+    .replace(/^\s*(?:[-*+]|\d+[.)])\s+/gm, '')
+    .replace(/\s+/g, ' ')
     .trim();
-}
-
-export function parseRich(src: string): Block[] {
-  const out: Block[] = [];
-  let counter = 0;
-  String(src == null ? '' : src).split('\n').forEach((raw) => {
-    const line = raw.trim();
-    if (!line) { counter = 0; return; }
-    let m: RegExpExecArray | null;
-    if ((m = /^!\[([^\]]*)\]\(([^)]*)\)$/.exec(line))) {
-      out.push({ isImage: true, isText: false, src: m[2], alt: m[1] });
-      counter = 0;
-      return;
-    }
-    if ((m = /^[-*+](?:\s+(.*))?$/.exec(line))) {
-      out.push({ isImage: false, isText: true, hasMarker: true, marker: '•', runs: inlineRuns(m[1]) });
-      counter = 0;
-      return;
-    }
-    if ((m = /^\d+[.)](?:\s+(.*))?$/.exec(line))) {
-      counter += 1;
-      out.push({ isImage: false, isText: true, hasMarker: true, marker: counter + '.', runs: inlineRuns(m[1]) });
-      return;
-    }
-    out.push({ isImage: false, isText: true, hasMarker: false, marker: '', runs: inlineRuns(line) });
-    counter = 0;
-  });
-  return out;
 }
 
 // ---------------------------------------------------------------------------
@@ -238,19 +194,23 @@ export const emptyPayload: Record<CardTypeKey, () => Payload> = {
   drag_order: () => ({ tokens: [{ en: '', si: '' }, { en: '', si: '' }] }),
   match: () => ({ pairs: [{ left: '', right: '' }, { left: '', right: '' }] }),
   free_text: () => ({ accept: [], normalize: { lowercase: true, stripPunctuation: true } }),
+  multi_select: () => ({ options: [{ en: '', si: '' }, { en: '', si: '' }], correctIndexes: [0], shuffle: true }),
+  essay: () => ({ ideaBank: [], outline: [] }),
+  rubric: () => ({ sections: [{ title: { en: '', si: '' }, items: [{ en: '', si: '' }] }] }),
   text: () => ({}),
 };
 type CardTypeKey = ExerciseType | 'text';
 
 export function makeCard(id: string, type: CardTypeKey, column: Card['column'] = 'full'): Card {
   if (type === 'text') {
-    return { id, type: 'text', column, body: { en: '', si: '' } };
+    return { id, type: 'text', column, body: { en: '', si: '' }, border: true };
   }
   return {
     id, type, column,
     prompt: { en: '', si: '' },
     payload: emptyPayload[type](),
     feedback: { correct: { en: '', si: '' }, incorrect: { en: '', si: '' } },
+    border: true,
   };
 }
 

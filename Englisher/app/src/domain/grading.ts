@@ -1,4 +1,4 @@
-import type { Card, DragOrderPayload, FreeTextPayload, GapFillPayload, MatchPayload, McqPayload } from './types';
+import type { Card, DragOrderPayload, FreeTextPayload, GapFillPayload, MatchPayload, McqPayload, MultiSelectPayload } from './types';
 
 // Extracted from Exercise.dc.html's inline grader so it is unit-testable and
 // shared by the exercise player.
@@ -7,7 +7,10 @@ export type McqAnswer = number | null;
 export type DragOrderAnswer = number[];
 export type MatchAnswer = { pending: number | null; pairs: Record<number, number> };
 export type TextAnswer = string;
-export type Answer = McqAnswer | DragOrderAnswer | MatchAnswer | TextAnswer;
+export type MultiSelectAnswer = number[];
+/** Rubric checklist state, keyed `${sectionIndex}-${itemIndex}`. */
+export type RubricAnswer = Record<string, boolean>;
+export type Answer = McqAnswer | DragOrderAnswer | MatchAnswer | TextAnswer | MultiSelectAnswer | RubricAnswer;
 
 /** Free-text and typed gap answers are compared under author-chosen normalisation. */
 export function norm(s: string | null | undefined, rules?: { lowercase?: boolean; stripPunctuation?: boolean } | null): string {
@@ -42,6 +45,15 @@ export function gradeCard(card: Card, answer: Answer): boolean {
     const p = q as FreeTextPayload;
     return (p.accept || []).some((x) => norm(x, p.normalize) === norm(answer as string, p.normalize));
   }
+  if (card.type === 'multi_select') {
+    const p = q as MultiSelectPayload;
+    const a = (answer as MultiSelectAnswer) || [];
+    const want = new Set(p.correctIndexes);
+    return a.length === want.size && a.every((i) => want.has(i));
+  }
+  // Essays and rubrics are self-assessed, not auto-graded — answering them
+  // always "passes" so the exercise flow can move on.
+  if (card.type === 'essay' || card.type === 'rubric') return true;
   return true;
 }
 
@@ -49,14 +61,19 @@ export function defaultAnswerFor(card: Card): Answer {
   if (card.type === 'drag_order') return [];
   if (card.type === 'match') return { pending: null, pairs: {} };
   if (card.type === 'mcq') return null;
+  if (card.type === 'multi_select') return [];
+  if (card.type === 'rubric') return {};
   return '';
 }
 
 export function isAnswered(card: Card, a: Answer): boolean {
   if (card.type === 'drag_order') return (a as DragOrderAnswer).length > 0;
   if (card.type === 'match') return Object.keys((a as MatchAnswer).pairs).length > 0;
-  if (card.type === 'free_text' || card.type === 'gap_fill') return !!(a && String(a).trim());
+  if (card.type === 'free_text' || card.type === 'gap_fill' || card.type === 'essay') return !!(a && String(a).trim());
   if (card.type === 'mcq') return a !== null && a !== undefined;
+  if (card.type === 'multi_select') return ((a as MultiSelectAnswer) || []).length > 0;
+  // A rubric is a self-check, not a gate — it never blocks moving on.
+  if (card.type === 'rubric') return true;
   return true;
 }
 

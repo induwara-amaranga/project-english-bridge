@@ -1,10 +1,14 @@
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth';
 import { RequireRole } from './components/RequireRole';
 import { Home } from './features/learner/Home';
 import { SignIn } from './features/learner/SignIn';
 import { SignUp } from './features/learner/SignUp';
 import { PlacementTest } from './features/learner/PlacementTest';
+import { OnboardingGoal } from './features/onboarding/Goal';
+import { OnboardingLanguage } from './features/onboarding/Language';
+import { OnboardingStreak } from './features/onboarding/Streak';
+import { OnboardingWalkthrough } from './features/onboarding/Walkthrough';
 import { Roadmap } from './features/learner/Roadmap';
 import { StageLessons } from './features/learner/StageLessons';
 import { LessonPage } from './features/learner/Lesson';
@@ -27,6 +31,14 @@ export default function App() {
         <Route path="/signup" element={<SignUp />} />
         <Route path="/signin" element={<SignIn />} />
         <Route path="/placement" element={<PlacementTest />} />
+
+        {/* Goal → Language → Streak → Walkthrough → Placement Test, matching
+            the progress dots in the Onboarding *.dc.html prototype pages. */}
+        <Route path="/onboarding" element={<Navigate to="/onboarding/goal" replace />} />
+        <Route path="/onboarding/goal" element={<OnboardingGoal />} />
+        <Route path="/onboarding/language" element={<OnboardingLanguage />} />
+        <Route path="/onboarding/streak" element={<OnboardingStreak />} />
+        <Route path="/onboarding/walkthrough" element={<OnboardingWalkthrough />} />
 
         {/* Student — the course page */}
         <Route path="/learn" element={<RequireRole role="student"><Roadmap /></RequireRole>} />

@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useProgress } from '../../hooks/useProgress';
 import { useCurriculum } from '../../hooks/useCurriculum';
+import { useAuth } from '../../hooks/useAuth';
 import { setCurrentStage } from '../../domain/progress';
 
 type Question =
@@ -31,6 +32,8 @@ type Screen = 'intro' | 'question' | 'feedback' | 'result';
 export function PlacementTest() {
   const { curriculum } = useCurriculum();
   const { progress, update } = useProgress();
+  const { signUp } = useAuth();
+  const navigate = useNavigate();
   const [screen, setScreen] = useState<Screen>('intro');
   const [qIndex, setQIndex] = useState(0);
   const [correctStages, setCorrectStages] = useState<number[]>([]);
@@ -60,6 +63,12 @@ export function PlacementTest() {
       setScreen('question');
     }
   };
+
+  // "Try a lesson first" is the no-account path the intro screen promises
+  // ("No account needed"), but /learn is gated to signed-in students — so,
+  // same as Sign Up's "Continue without an account", start a nameless guest
+  // session rather than bouncing this learner to sign-in.
+  const tryLessonFirst = () => { signUp('Guest', 'guest@example.com', 'student'); navigate('/learn'); };
 
   const submitTranslate = () => {
     const val = translateInput.toLowerCase();
@@ -151,7 +160,7 @@ export function PlacementTest() {
               <p style={{ margin: 0, fontSize: 16, lineHeight: 1.6, fontWeight: 600 }}>Save this so you don&apos;t lose it. Create a free account to start Stage {resultStage} and keep your progress, XP, and streak as you go.</p>
               <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
                 <Link to="/signup" style={{ background: 'var(--c-primary)', color: 'white', borderRadius: 999, padding: '14px 30px', fontWeight: 700, fontSize: 15, fontFamily: 'var(--font-display)', boxShadow: '0 4px 0 var(--c-primary-shadow)', display: 'inline-block' }}>Create account</Link>
-                <Link to="/learn" style={{ background: 'white', color: 'var(--c-primary)', border: '2px solid var(--c-primary)', borderRadius: 999, padding: '14px 30px', fontWeight: 700, fontSize: 15, fontFamily: 'var(--font-display)', display: 'inline-block' }}>Try a lesson first →</Link>
+                <button type="button" onClick={tryLessonFirst} style={{ background: 'white', color: 'var(--c-primary)', border: '2px solid var(--c-primary)', borderRadius: 999, padding: '14px 30px', fontWeight: 700, fontSize: 15, fontFamily: 'var(--font-display)', cursor: 'pointer' }}>Try a lesson first →</button>
               </div>
             </div>
           </div>

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { gradeCard, isAnswered, norm } from './grading';
 import { makeCard } from './curriculum';
-import type { Card, DragOrderPayload, McqPayload } from './types';
+import type { Card, DragOrderPayload, McqPayload, MultiSelectPayload } from './types';
 
 describe('norm', () => {
   it('lowercases and strips punctuation by default', () => {
@@ -49,6 +49,23 @@ describe('gradeCard', () => {
     const card = makeCard('c', 'text') as Card;
     expect(gradeCard(card, null)).toBe(true);
   });
+
+  it('grades multi_select as an exact set match, order-independent', () => {
+    const card = makeCard('c', 'multi_select') as Card;
+    (card as unknown as { payload: MultiSelectPayload }).payload = { options: [{ en: 'a', si: '' }, { en: 'b', si: '' }, { en: 'c', si: '' }], correctIndexes: [0, 2] };
+    expect(gradeCard(card, [0, 2])).toBe(true);
+    expect(gradeCard(card, [2, 0])).toBe(true);
+    expect(gradeCard(card, [0])).toBe(false);
+    expect(gradeCard(card, [0, 1, 2])).toBe(false);
+    expect(gradeCard(card, [])).toBe(false);
+  });
+
+  it('essay and rubric cards are never auto-graded — always pass once answered', () => {
+    const essay = makeCard('c', 'essay') as Card;
+    expect(gradeCard(essay, 'anything at all')).toBe(true);
+    const rubric = makeCard('c', 'rubric') as Card;
+    expect(gradeCard(rubric, {})).toBe(true);
+  });
 });
 
 describe('isAnswered', () => {
@@ -66,5 +83,19 @@ describe('isAnswered', () => {
     const card = makeCard('c', 'free_text') as Card;
     expect(isAnswered(card, '   ')).toBe(false);
     expect(isAnswered(card, 'hi')).toBe(true);
+  });
+  it('essay needs non-whitespace content, same as free_text', () => {
+    const card = makeCard('c', 'essay') as Card;
+    expect(isAnswered(card, '   ')).toBe(false);
+    expect(isAnswered(card, 'My essay...')).toBe(true);
+  });
+  it('multi_select needs at least one option picked', () => {
+    const card = makeCard('c', 'multi_select') as Card;
+    expect(isAnswered(card, [])).toBe(false);
+    expect(isAnswered(card, [0])).toBe(true);
+  });
+  it('rubric is a self-check, never a gate', () => {
+    const card = makeCard('c', 'rubric') as Card;
+    expect(isAnswered(card, {})).toBe(true);
   });
 });

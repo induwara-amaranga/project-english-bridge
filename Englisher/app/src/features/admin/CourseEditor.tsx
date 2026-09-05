@@ -1,19 +1,22 @@
-import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCourseEditor, type CourseEditorApi } from './courseEditorState';
 import { CARD_COLUMNS, TYPE_META } from '../../domain/types';
 import type {
-  Card, CardType, Column, DragOrderPayload, Exercise, ExerciseType,
-  GapFillPayload, Lesson, MatchPayload, McqPayload, Stage,
+  Card, CardType, Column, DragOrderPayload, EssayPayload, Exercise, ExerciseType,
+  GapFillPayload, Lesson, MatchPayload, McqPayload, MultiSelectPayload, RubricPayload, Stage,
 } from '../../domain/types';
-import { cardGridColumn, emptyPayload, parseRich, plainText } from '../../domain/curriculum';
+import { cardGridColumn, emptyPayload, plainText } from '../../domain/curriculum';
 import { seededShuffle } from '../../domain/grading';
 import { useAuth } from '../../hooks/useAuth';
-import { applyMarkup, MARKUP_HINT, TOOLS, type ToolKey } from './richMarkup';
+import { RichField } from '../../components/RichTextEditor';
+import { RichText } from '../../components/RichText';
 import './editor.css';
 
-const CARD_TYPES: CardType[] = ['text', 'mcq', 'gap_fill', 'drag_order', 'match', 'free_text'];
-const TYPE_COLOR: Record<CardType, string> = { mcq: '#6C4FF6', gap_fill: '#0FA593', drag_order: '#B37E00', match: '#FF4D5E', free_text: '#2FAE63', text: '#4A4560' };
+const CARD_TYPES: CardType[] = ['text', 'mcq', 'gap_fill', 'drag_order', 'match', 'free_text', 'multi_select', 'essay', 'rubric'];
+const TYPE_COLOR: Record<CardType, string> = {
+  mcq: '#6C4FF6', gap_fill: '#0FA593', drag_order: '#B37E00', match: '#FF4D5E', free_text: '#2FAE63', text: '#4A4560',
+  multi_select: '#5539E0', essay: '#FF6B4A', rubric: '#8A84A8',
+};
 const CARD_SHORT = (t: CardType) => (t === 'text' ? 'TEXT' : TYPE_META[t as ExerciseType].short);
 const UNLOCK_LABEL: Record<string, string> = { always: 'Open to everyone', afterStage: 'After the previous course', minXp: 'At an XP threshold' };
 const MOVE_ON = '#6B6580', MOVE_OFF = '#DED7F8';
@@ -37,32 +40,6 @@ function TreeMove({ onUp, onDown, upOk, downOk }: { onUp: (e: React.MouseEvent) 
     <div className="moves">
       <button className="movebtn" onClick={onUp} style={{ color: upOk ? MOVE_ON : MOVE_OFF }}>↑</button>
       <button className="movebtn" onClick={onDown} style={{ color: downOk ? MOVE_ON : MOVE_OFF }}>↓</button>
-    </div>
-  );
-}
-
-function RichField({ label, value, onChange, rows = 3, placeholder }: { label: string; value: string; onChange: (v: string) => void; rows?: number; placeholder?: string }) {
-  const ref = useRef<HTMLTextAreaElement>(null);
-  const applyTool = (key: ToolKey) => {
-    const el = ref.current;
-    const start = el ? el.selectionStart : value.length;
-    const end = el ? el.selectionEnd : value.length;
-    const next = applyMarkup(key, value, start, end);
-    onChange(next.text);
-    requestAnimationFrame(() => {
-      try { el?.focus(); el?.setSelectionRange(next.from, next.to); } catch { /* detached */ }
-    });
-  };
-  return (
-    <div>
-      <label className="lbl">{label}</label>
-      <div className="fmtbar">
-        {TOOLS.map((t) => (
-          <button key={t.key} type="button" className="fmtbtn" style={{ fontWeight: t.weight, fontStyle: t.fontStyle }} onClick={() => applyTool(t.key)}>{t.label}</button>
-        ))}
-      </div>
-      <textarea ref={ref} className="fld" rows={rows} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
-      <div className="hint">{MARKUP_HINT}</div>
     </div>
   );
 }
@@ -209,7 +186,10 @@ export function CourseEditor() {
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#6B6580', letterSpacing: '0.06em' }}>EDITING LESSON</div>
                   <h2 style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 800, fontSize: 22, margin: '6px 0 0' }}>{lessonNameOf(lesson)}</h2>
                 </div>
-                <button className="delbtn" onClick={api.deleteLesson} style={{ background: lsDel.background, color: lsDel.color, borderColor: lsDel.borderColor }}>{lsDel.label}</button>
+                <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                  <button className="addbtn" onClick={() => stage && api.addExercise(stage.id, lesson.id)}>+ Add exercise</button>
+                  <button className="delbtn" onClick={api.deleteLesson} style={{ background: lsDel.background, color: lsDel.color, borderColor: lsDel.borderColor }}>{lsDel.label}</button>
+                </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 620 }}>
                 <div>
@@ -223,7 +203,6 @@ export function CourseEditor() {
                 <div style={{ background: '#ECE8FB', borderRadius: 12, padding: '14px 16px', fontSize: 12.5, color: '#4A4560' }}>
                   The cards below are what a learner reads when the lesson opens. It then runs its <b>{lesson.exercises.length}</b> exercises.
                 </div>
-                <button className="addbtn" onClick={() => stage && api.addExercise(stage.id, lesson.id)}>+ Add exercise</button>
               </div>
             </div>
           )}
@@ -242,7 +221,10 @@ export function CourseEditor() {
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#6B6580', letterSpacing: '0.06em' }}>EDITING EXERCISE</div>
                   <h2 style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 800, fontSize: 22, margin: '6px 0 0' }}>{plainText(exercise.prompt.en) || '(untitled exercise)'}</h2>
                 </div>
-                <button className="delbtn" onClick={api.deleteExercise} style={{ background: exDel.background, color: exDel.color, borderColor: exDel.borderColor }}>{exDel.label}</button>
+                <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                  <button className="addbtn" onClick={() => stage && lesson && api.addExercise(stage.id, lesson.id)}>+ Add exercise</button>
+                  <button className="delbtn" onClick={api.deleteExercise} style={{ background: exDel.background, color: exDel.color, borderColor: exDel.borderColor }}>{exDel.label}</button>
+                </div>
               </div>
               <div style={{ background: '#ECE8FB', borderRadius: 12, padding: '14px 16px', fontSize: 12.5, color: '#4A4560', maxWidth: 620 }}>
                 This exercise is made of <b>{exercise.cards.length}</b> cards. They lay out in two columns on the right.
@@ -280,8 +262,19 @@ export function CourseEditor() {
                   </div>
                 </div>
 
+                <div className="ed-row" onClick={() => api.editCard((c) => { c.border = card.border === false; })} style={{ cursor: 'pointer' }}>
+                  <div style={{ width: 30, height: 18, borderRadius: 999, background: card.border !== false ? '#6C4FF6' : '#D8D3EE', position: 'relative', flexShrink: 0 }}>
+                    <div style={{ position: 'absolute', top: 2, left: card.border !== false ? 14 : 2, width: 14, height: 14, borderRadius: '50%', background: 'white', transition: 'left 0.15s' }} />
+                  </div>
+                  <span className="lbl" style={{ margin: 0 }}>Show border</span>
+                  <span style={{ fontSize: 11.5, color: '#9B94BE' }}>Off blends the card into the page background.</span>
+                </div>
+
                 {card.type === 'text' ? (
-                  <RichField label="Text shown to the learner" rows={7} placeholder="Explain the rule in plain language, then show what it looks like." value={card.body.en} onChange={(v) => api.editCard((c) => { if (c.type === 'text') c.body.en = v; })} />
+                  <>
+                    <RichField label="Text shown to the learner — English" rows={7} placeholder="Explain the rule in plain language, then show what it looks like." value={card.body.en} onChange={(v) => api.editCard((c) => { if (c.type === 'text') c.body.en = v; })} />
+                    <RichField label="Text shown to the learner — Sinhala" rows={7} placeholder="Sinhala translation of the text above." si value={card.body.si} onChange={(v) => api.editCard((c) => { if (c.type === 'text') c.body.si = v; })} />
+                  </>
                 ) : (
                   <>
                     <RichField label="Prompt — English" rows={3} placeholder="What the learner is asked to do" value={card.prompt.en} onChange={(v) => api.editCard((c) => { if (c.type !== 'text') c.prompt.en = v; })} />
@@ -294,12 +287,20 @@ export function CourseEditor() {
 
                     <div style={{ height: 1, background: '#E3DEF5' }} />
                     <div>
-                      <label className="lbl">Feedback when correct</label>
+                      <label className="lbl">Feedback when correct — English</label>
                       <input className="fld" value={card.feedback.correct.en} onChange={(e) => { const v = e.target.value; api.editCard((c) => { if (c.type !== 'text') c.feedback.correct.en = v; }); }} placeholder="Correct! Subject → Verb → Object." />
                     </div>
                     <div>
-                      <label className="lbl">Feedback when wrong</label>
+                      <label className="lbl">Feedback when correct — Sinhala</label>
+                      <input className="fld si" value={card.feedback.correct.si} onChange={(e) => { const v = e.target.value; api.editCard((c) => { if (c.type !== 'text') c.feedback.correct.si = v; }); }} />
+                    </div>
+                    <div>
+                      <label className="lbl">Feedback when wrong — English</label>
                       <input className="fld" value={card.feedback.incorrect.en} onChange={(e) => { const v = e.target.value; api.editCard((c) => { if (c.type !== 'text') c.feedback.incorrect.en = v; }); }} placeholder="Not quite — try again." />
+                    </div>
+                    <div>
+                      <label className="lbl">Feedback when wrong — Sinhala</label>
+                      <input className="fld si" value={card.feedback.incorrect.si} onChange={(e) => { const v = e.target.value; api.editCard((c) => { if (c.type !== 'text') c.feedback.incorrect.si = v; }); }} />
                     </div>
                   </>
                 )}
@@ -427,23 +428,134 @@ function PayloadEditor({ api, card }: { api: CourseEditorApi; card: Card }) {
     );
   }
 
-  if (card.type !== 'free_text') return null;
-  const p = card.payload as { accept: string[]; normalize: { lowercase: boolean; stripPunctuation: boolean } };
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div>
-        <label className="lbl">Accepted answers — one per line</label>
-        <textarea className="fld" rows={4} defaultValue={p.accept.join('\n')} onBlur={(e) => { const v = e.target.value.split('\n').map((x) => x.trim()).filter(Boolean); api.editExercisePayload((pl) => { (pl as { accept: string[] }).accept = v; }); }} placeholder="I go to school" />
+  if (card.type === 'free_text') {
+    const p = card.payload as { accept: string[]; normalize: { lowercase: boolean; stripPunctuation: boolean } };
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div>
+          <label className="lbl">Accepted answers — one per line</label>
+          <textarea className="fld" rows={4} defaultValue={p.accept.join('\n')} onBlur={(e) => { const v = e.target.value.split('\n').map((x) => x.trim()).filter(Boolean); api.editExercisePayload((pl) => { (pl as { accept: string[] }).accept = v; }); }} placeholder="I go to school" />
+        </div>
+        <div className="ed-row" style={{ gap: 20 }}>
+          <div className="ed-row" onClick={() => api.editExercisePayload((pl) => { (pl as { normalize: { lowercase: boolean } }).normalize.lowercase = !p.normalize.lowercase; })} style={{ cursor: 'pointer' }}>
+            <div style={{ width: 18, height: 18, borderRadius: 5, border: `2px solid ${p.normalize.lowercase ? '#6C4FF6' : '#D8D3EE'}`, background: p.normalize.lowercase ? '#6C4FF6' : 'white' }} />
+            <span style={{ fontSize: 13, fontWeight: 600 }}>Ignore capitalisation</span>
+          </div>
+          <div className="ed-row" onClick={() => api.editExercisePayload((pl) => { (pl as { normalize: { stripPunctuation: boolean } }).normalize.stripPunctuation = !p.normalize.stripPunctuation; })} style={{ cursor: 'pointer' }}>
+            <div style={{ width: 18, height: 18, borderRadius: 5, border: `2px solid ${p.normalize.stripPunctuation ? '#6C4FF6' : '#D8D3EE'}`, background: p.normalize.stripPunctuation ? '#6C4FF6' : 'white' }} />
+            <span style={{ fontSize: 13, fontWeight: 600 }}>Ignore punctuation</span>
+          </div>
+        </div>
       </div>
-      <div className="ed-row" style={{ gap: 20 }}>
-        <div className="ed-row" onClick={() => api.editExercisePayload((pl) => { (pl as { normalize: { lowercase: boolean } }).normalize.lowercase = !p.normalize.lowercase; })} style={{ cursor: 'pointer' }}>
-          <div style={{ width: 18, height: 18, borderRadius: 5, border: `2px solid ${p.normalize.lowercase ? '#6C4FF6' : '#D8D3EE'}`, background: p.normalize.lowercase ? '#6C4FF6' : 'white' }} />
-          <span style={{ fontSize: 13, fontWeight: 600 }}>Ignore capitalisation</span>
+    );
+  }
+
+  if (card.type === 'multi_select') {
+    const p = card.payload as MultiSelectPayload;
+    const toggleCorrect = (i: number) => api.editExercisePayload((pl) => {
+      const mp = pl as MultiSelectPayload;
+      mp.correctIndexes = mp.correctIndexes.includes(i) ? mp.correctIndexes.filter((x) => x !== i) : [...mp.correctIndexes, i];
+    });
+    return (
+      <div>
+        <label className="lbl">Options — check every correct answer</label>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {p.options.map((o, i) => {
+            const correct = p.correctIndexes.includes(i);
+            return (
+              <div key={i} className="ed-row">
+                <div onClick={() => toggleCorrect(i)} style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${correct ? '#3ECF6E' : '#D8D3EE'}`, background: correct ? '#3ECF6E' : 'white', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {correct && <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6.5L4.5 9L10 3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+                </div>
+                <input className="fld" style={{ flex: 1 }} value={o.en} onChange={(e) => { const v = e.target.value; api.editExercisePayload((pl) => { (pl as MultiSelectPayload).options[i].en = v; }); }} placeholder="Option (English)" />
+                <input className="fld si" style={{ flex: 1 }} value={o.si} onChange={(e) => { const v = e.target.value; api.editExercisePayload((pl) => { (pl as MultiSelectPayload).options[i].si = v; }); }} placeholder="Sinhala" />
+                <button className="iconbtn" onClick={() => api.editExercisePayload((pl) => { const mp = pl as MultiSelectPayload; if (mp.options.length > 2) { mp.options.splice(i, 1); mp.correctIndexes = mp.correctIndexes.filter((x) => x !== i).map((x) => (x > i ? x - 1 : x)); } })}>✕</button>
+              </div>
+            );
+          })}
+          <button className="addbtn" onClick={() => api.editExercisePayload((pl) => { (pl as MultiSelectPayload).options.push({ en: '', si: '' }); })}>+ Add option</button>
         </div>
-        <div className="ed-row" onClick={() => api.editExercisePayload((pl) => { (pl as { normalize: { stripPunctuation: boolean } }).normalize.stripPunctuation = !p.normalize.stripPunctuation; })} style={{ cursor: 'pointer' }}>
-          <div style={{ width: 18, height: 18, borderRadius: 5, border: `2px solid ${p.normalize.stripPunctuation ? '#6C4FF6' : '#D8D3EE'}`, background: p.normalize.stripPunctuation ? '#6C4FF6' : 'white' }} />
-          <span style={{ fontSize: 13, fontWeight: 600 }}>Ignore punctuation</span>
+      </div>
+    );
+  }
+
+  if (card.type === 'essay') {
+    const p = card.payload as EssayPayload;
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <BilingualListEditor
+          label="Outline — suggested structure, shown as numbered steps"
+          items={p.outline}
+          onChange={(v) => api.editExercisePayload((pl) => { (pl as EssayPayload).outline = v; })}
+          addLabel="+ Add outline step"
+        />
+        <BilingualListEditor
+          label="Idea bank — facts or phrases the learner can draw on"
+          items={p.ideaBank}
+          onChange={(v) => api.editExercisePayload((pl) => { (pl as EssayPayload).ideaBank = v; })}
+          addLabel="+ Add idea"
+        />
+        <div>
+          <label className="lbl">Minimum word count — optional</label>
+          <input
+            className="fld" type="number" min={0} style={{ maxWidth: 140 }}
+            value={p.minWords ?? ''}
+            onChange={(e) => { const v = e.target.value ? Number(e.target.value) : undefined; api.editExercisePayload((pl) => { (pl as EssayPayload).minWords = v; }); }}
+            placeholder="e.g. 150"
+          />
         </div>
+      </div>
+    );
+  }
+
+  if (card.type === 'rubric') {
+    const p = card.payload as RubricPayload;
+    return (
+      <div>
+        <label className="lbl">Self-evaluation checklist — grouped into sections</label>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {p.sections.map((section, si) => (
+            <div key={si} style={{ border: '1.5px solid #E3DEF5', borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div className="ed-row">
+                <input className="fld" style={{ flex: 1 }} value={section.title.en} onChange={(e) => { const v = e.target.value; api.editExercisePayload((pl) => { (pl as RubricPayload).sections[si].title.en = v; }); }} placeholder="Section title (English)" />
+                <input className="fld si" style={{ flex: 1 }} value={section.title.si} onChange={(e) => { const v = e.target.value; api.editExercisePayload((pl) => { (pl as RubricPayload).sections[si].title.si = v; }); }} placeholder="Sinhala" />
+                <button className="iconbtn" onClick={() => api.editExercisePayload((pl) => { const rp = pl as RubricPayload; if (rp.sections.length > 1) rp.sections.splice(si, 1); })}>✕</button>
+              </div>
+              {section.items.map((item, ii) => (
+                <div key={ii} className="ed-row" style={{ paddingLeft: 14 }}>
+                  <input className="fld" style={{ flex: 1 }} value={item.en} onChange={(e) => { const v = e.target.value; api.editExercisePayload((pl) => { (pl as RubricPayload).sections[si].items[ii].en = v; }); }} placeholder="Checklist item (English)" />
+                  <input className="fld si" style={{ flex: 1 }} value={item.si} onChange={(e) => { const v = e.target.value; api.editExercisePayload((pl) => { (pl as RubricPayload).sections[si].items[ii].si = v; }); }} placeholder="Sinhala" />
+                  <button className="iconbtn" onClick={() => api.editExercisePayload((pl) => { const rp = pl as RubricPayload; if (rp.sections[si].items.length > 1) rp.sections[si].items.splice(ii, 1); })}>✕</button>
+                </div>
+              ))}
+              <button className="addbtn" style={{ marginLeft: 14 }} onClick={() => api.editExercisePayload((pl) => { (pl as RubricPayload).sections[si].items.push({ en: '', si: '' }); })}>+ Add checklist item</button>
+            </div>
+          ))}
+          <button className="addbtn" onClick={() => api.editExercisePayload((pl) => { (pl as RubricPayload).sections.push({ title: { en: '', si: '' }, items: [{ en: '', si: '' }] }); })}>+ Add section</button>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+/** A repeatable list of bilingual strings — shared by the Essay payload editor's outline and idea-bank fields. */
+function BilingualListEditor({ label, items, onChange, addLabel }: {
+  label: string; items: { en: string; si: string }[]; onChange: (v: { en: string; si: string }[]) => void; addLabel: string;
+}) {
+  return (
+    <div>
+      <label className="lbl">{label}</label>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {items.map((it, i) => (
+          <div key={i} className="ed-row">
+            <input className="fld" style={{ flex: 1 }} value={it.en} onChange={(e) => { const next = items.slice(); next[i] = { ...next[i], en: e.target.value }; onChange(next); }} placeholder="English" />
+            <input className="fld si" style={{ flex: 1 }} value={it.si} onChange={(e) => { const next = items.slice(); next[i] = { ...next[i], si: e.target.value }; onChange(next); }} placeholder="Sinhala" />
+            <button className="iconbtn" onClick={() => onChange(items.filter((_, j) => j !== i))}>✕</button>
+          </div>
+        ))}
+        <button className="addbtn" onClick={() => onChange([...items, { en: '', si: '' }])}>{addLabel}</button>
       </div>
     </div>
   );
@@ -534,13 +646,17 @@ function PreviewCard({ card, index, total, isSelected, showKey, pendingDelete, o
 }) {
   const isText = card.type === 'text';
   const src = isText ? card.body.en : card.prompt.en;
-  const blocks = src ? parseRich(src) : [];
   const armed = pendingDelete === `card:${card.id}`;
   const columnLabel = card.column === 'full' ? 'Full width' : card.column === 'right' ? 'Right' : 'Left';
+  const hasBorder = card.border !== false;
 
   return (
     <div style={{ gridColumn: cardGridColumn(card), minWidth: 0 }}>
-      <div onClick={onSelect} style={{ background: isSelected ? '#F7F5FF' : 'white', border: `2px solid ${isSelected ? '#6C4FF6' : '#E3DEF5'}`, borderRadius: 14, padding: 13, cursor: 'pointer' }}>
+      {/* The outline still shows when selected — that's an editing affordance,
+          not part of the authored look — but the background only turns white
+          when this card actually has its border on, so the preview matches
+          what a learner would see. */}
+      <div onClick={onSelect} style={{ background: isSelected ? '#F7F5FF' : hasBorder ? 'white' : '#F7F5FF', border: `2px solid ${isSelected ? '#6C4FF6' : hasBorder ? '#E3DEF5' : 'transparent'}`, borderRadius: 14, padding: 13, cursor: 'pointer' }}>
         <div className="pvhead">
           <span className="cardbadge" style={{ background: TYPE_COLOR[card.type] }}>{CARD_SHORT(card.type)}</span>
           <span style={{ fontSize: 10, fontWeight: 700, color: '#B5AFD4' }}>{columnLabel}</span>
@@ -551,22 +667,8 @@ function PreviewCard({ card, index, total, isSelected, showKey, pendingDelete, o
           </div>
         </div>
 
-        <div style={{ fontSize: 14, lineHeight: 1.5 }}>
-          {blocks.map((b, i) =>
-            b.isImage ? (
-              <img key={i} src={b.src} alt={b.alt} style={{ display: 'block', maxWidth: '100%', borderRadius: 10, margin: '0 0 8px' }} />
-            ) : (
-              <div key={i} style={{ display: 'flex', gap: 7, marginBottom: 5 }}>
-                {b.hasMarker && <span style={{ lineHeight: 1.5, color: '#6C4FF6', fontWeight: 700, flexShrink: 0 }}>{b.marker}</span>}
-                <div style={{ lineHeight: 1.5, minWidth: 0 }}>
-                  {b.runs.map((r, j) => r.isLink
-                    ? <a key={j} href={r.href} target="_blank" rel="noopener" style={{ fontWeight: r.weight, fontStyle: r.italic, textDecoration: 'underline' }}>{r.text}</a>
-                    : <span key={j} style={{ fontWeight: r.weight, fontStyle: r.italic }}>{r.text}</span>)}
-                </div>
-              </div>
-            )
-          )}
-          {!src && <span style={{ color: '#B5AFD4', fontWeight: 700 }}>{isText ? '(empty text card)' : '(no prompt yet)'}</span>}
+        <div>
+          {src ? <RichText src={src} dense /> : <span style={{ fontSize: 14, color: '#B5AFD4', fontWeight: 700 }}>{isText ? '(empty text card)' : '(no prompt yet)'}</span>}
         </div>
 
         {card.type === 'mcq' && (
@@ -635,6 +737,62 @@ function PreviewCard({ card, index, total, isSelected, showKey, pendingDelete, o
             </>
           );
         })()}
+
+        {card.type === 'multi_select' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginTop: 10 }}>
+            {(card.payload as MultiSelectPayload).options.map((o, i) => {
+              const correct = showKey && (card.payload as MultiSelectPayload).correctIndexes.includes(i);
+              return (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, background: correct ? '#E3F9EB' : 'white', border: `2px solid ${correct ? '#3ECF6E' : '#D8D3EE'}`, borderRadius: 11, padding: '9px 12px', fontSize: 13, fontWeight: 600 }}>
+                  <span style={{ width: 14, height: 14, borderRadius: 4, border: `2px solid ${correct ? '#3ECF6E' : '#D8D3EE'}`, background: correct ? '#3ECF6E' : 'white', flexShrink: 0 }} />
+                  {o.en || '(empty option)'}
+                </div>
+              );
+            })}
+            <span style={{ fontSize: 10.5, color: '#B5AFD4', fontWeight: 600 }}>Learner may pick more than one.</span>
+          </div>
+        )}
+
+        {card.type === 'essay' && (() => {
+          const p = card.payload as EssayPayload;
+          return (
+            <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {p.outline.length > 0 && (
+                <div style={{ background: '#F7F5FF', borderRadius: 10, padding: 10 }}>
+                  <div style={{ fontSize: 9.5, fontWeight: 700, color: '#6C4FF6', letterSpacing: '0.05em', marginBottom: 5 }}>OUTLINE</div>
+                  <ol style={{ margin: 0, paddingLeft: 16, fontSize: 12, lineHeight: 1.6 }}>{p.outline.map((o, i) => <li key={i}>{o.en || '…'}</li>)}</ol>
+                </div>
+              )}
+              {p.ideaBank.length > 0 && (
+                <div style={{ background: '#F7F5FF', borderRadius: 10, padding: 10 }}>
+                  <div style={{ fontSize: 9.5, fontWeight: 700, color: '#6C4FF6', letterSpacing: '0.05em', marginBottom: 5 }}>IDEA BANK</div>
+                  <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12, lineHeight: 1.6 }}>{p.ideaBank.map((o, i) => <li key={i}>{o.en || '…'}</li>)}</ul>
+                </div>
+              )}
+              <div style={{ background: 'white', border: '2px solid #D8D3EE', borderRadius: 11, padding: 12, minHeight: 70, fontSize: 13, color: '#B5AFD4' }}>Write your response here…</div>
+              {!!p.minWords && <span style={{ fontSize: 10.5, color: '#B5AFD4', fontWeight: 600 }}>Minimum {p.minWords} words</span>}
+            </div>
+          );
+        })()}
+
+        {card.type === 'rubric' && (
+          <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {(card.payload as RubricPayload).sections.map((section, si) => (
+              <div key={si}>
+                <div style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 12, marginBottom: 5 }}>{section.title.en || '(untitled section)'}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  {section.items.map((item, ii) => (
+                    <div key={ii} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5 }}>
+                      <span style={{ width: 13, height: 13, borderRadius: 4, border: '2px solid #D8D3EE', flexShrink: 0 }} />
+                      {item.en || '(empty item)'}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+            <span style={{ fontSize: 10.5, color: '#B5AFD4', fontWeight: 600 }}>Self-checked by the learner — not graded.</span>
+          </div>
+        )}
       </div>
     </div>
   );

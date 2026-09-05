@@ -21,6 +21,24 @@
 .fmtbar { display: flex; gap: 5px; margin-bottom: 6px; flex-wrap: wrap; }
 .fmtbtn { background: white; border: 1.5px solid #E3DEF5; border-radius: 8px; padding: 4px 9px; font-size: 12px; color: #4A4560; cursor: pointer; font-family: 'Inter', sans-serif; line-height: 1.5; }
 .fmtbtn:hover { border-color: #6C4FF6; color: #6C4FF6; background: #F7F5FF; }
+.fmtbtn--active { border-color: #6C4FF6; color: #6C4FF6; background: #F7F5FF; }
+.fmtbtn:disabled { opacity: 0.4; cursor: not-allowed; }
+.fmtbtn:disabled:hover { border-color: #E3DEF5; color: #4A4560; background: white; }
+.fmtbar__sep { width: 1px; align-self: stretch; background: #E3DEF5; margin: 2px 2px; }
+.fmtbar__zoom { font-size: 11px; font-weight: 700; color: #6B6580; align-self: center; min-width: 34px; text-align: center; }
+.fmtselect { background: white; border: 1.5px solid #E3DEF5; border-radius: 8px; padding: 4px 8px; font-size: 12px; color: #4A4560; cursor: pointer; font-family: 'Inter', sans-serif; }
+.fmtselect:hover { border-color: #6C4FF6; }
+
+/* RichField (components/RichTextEditor.tsx) — the Tiptap editor's chrome.
+   The editable area itself is styled by the .rt rules in design/global.css,
+   the same class the read-only RichText preview uses, so editing and
+   preview render identically. */
+.richfield-shell { border: 1.5px solid #E3DEF5; border-radius: 10px; background: white; padding: 10px 12px; cursor: text; }
+.richfield-shell:focus-within { border-color: #6C4FF6; }
+.richfield-shell .ProseMirror { outline: none; }
+.richfield-shell .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder); float: left; height: 0; pointer-events: none; color: #A8A0C7;
+}
 .hint { font-size: 11px; color: #9B94BE; margin-top: 5px; line-height: 1.6; }
 .hint code { font-family: ui-monospace, monospace; background: #F0EDFA; border-radius: 4px; padding: 1px 4px; }
 .moves { display: flex; gap: 1px; margin-left: auto; flex-shrink: 0; }

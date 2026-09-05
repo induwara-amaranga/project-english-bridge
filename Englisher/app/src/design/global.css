@@ -35,6 +35,36 @@ input::placeholder, textarea::placeholder { color: var(--c-input-placeholder); }
 @keyframes float-node { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 @keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(255,184,0,0.5); } 100% { box-shadow: 0 0 0 14px rgba(255,184,0,0); } }
 
+/* ---- RichText — markdown-it output for card body/prompt text (see
+   components/RichText.tsx). `.rt--dense` is the Course Editor's compact
+   preview variant; the bare `.rt` is the full learner-facing size. ---- */
+.rt { font-size: 16px; line-height: 1.75; }
+.rt p, .rt ul, .rt ol { margin: 0 0 10px; }
+.rt p:last-child, .rt ul:last-child, .rt ol:last-child { margin-bottom: 0; }
+.rt ul, .rt ol { padding-left: 22px; }
+.rt li { margin-bottom: 2px; }
+.rt li::marker { color: var(--c-primary); font-weight: 700; }
+.rt a { text-decoration: underline; }
+.rt img { display: block; max-width: 100%; border-radius: 12px; margin: 0 0 10px; }
+.rt strong { font-weight: 700; }
+.rt em { font-style: italic; }
+.rt s { text-decoration: line-through; }
+.rt u { text-decoration: underline; }
+.rt mark { background: var(--c-warning-bg); color: inherit; border-radius: 3px; padding: 0 2px; }
+.rt h1, .rt h2, .rt h3 { font-family: var(--font-display); font-weight: 800; margin: 0 0 10px; line-height: 1.3; }
+.rt h1 { font-size: 1.5em; }
+.rt h2 { font-size: 1.25em; }
+.rt h3 { font-size: 1.1em; }
+.rt table { width: 100%; border-collapse: collapse; margin: 0 0 10px; }
+.rt th, .rt td { border: 1px solid var(--c-line); padding: 6px 10px; text-align: left; }
+.rt th { background: var(--c-primary-tint-2); font-weight: 700; }
+
+.rt--dense { font-size: 14px; line-height: 1.5; }
+.rt--dense p, .rt--dense ul, .rt--dense ol { margin: 0 0 5px; }
+.rt--dense img { border-radius: 10px; margin: 0 0 8px; }
+.rt--dense h1, .rt--dense h2, .rt--dense h3 { margin: 0 0 6px; }
+.rt--dense th, .rt--dense td { padding: 4px 7px; }
+
 /* ---- the two-column card grid (Lesson, Exercise, Course Editor preview) ---- */
 .cardgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
 .cardcell { min-width: 0; }

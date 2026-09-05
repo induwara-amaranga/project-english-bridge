@@ -64,7 +64,7 @@ export function Home() {
           </div>
           <h1 style={{ fontFamily: headFont, fontWeight: 800, fontSize: 44, lineHeight: 1.2, margin: '0 0 28px', maxWidth: 560 }}>{c.value}</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, height: 69 }}>
-            <Link to="/placement" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 200, height: 49, background: 'var(--c-primary)', color: 'white', borderRadius: 14, padding: '16px 32px', fontWeight: 800, fontSize: 17, fontFamily: headFont, boxShadow: '0 6px 0 var(--c-primary-hover)' }}>{c.cta}</Link>
+            <Link to="/onboarding/goal" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 200, height: 49, background: 'var(--c-primary)', color: 'white', borderRadius: 14, padding: '16px 32px', fontWeight: 800, fontSize: 17, fontFamily: headFont, boxShadow: '0 6px 0 var(--c-primary-hover)' }}>{c.cta}</Link>
             <Link to="/signup" style={{ fontFamily: headFont, fontWeight: 700, fontSize: 15, lineHeight: 1.2, color: 'var(--c-ink-soft)' }}>{c.alreadyKnow}</Link>
           </div>
         </div>

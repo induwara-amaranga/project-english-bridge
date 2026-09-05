@@ -7,8 +7,11 @@ import { TYPE_META } from '../../domain/types';
 import type { ExerciseType } from '../../domain/types';
 import { repairUnlocks } from '../../domain/curriculum';
 
-const TYPE_COLOR: Record<ExerciseType, string> = { mcq: '#6C4FF6', gap_fill: '#0FA593', drag_order: '#B37E00', match: '#FF4D5E', free_text: '#2FAE63' };
-const TYPE_ORDER: ExerciseType[] = ['mcq', 'gap_fill', 'drag_order', 'match', 'free_text'];
+const TYPE_COLOR: Record<ExerciseType, string> = {
+  mcq: '#6C4FF6', gap_fill: '#0FA593', drag_order: '#B37E00', match: '#FF4D5E', free_text: '#2FAE63',
+  multi_select: '#5539E0', essay: '#FF6B4A', rubric: '#4A4560',
+};
+const TYPE_ORDER: ExerciseType[] = ['mcq', 'gap_fill', 'drag_order', 'match', 'free_text', 'multi_select', 'essay', 'rubric'];
 
 export function CourseDashboard() {
   const { curriculum, mutate } = useCurriculum();
@@ -41,7 +44,7 @@ export function CourseDashboard() {
   const allExercises = allLessons.flatMap((l) => l.exercises);
   const totalExercises = allExercises.length;
 
-  const counts: Record<ExerciseType, number> = { mcq: 0, gap_fill: 0, drag_order: 0, match: 0, free_text: 0 };
+  const counts: Record<ExerciseType, number> = { mcq: 0, gap_fill: 0, drag_order: 0, match: 0, free_text: 0, multi_select: 0, essay: 0, rubric: 0 };
   allExercises.forEach((e) => { counts[e.type]++; });
   const maxCount = Math.max(1, ...TYPE_ORDER.map((t) => counts[t]));
 

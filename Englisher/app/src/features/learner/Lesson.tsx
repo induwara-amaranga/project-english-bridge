@@ -1,30 +1,32 @@
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useCurriculum } from '../../hooks/useCurriculum';
 import { TYPE_META } from '../../domain/types';
-import type { Card, DragOrderPayload, GapFillPayload, MatchPayload, McqPayload } from '../../domain/types';
+import type { Card, DragOrderPayload, GapFillPayload, MatchPayload, McqPayload, MultiSelectPayload } from '../../domain/types';
 import { RichText } from '../../components/RichText';
-import { Tile, Chip } from '../../components/Primitives';
+import { Tile, Chip, LangToggle } from '../../components/Primitives';
 import { LinkButton } from '../../components/Button';
 
 const COL_CLASS: Record<string, string> = { left: 'cardcell col-left', right: 'cardcell col-right', full: 'cardcell col-full' };
 
-function LessonCard({ card }: { card: Card }) {
+function LessonCard({ card, lang }: { card: Card; lang: 'en' | 'si' }) {
   const isText = card.type === 'text';
-  const src = isText ? card.body.en : card.prompt.en;
+  const si = lang === 'si';
+  const src = isText ? (si ? card.body.si || card.body.en : card.body.en) : (si ? card.prompt.si || card.prompt.en : card.prompt.en);
   return (
     <div className={COL_CLASS[card.column] || COL_CLASS.full}>
-      <div className="card">
+      <div className="card" style={card.border === false ? { background: 'var(--c-bg)' } : undefined}>
         {!isText && <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, color: 'var(--c-primary)', letterSpacing: '0.05em', marginBottom: 10 }}>{TYPE_META[card.type].label.toUpperCase()}</div>}
         {src ? <RichText src={src} /> : <div style={{ fontSize: 15, color: 'var(--c-ink-faint)', fontWeight: 600 }}>{isText ? '(empty card)' : '(no prompt yet)'}</div>}
 
         {card.type === 'mcq' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 9, marginTop: 12 }}>
-            {(card.payload as McqPayload).options.map((o, i) => <Tile key={i}>{o.en || '…'}</Tile>)}
+            {(card.payload as McqPayload).options.map((o, i) => <Tile key={i}>{(si ? o.si || o.en : o.en) || '…'}</Tile>)}
           </div>
         )}
         {card.type === 'gap_fill' && (() => {
           const p = card.payload as GapFillPayload;
-          const t = p.template.en || '';
+          const t = (si ? p.template.si || p.template.en : p.template.en) || '';
           const at = t.indexOf('___');
           const before = at >= 0 ? t.slice(0, at) : t;
           const after = at >= 0 ? t.slice(at + 3) : '';
@@ -41,7 +43,7 @@ function LessonCard({ card }: { card: Card }) {
         })()}
         {card.type === 'drag_order' && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
-            {(card.payload as DragOrderPayload).tokens.map((t, i) => <Tile key={i}>{t.en || '…'}</Tile>)}
+            {(card.payload as DragOrderPayload).tokens.map((t, i) => <Tile key={i}>{(si ? t.si || t.en : t.en) || '…'}</Tile>)}
           </div>
         )}
         {card.type === 'match' && (
@@ -57,6 +59,14 @@ function LessonCard({ card }: { card: Card }) {
         {card.type === 'free_text' && (
           <div style={{ background: 'var(--c-primary-tint-2)', border: '2px solid var(--c-primary-line)', borderRadius: 12, padding: 14, minHeight: 64, fontSize: 14, color: 'var(--c-ink-disabled)', marginTop: 12 }}>Answered on the exercise screen</div>
         )}
+        {card.type === 'multi_select' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 9, marginTop: 12 }}>
+            {(card.payload as MultiSelectPayload).options.map((o, i) => <Tile key={i}>{(si ? o.si || o.en : o.en) || '…'}</Tile>)}
+          </div>
+        )}
+        {(card.type === 'essay' || card.type === 'rubric') && (
+          <div style={{ background: 'var(--c-primary-tint-2)', border: '2px solid var(--c-primary-line)', borderRadius: 12, padding: 14, minHeight: 64, fontSize: 14, color: 'var(--c-ink-disabled)', marginTop: 12 }}>Answered on the exercise screen</div>
+        )}
       </div>
     </div>
   );
@@ -65,6 +75,7 @@ function LessonCard({ card }: { card: Card }) {
 export function LessonPage() {
   const { stageId, lessonId } = useParams();
   const { curriculum } = useCurriculum();
+  const [lang, setLang] = useState<'en' | 'si'>('en');
   const stage = curriculum.stages.find((s) => s.id === stageId);
   const lesson = stage?.lessons.find((l) => l.id === lessonId);
   const stageIndex = stage ? curriculum.stages.indexOf(stage) + 1 : 1;
@@ -94,6 +105,7 @@ export function LessonPage() {
             <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.75)', letterSpacing: '0.04em' }}>STAGE {stageIndex} — {stage.title.en}</div>
             <div className="si" style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.85)' }}>අදියර {stageIndex} — {stage.title.si}</div>
           </div>
+          <div style={{ marginLeft: 'auto' }}><LangToggle lang={lang} onToggle={() => setLang((l) => (l === 'en' ? 'si' : 'en'))} /></div>
         </div>
       </div>
 
@@ -104,7 +116,7 @@ export function LessonPage() {
         </div>
 
         <div className="cardgrid">
-          {cards.map((c) => <LessonCard key={c.id} card={c} />)}
+          {cards.map((c) => <LessonCard key={c.id} card={c} lang={lang} />)}
         </div>
 
         {cards.length === 0 && (

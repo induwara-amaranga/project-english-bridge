@@ -4,7 +4,6 @@ import { useCurriculum } from '../../hooks/useCurriculum';
 import { useProgress } from '../../hooks/useProgress';
 import { isLessonComplete } from '../../domain/progress';
 import { LangToggle } from '../../components/Primitives';
-import { LinkButton } from '../../components/Button';
 
 const PLANET_GRADIENTS = [
   'radial-gradient(circle at 35% 30%, #6EE7A8, #2FAE63 70%)',
@@ -41,19 +40,7 @@ export function StageLessons() {
   const stageNo = idx + 1;
   const titleFont = isSi ? 'var(--font-si-display)' : 'var(--font-display)';
 
-  if (stage.placeholder && stage.taskHref) {
-    return (
-      <div className="app-shell" style={{ background: '#FFFFFF', color: 'white' }}>
-        <StageHeader stage={stage} stageNo={stageNo} lang={lang} onToggleLang={() => setLang((l) => (l === 'en' ? 'si' : 'en'))} titleFont={titleFont} idx={idx} />
-        <div style={{ maxWidth: 640, margin: '0 auto', padding: '48px 24px', textAlign: 'center', color: '#1E1B2E' }}>
-          <p style={{ fontSize: 16, color: '#6B6580', marginBottom: 24 }}>{isSi ? 'මෙම අදියරේ එකම කාර්යයක් ඇත.' : 'This stage is a single writing task.'}</p>
-          <LinkButton to={stage.taskHref} variant="primary" size="lg">{isSi ? 'ආරම්භ කරන්න' : 'Start the task'}</LinkButton>
-        </div>
-      </div>
-    );
-  }
-
-  if (stage.placeholder || stage.lessons.length === 0) {
+  if (stage.lessons.length === 0) {
     return (
       <div className="app-shell" style={{ background: '#FFFFFF' }}>
         <StageHeader stage={stage} stageNo={stageNo} lang={lang} onToggleLang={() => setLang((l) => (l === 'en' ? 'si' : 'en'))} titleFont={titleFont} idx={idx} />
