@@ -29,11 +29,15 @@ const PlayIcon = () => <svg width="28" height="28" viewBox="0 0 26 26" fill="whi
 
 export function StageLessons() {
   const { stageId } = useParams();
-  const { curriculum } = useCurriculum();
+  const { curriculum, loading } = useCurriculum();
   const { progress } = useProgress();
   const navigate = useNavigate();
   const [lang, setLang] = useState<'en' | 'si'>('en');
   const isSi = lang === 'si';
+
+  if (loading || curriculum.stages.length === 0) {
+    return <div className="app-shell" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B6580', fontWeight: 600 }}>{loading ? 'Loading…' : 'No courses yet.'}</div>;
+  }
 
   const idx = curriculum.stages.findIndex((s) => s.id === stageId);
   const stage = curriculum.stages[idx] ?? curriculum.stages[0];

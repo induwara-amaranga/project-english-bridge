@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { LangToggle, RoleToggle } from '../../components/Primitives';
 import { roleHome, useAuth, type Role } from '../../hooks/useAuth';
+import { errorMessage } from '../../lib/apiClient';
+import { submitPlacement } from '../../domain/progress';
 
 const COPY = {
   en: {
@@ -10,9 +12,10 @@ const COPY = {
     nameLabel: 'Your name', namePlaceholder: 'Your name',
     ageLabel: 'Your age', agePlaceholder: 'Your age',
     emailLabel: 'Email address', emailPlaceholder: 'Email address',
-    passwordLabel: 'Create a password', passwordPlaceholder: 'Create a password',
-    submit: 'Save and continue', secondary: 'Continue without an account',
+    passwordLabel: 'Create a password', passwordPlaceholder: 'At least 8 characters',
+    submit: 'Save and continue', submitting: 'Creating your account…', secondary: 'Continue without an account',
     or: 'OR', google: 'Continue with Google', facebook: 'Continue with Facebook', signIn: 'Sign In',
+    oauthUnavailable: 'Social sign-up is not available yet — please fill in the form.',
   },
   si: {
     framing: 'ඔබේ ප්‍රගතිය සුරකින්න, ඊළඟ වතාවේ ආපහු එනකොට තියෙන්න.',
@@ -20,9 +23,10 @@ const COPY = {
     nameLabel: 'ඔබේ නම', namePlaceholder: 'ඔබේ නම',
     ageLabel: 'ඔබේ වයස', agePlaceholder: 'ඔබේ වයස',
     emailLabel: 'විද්‍යුත් තැපැල් ලිපිනය', emailPlaceholder: 'විද්‍යුත් තැපැල් ලිපිනය',
-    passwordLabel: 'මුරපදයක් සාදන්න', passwordPlaceholder: 'මුරපදයක් සාදන්න',
-    submit: 'සුරකින්න, ඉදිරියට යන්න', secondary: 'ගිණුමකින් තොරව ඉදිරියට යන්න',
+    passwordLabel: 'මුරපදයක් සාදන්න', passwordPlaceholder: 'අවම වශයෙන් අකුරු 8ක්',
+    submit: 'සුරකින්න, ඉදිරියට යන්න', submitting: 'ගිණුම සාදමින්…', secondary: 'ගිණුමකින් තොරව ඉදිරියට යන්න',
     or: 'හෝ', google: 'Google සමඟ ඉදිරියට යන්න', facebook: 'Facebook සමඟ ඉදිරියට යන්න', signIn: 'පිවිසෙන්න',
+    oauthUnavailable: 'සමාජ මාධ්‍ය ලියාපදිංචිය තවම නොමැත — කරුණාකර පෝරමය පුරවන්න.',
   },
 };
 
@@ -36,17 +40,53 @@ export function SignUp() {
   const [age, setAge] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { signUp } = useAuth();
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const { signUp, continueAsGuest } = useAuth();
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  // Set by PlacementTest's "Create account" link so a result taken before
+  // signing up is not lost the moment a real account exists to hold it.
+  const placementStage = params.get('placementStage');
   const c = COPY[lang];
   const isSi = lang === 'si';
   const headFont = isSi ? 'var(--font-si-display)' : 'var(--font-display)';
 
-  const submit = (e: React.FormEvent) => { e.preventDefault(); signUp(name || 'Learner', email, role); navigate(roleHome(role)); };
-  const oauth = () => { signUp('Learner', 'learner@example.com', role); navigate(roleHome(role)); };
-  // No real backend, so "continue without an account" still needs a session to
-  // pass the student-only gate on /learn — sign up as a nameless guest learner.
-  const continueAsGuest = () => { signUp('Guest', 'guest@example.com', 'student'); navigate('/learn'); };
+  const applyPlacement = async (userRole: Role) => {
+    if (!placementStage || userRole !== 'student') return;
+    try { await submitPlacement(placementStage); } catch { /* best-effort — the roadmap still works without it */ }
+  };
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (busy) return;
+    setError('');
+    setBusy(true);
+    try {
+      const user = await signUp(name || 'Learner', email, password, role);
+      await applyPlacement(user.role);
+      navigate(roleHome(user.role));
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const oauth = () => setError(c.oauthUnavailable);
+  const continueAsGuestClick = async () => {
+    if (busy) return;
+    setError('');
+    setBusy(true);
+    try {
+      const user = await continueAsGuest();
+      await applyPlacement(user.role);
+      navigate('/learn');
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <div style={{ fontFamily: isSi ? 'var(--font-si-body)' : 'var(--font-body)', background: 'var(--c-bg)', color: 'var(--c-ink)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -70,7 +110,8 @@ export function SignUp() {
             )}
             <div className="field"><label className="field__label">{c.emailLabel}</label><input type="email" className="field__input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={c.emailPlaceholder} /></div>
             <div className="field"><label className="field__label">{c.passwordLabel}</label><input type="password" className="field__input" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={c.passwordPlaceholder} /></div>
-            <button type="submit" style={{ background: 'var(--c-primary)', color: 'white', border: 'none', borderRadius: 999, padding: 16, fontWeight: 700, fontSize: 16, fontFamily: headFont, cursor: 'pointer', boxShadow: '0 5px 0 var(--c-primary-shadow)', marginTop: 8 }}>{c.submit}</button>
+            {error && <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--c-danger-ink-2, #C2354A)' }}>{error}</div>}
+            <button type="submit" disabled={busy} style={{ background: 'var(--c-primary)', color: 'white', border: 'none', borderRadius: 999, padding: 16, fontWeight: 700, fontSize: 16, fontFamily: headFont, cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.7 : 1, boxShadow: '0 5px 0 var(--c-primary-shadow)', marginTop: 8 }}>{busy ? c.submitting : c.submit}</button>
           </form>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 22 }}>
@@ -84,7 +125,7 @@ export function SignUp() {
 
           {role === 'student' && (
             <div style={{ textAlign: 'center', marginTop: 20 }}>
-              <button onClick={continueAsGuest} type="button" style={{ fontWeight: 700, fontSize: 15, background: 'none', border: 'none', color: 'var(--c-primary)', cursor: 'pointer' }}>{c.secondary}</button>
+              <button onClick={continueAsGuestClick} disabled={busy} type="button" style={{ fontWeight: 700, fontSize: 15, background: 'none', border: 'none', color: 'var(--c-primary)', cursor: busy ? 'default' : 'pointer' }}>{c.secondary}</button>
             </div>
           )}
         </div>

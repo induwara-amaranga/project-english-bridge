@@ -1,3 +1,5 @@
+import { apiGet, apiPost } from '../lib/apiClient';
+import type { Answer } from './grading';
 import type { Curriculum, Stage } from './types';
 
 // ---------------------------------------------------------------------------
@@ -11,9 +13,9 @@ import type { Curriculum, Stage } from './types';
 // (ARCHITECTURE.md, Weakness 2). This is the one source now; every screen
 // that shows XP, streak, or stage completion reads it.
 //
-// In production this is `GET/PUT /api/progress`, keyed by the signed-in
-// learner. Here it is one `localStorage` key, seeded once from the demo
-// figures so screenshots stay consistent with the original prototype.
+// `GET /api/progress` is scoped to the signed-in learner; the two writes
+// below go through the server so XP cannot be forged from devtools — see
+// SPRINGBOOT-MIGRATION.md section 5.
 // ---------------------------------------------------------------------------
 
 export interface Progress {
@@ -28,34 +30,47 @@ export interface Progress {
   currentStagePct: number;
 }
 
-const KEY = 'englisher.progress';
-
-const PROGRESS_DEFAULT: Progress = {
-  xp: 240,
-  streakDays: 7,
-  lastActiveISO: new Date().toISOString(),
-  completedLessonIds: { tenses: ['word-order'] },
-  currentStageId: 'complex-sentences',
-  currentStagePct: 60,
+/** The empty state a hook renders before its first fetch resolves — never persisted. */
+export const EMPTY_PROGRESS: Progress = {
+  xp: 0,
+  streakDays: 0,
+  lastActiveISO: new Date(0).toISOString(),
+  completedLessonIds: {},
+  currentStageId: '',
+  currentStagePct: 0,
 };
 
-export function loadProgress(): Progress {
-  try {
-    const raw = window.localStorage.getItem(KEY);
-    if (raw) return JSON.parse(raw) as Progress;
-  } catch {
-    /* storage blocked */
-  }
-  return JSON.parse(JSON.stringify(PROGRESS_DEFAULT)) as Progress;
+export function loadProgress(): Promise<Progress> {
+  return apiGet<Progress>('/api/progress');
 }
 
-export function saveProgress(p: Progress): boolean {
-  try {
-    window.localStorage.setItem(KEY, JSON.stringify(p));
-    return true;
-  } catch {
-    return false;
-  }
+export interface GradedCard {
+  cardId: string;
+  type: string;
+  answered: boolean;
+  correct: boolean;
+}
+
+export interface CompleteLessonResult {
+  passed: boolean;
+  xpAwarded: number;
+  cards: GradedCard[];
+  progress: Progress;
+}
+
+/**
+ * Sends the learner's answers for every interactive card in the lesson so
+ * the server can re-grade them independently (with `domain/grading.ts`'s own
+ * ported rules) and award XP only on a pass — see ProgressService on the
+ * backend for why this cannot just persist a client-computed result.
+ */
+export function completeLesson(stageId: string, lessonId: string, answers: Record<string, Answer>): Promise<CompleteLessonResult> {
+  return apiPost<CompleteLessonResult>(`/api/progress/lessons/${encodeURIComponent(lessonId)}/complete`, { stageId, answers });
+}
+
+/** The placement test's result — where it drops the learner. */
+export function submitPlacement(stageId: string): Promise<Progress> {
+  return apiPost<Progress>('/api/progress/placement', { stageId });
 }
 
 export function stageStatus(p: Progress, stage: Stage, curriculum: Curriculum): 'completed' | 'current' | 'locked' {
@@ -79,27 +94,12 @@ export function completedStageCount(p: Progress, curriculum: Curriculum): number
 }
 
 export function overallPercent(p: Progress, curriculum: Curriculum): number {
-  const completed = completedStageCount(p, curriculum);
   const total = curriculum.stages.length;
+  if (total === 0) return 0; // curriculum still loading — nothing to divide by yet
+  const completed = completedStageCount(p, curriculum);
   return Math.round(((completed + p.currentStagePct / 100) / total) * 100);
 }
 
 export function isLessonComplete(p: Progress, stageId: string, lessonId: string): boolean {
   return (p.completedLessonIds[stageId] || []).includes(lessonId);
-}
-
-export function markLessonComplete(p: Progress, stageId: string, lessonId: string): Progress {
-  const list = p.completedLessonIds[stageId] || [];
-  if (list.includes(lessonId)) return p;
-  return {
-    ...p,
-    xp: p.xp + 10,
-    completedLessonIds: { ...p.completedLessonIds, [stageId]: [...list, lessonId] },
-    lastActiveISO: new Date().toISOString(),
-  };
-}
-
-/** Advance to a given stage — used once a placement test decides a starting point. */
-export function setCurrentStage(p: Progress, stageId: string): Progress {
-  return { ...p, currentStageId: stageId, currentStagePct: 0 };
 }

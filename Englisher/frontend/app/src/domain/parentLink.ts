@@ -1,11 +1,14 @@
+import { apiDelete, apiGet, apiPost } from '../lib/apiClient';
+import type { Progress } from './progress';
+
 // ---------------------------------------------------------------------------
 // PARENT ACCESS LINK — ported from parent-link.js unchanged in behaviour.
 //
 // A parent never signs up on their own and is never given the child's login.
 // The child invites a parent by email/phone; only after the parent accepts
-// does the dashboard unlock. In production this is a row in a `parent_links`
-// table (child_id, contact, status, invited_at, accepted_at) with a signed,
-// expiring invitation token. Here it is one `localStorage` key.
+// does the dashboard unlock. This is now a real `parent_links` row behind
+// `/api/parent-links/*` (child side) and `/api/parent/dashboard` (parent
+// side) — see SPRINGBOOT-MIGRATION.md section 6.
 // ---------------------------------------------------------------------------
 
 export type ParentLinkStatus = 'none' | 'invited' | 'accepted';
@@ -18,27 +21,56 @@ export interface ParentLink {
   acceptedAt: number | null;
 }
 
-const KEY = 'englisher.parentLink';
-
 export const PARENT_LINK_DEFAULT: ParentLink = { status: 'none', contact: '', channel: '', invitedAt: null, acceptedAt: null };
 
-export function loadParentLink(): ParentLink {
-  try {
-    const raw = window.localStorage.getItem(KEY);
-    if (raw) return JSON.parse(raw) as ParentLink;
-  } catch {
-    /* storage blocked — fall through to the default */
-  }
-  return JSON.parse(JSON.stringify(PARENT_LINK_DEFAULT)) as ParentLink;
+// ---------------------------------------------------------------------------
+// Child side — ParentAccess.tsx
+// ---------------------------------------------------------------------------
+
+export function loadParentLink(): Promise<ParentLink> {
+  return apiGet<ParentLink>('/api/parent-links');
 }
 
-export function saveParentLink(link: ParentLink): boolean {
-  try {
-    window.localStorage.setItem(KEY, JSON.stringify(link));
-    return true;
-  } catch {
-    return false;
-  }
+export function inviteParent(contact: string): Promise<ParentLink> {
+  return apiPost<ParentLink>('/api/parent-links/invite', { contact });
+}
+
+export function resendParentInvite(): Promise<ParentLink> {
+  return apiPost<ParentLink>('/api/parent-links/resend');
+}
+
+export function revokeParentLink(): Promise<ParentLink> {
+  return apiDelete<ParentLink>('/api/parent-links');
+}
+
+// ---------------------------------------------------------------------------
+// Parent side — ParentDashboard.tsx
+// ---------------------------------------------------------------------------
+
+export interface ChildSubmission {
+  stageId: string;
+  lessonId: string;
+  cardId: string;
+  excerpt: string;
+  status: string;
+  updatedAt: string;
+}
+
+/** Everything the parent dashboard needs in one call — see ParentController on the backend. */
+export interface ParentDashboardData {
+  childName: string;
+  stageName: string;
+  stageId: string;
+  progress: Progress;
+  completedStages: number;
+  totalStages: number;
+  overallPercent: number;
+  recentWriting: ChildSubmission[];
+}
+
+/** Throws an ApiRequestError with code `parentLink.notLinked` (404) when no child has linked this account yet. */
+export function loadParentDashboard(): Promise<ParentDashboardData> {
+  return apiGet<ParentDashboardData>('/api/parent/dashboard');
 }
 
 /** An invitation goes to exactly one of the two channels — inferred, not asked for twice. */

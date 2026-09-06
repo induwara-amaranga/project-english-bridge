@@ -46,18 +46,25 @@ function TreeMove({ onUp, onDown, upOk, downOk }: { onUp: (e: React.MouseEvent) 
 
 export function CourseEditor() {
   const api = useCourseEditor();
-  const { curriculum, sel, expanded, dirty, saved, pendingDelete, draft, stage, lesson, exercise, card } = api;
+  const { curriculum, sel, expanded, dirty, saved, pendingDelete, draft, loading, loadError, saving, saveError, stage, lesson, exercise, card } = api;
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const logout = () => { signOut(); navigate('/signin'); };
+
+  if (loading) {
+    return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#6B6580', fontWeight: 600 }}>Loading curriculum…</div>;
+  }
+  if (loadError) {
+    return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#C2354A', fontWeight: 600 }}>Could not load the curriculum: {loadError}</div>;
+  }
 
   const holder: Lesson | Exercise | null = exercise || lesson;
   const editingCard = !!sel.cardId;
   const type = card.type;
   const stageExCount = stage ? stage.lessons.reduce((n, l) => n + l.exercises.length, 0) : 0;
   const breadcrumb = [stage && stageName(stage), lesson && lessonNameOf(lesson)].filter(Boolean).join(' › ') || '—';
-  const dirtyLabel = dirty === 0 ? (saved ? 'Draft saved' : 'No changes') : `${dirty} unsaved change${dirty === 1 ? '' : 's'}`;
-  const dirtyColor = dirty === 0 ? (saved ? '#3E8E5B' : '#6B6580') : '#B37E00';
+  const dirtyLabel = saving ? 'Saving…' : dirty === 0 ? (saved ? 'Draft saved' : 'No changes') : `${dirty} unsaved change${dirty === 1 ? '' : 's'}`;
+  const dirtyColor = saving ? '#6B6580' : dirty === 0 ? (saved ? '#3E8E5B' : '#6B6580') : '#B37E00';
 
   const stDel = delStyle(pendingDelete === 'course', stage && stage.lessons.length ? plural(stage.lessons.length, 'lesson') : undefined);
   const lsDel = delStyle(pendingDelete === 'lesson', lesson && lesson.exercises.length ? plural(lesson.exercises.length, 'exercise') : undefined);
@@ -78,8 +85,9 @@ export function CourseEditor() {
           <span style={{ fontSize: 13, fontWeight: 600, color: '#6B6580' }}>{breadcrumb}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          {saveError && <span style={{ fontSize: 12, fontWeight: 700, color: '#C2354A' }}>{saveError}</span>}
           <span style={{ fontSize: 12, fontWeight: 700, color: dirtyColor }}>{dirtyLabel}</span>
-          <button className="savebtn" onClick={api.save}>Save draft</button>
+          <button className="savebtn" onClick={api.save} disabled={saving} style={saving ? { opacity: 0.6, cursor: 'default' } : undefined}>{saving ? 'Saving…' : 'Save draft'}</button>
           <button onClick={logout} style={{ background: 'none', border: '1px solid #E3DEF5', borderRadius: 999, padding: '8px 14px', fontSize: 12, fontWeight: 700, color: '#4A4560', cursor: 'pointer' }}>Sign out</button>
         </div>
       </div>

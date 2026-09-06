@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useCurriculum } from '../../hooks/useCurriculum';
 import { useProgress } from '../../hooks/useProgress';
-import { markLessonComplete } from '../../domain/progress';
+import { completeLesson } from '../../domain/progress';
 import { RichText } from '../../components/RichText';
 import { LangToggle } from '../../components/Primitives';
 import { LinkButton } from '../../components/Button';
@@ -26,7 +26,7 @@ function defaultAnswer(card: Card): Answer {
 export function ExercisePage() {
   const { stageId, lessonId } = useParams();
   const { curriculum } = useCurriculum();
-  const { progress, update } = useProgress();
+  const { setProgress } = useProgress();
 
   const stage = curriculum.stages.find((s) => s.id === stageId);
   const lesson = stage?.lessons.find((l) => l.id === lessonId);
@@ -36,9 +36,11 @@ export function ExercisePage() {
 
   const [qIndex, setQIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, Answer>>({});
+  const [allAnswers, setAllAnswers] = useState<Record<string, Answer>>({});
   const [checked, setChecked] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
   const [complete, setComplete] = useState(false);
+  const [finishing, setFinishing] = useState(false);
   const [lang, setLang] = useState<'en' | 'si'>('en');
 
   if (!stage || !lesson || exercises.length === 0) {
@@ -70,12 +72,26 @@ export function ExercisePage() {
     const right = interactiveCards.every((c) => gradeCard(c, answerFor(c)));
     setChecked(true);
     setCorrectCount((n) => n + (right ? 1 : 0));
+    // Accumulated across the whole lesson — sent once, at the end, so the
+    // server can re-grade independently rather than trust this per-question
+    // local check (see ProgressService.completeLesson on the backend).
+    setAllAnswers((prev) => ({ ...prev, ...answers }));
   };
 
-  const next = () => {
+  const next = async () => {
     const nextIndex = qIndex + 1;
     if (nextIndex >= exercises.length) {
-      update(markLessonComplete(progress, stage.id, lesson.id));
+      setFinishing(true);
+      try {
+        const result = await completeLesson(stage.id, lesson.id, { ...allAnswers, ...answers });
+        setProgress(result.progress);
+      } catch {
+        // Best-effort — the completion screen still shows; the server is the
+        // source of truth for XP, so a failed save here costs nothing to
+        // pretend it succeeded locally.
+      } finally {
+        setFinishing(false);
+      }
       setComplete(true);
       return;
     }
@@ -127,8 +143,8 @@ export function ExercisePage() {
                       ? (lang === 'si' ? fb.correct.si || fb.correct.en : fb.correct.en) || 'Correct.'
                       : (lang === 'si' ? fb.incorrect.si || fb.incorrect.en : fb.incorrect.en) || 'Not quite — have another look.'}
                 </p>
-                <button onClick={next} style={{ alignSelf: 'flex-end', background: 'var(--c-primary)', color: 'white', border: 'none', borderRadius: 12, padding: '12px 28px', fontWeight: 700, fontSize: 15, fontFamily: 'var(--font-display)', cursor: 'pointer' }}>
-                  {qIndex + 1 >= exercises.length ? 'Finish' : 'Next question'}
+                <button onClick={next} disabled={finishing} style={{ alignSelf: 'flex-end', background: 'var(--c-primary)', color: 'white', border: 'none', borderRadius: 12, padding: '12px 28px', fontWeight: 700, fontSize: 15, fontFamily: 'var(--font-display)', cursor: finishing ? 'default' : 'pointer', opacity: finishing ? 0.7 : 1 }}>
+                  {finishing ? 'Saving…' : qIndex + 1 >= exercises.length ? 'Finish' : 'Next question'}
                 </button>
               </div>
             )}

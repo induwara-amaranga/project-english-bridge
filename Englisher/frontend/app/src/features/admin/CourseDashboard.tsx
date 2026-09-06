@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCurriculum } from '../../hooks/useCurriculum';
+import { useAnalytics } from '../../hooks/useAnalytics';
 import { useAuth } from '../../hooks/useAuth';
-import { ANALYTICS } from '../../domain/curriculum';
 import { TYPE_META } from '../../domain/types';
 import type { ExerciseType } from '../../domain/types';
 import { repairUnlocks } from '../../domain/curriculum';
@@ -15,6 +15,7 @@ const TYPE_ORDER: ExerciseType[] = ['mcq', 'gap_fill', 'drag_order', 'match', 'f
 
 export function CourseDashboard() {
   const { curriculum, mutate } = useCurriculum();
+  const { analytics } = useAnalytics();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const logout = () => { signOut(); navigate('/signin'); };
@@ -35,8 +36,9 @@ export function CourseDashboard() {
       const tmp = c.stages[i]; c.stages[i] = c.stages[j]; c.stages[j] = tmp;
       c.stages.forEach((s, k) => { s.order = k + 1; });
       repairUnlocks(c);
-    });
-    setNote('Order saved');
+    })
+      .then(() => setNote('Order saved'))
+      .catch(() => setNote('Failed to save — try again'));
   };
 
   const stages = curriculum.stages;
@@ -73,7 +75,7 @@ export function CourseDashboard() {
     { label: 'COURSES', value: stages.length, sub: stages.length === 1 ? '1 stage on the roadmap' : `${stages.length} stages on the roadmap` },
     { label: 'LESSONS', value: allLessons.length, sub: 'across all courses' },
     { label: 'EXERCISES', value: totalExercises, sub: `${TYPE_ORDER.filter((t) => counts[t] > 0).length} of 5 types in use` },
-    { label: 'ACTIVE LEARNERS', value: ANALYTICS.activeLearners, sub: `${ANALYTICS.weeklyActive} active this week` },
+    { label: 'ACTIVE LEARNERS', value: analytics.activeLearners, sub: `${analytics.weeklyActive} active this week` },
   ];
 
   return (
@@ -146,7 +148,7 @@ export function CourseDashboard() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {stages.map((st, si) => {
-            const a = ANALYTICS.byStage[st.id] || { completionPct: 0, learners: 0 };
+            const a = analytics.byStage[st.id] || { completionPct: 0, learners: 0 };
             const exCount = st.lessons.reduce((n, l) => n + l.exercises.length, 0);
             const isExpanded = !!expanded[st.id];
             return (

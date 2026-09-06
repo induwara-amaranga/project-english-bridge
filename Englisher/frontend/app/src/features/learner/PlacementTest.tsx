@@ -1,47 +1,44 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useProgress } from '../../hooks/useProgress';
-import { useCurriculum } from '../../hooks/useCurriculum';
 import { useAuth } from '../../hooks/useAuth';
-import { setCurrentStage } from '../../domain/progress';
+import { loadPlacement, type Placement } from '../../domain/placement';
+import { submitPlacement } from '../../domain/progress';
+import { errorMessage } from '../../lib/apiClient';
 
-type Question =
-  | { stage: number; type: 'choice'; prompt: string; options: string[]; correct: string }
-  | { stage: number; type: 'translate'; prompt: string; sinhala: string };
-
-const QUESTIONS: Question[] = [
-  { stage: 1, type: 'choice', prompt: 'Which sentence is correct?', options: ['I eat rice', 'I rice eat'], correct: 'I eat rice' },
-  { stage: 1, type: 'choice', prompt: 'Fill the blank: "She ___ to school every day."', options: ['go', 'goes'], correct: 'goes' },
-  { stage: 2, type: 'choice', prompt: 'Which sentence uses "because" correctly?', options: ['I was late because traffic.', 'I was late because the traffic was heavy.'], correct: 'I was late because the traffic was heavy.' },
-  { stage: 3, type: 'choice', prompt: 'Fill the blank: "The book is ___ the table."', options: ['on', 'in'], correct: 'on' },
-  { stage: 4, type: 'choice', prompt: 'Which sentence is passive voice?', options: ['The chef cooked the meal.', 'The meal was cooked by the chef.'], correct: 'The meal was cooked by the chef.' },
-  { stage: 5, type: 'translate', prompt: 'Translate this into English:', sinhala: 'මම පාසැලට යනවා' },
-];
-
-const STAGE_NAMES: Record<number, string> = { 1: 'Tenses', 2: 'Complex Sentences', 3: 'Adjectives & Prepositions', 4: 'Passive Voice', 5: 'Everyday Translation' };
-const STAGE_MESSAGES: Record<number, string> = {
-  1: "You're ready to start at Stage 1 — Tenses. Everyone starts somewhere. This is exactly where you'll build the strongest foundation.",
-  2: "You're ready to start at Stage 2 — Complex Sentences. You've already got the basics of word order down. Let's build from there.",
-  3: "You're ready to start at Stage 3 — Adjectives & Prepositions. You're already forming full sentences with the right tenses. Time to sharpen the details.",
-  4: "You're ready to start at Stage 4 — Passive Voice. You're handling complex sentence structure well. Let's build on that.",
-  5: "You're ready to start at Stage 5 — Everyday Translation. You're translating between languages naturally already. Let's put that to work.",
-};
-
-type Screen = 'intro' | 'question' | 'feedback' | 'result';
+type Screen = 'loading' | 'error' | 'intro' | 'question' | 'feedback' | 'result';
 
 export function PlacementTest() {
-  const { curriculum } = useCurriculum();
-  const { progress, update } = useProgress();
-  const { signUp } = useAuth();
+  const { continueAsGuest } = useAuth();
   const navigate = useNavigate();
-  const [screen, setScreen] = useState<Screen>('intro');
+  const [placement, setPlacement] = useState<Placement | null>(null);
+  const [screen, setScreen] = useState<Screen>('loading');
+  const [loadErr, setLoadErr] = useState('');
   const [qIndex, setQIndex] = useState(0);
   const [correctStages, setCorrectStages] = useState<number[]>([]);
   const [translateInput, setTranslateInput] = useState('');
   const [pending, setPending] = useState<{ isCorrect: boolean; correctLabel: string } | null>(null);
+  const [busy, setBusy] = useState(false);
 
+  useEffect(() => {
+    let alive = true;
+    loadPlacement()
+      .then((p) => { if (alive) { setPlacement(p); setScreen('intro'); } })
+      .catch((err) => { if (alive) { setLoadErr(errorMessage(err)); setScreen('error'); } });
+    return () => { alive = false; };
+  }, []);
+
+  if (screen === 'loading' || !placement) {
+    return <CenteredShell>Loading…</CenteredShell>;
+  }
+  if (screen === 'error') {
+    return <CenteredShell>Could not load the placement test: {loadErr}</CenteredShell>;
+  }
+
+  const QUESTIONS = placement.questions;
   const q = QUESTIONS[qIndex];
   const resultStage = correctStages.length ? Math.max(...correctStages) : 1;
+  const resultCopy = placement.stages.find((s) => s.stage === resultStage);
+  const resultStageId = resultCopy?.stageId ?? null;
   const progressPct = Math.round((qIndex / QUESTIONS.length) * 100);
 
   const selectAnswer = (isCorrect: boolean, correctLabel: string) => { setPending({ isCorrect, correctLabel }); setScreen('feedback'); };
@@ -51,9 +48,6 @@ export function PlacementTest() {
     const nextIndex = qIndex + 1;
     if (nextIndex >= QUESTIONS.length) {
       setCorrectStages(next);
-      const finalStage = next.length ? Math.max(...next) : 1;
-      const stageId = curriculum.stages[finalStage - 1]?.id;
-      if (stageId) update(setCurrentStage(progress, stageId));
       setScreen('result');
     } else {
       setCorrectStages(next);
@@ -65,12 +59,24 @@ export function PlacementTest() {
   };
 
   // "Try a lesson first" is the no-account path the intro screen promises
-  // ("No account needed"), but /learn is gated to signed-in students — so,
-  // same as Sign Up's "Continue without an account", start a nameless guest
-  // session rather than bouncing this learner to sign-in.
-  const tryLessonFirst = () => { signUp('Guest', 'guest@example.com', 'student'); navigate('/learn'); };
+  // ("No account needed") — /learn is gated to signed-in students, so this
+  // signs into (or creates) the shared guest account, same as Sign Up's
+  // "Continue without an account", then posts the result the same way a real
+  // signup would.
+  const tryLessonFirst = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await continueAsGuest();
+      if (resultStageId) { try { await submitPlacement(resultStageId); } catch { /* best-effort */ } }
+      navigate('/learn');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const submitTranslate = () => {
+    if (q.type !== 'translate') return;
     const val = translateInput.toLowerCase();
     const isCorrect = val.includes('school') && (val.includes('go') || val.includes('going'));
     selectAnswer(isCorrect, 'I go to school');
@@ -92,7 +98,7 @@ export function PlacementTest() {
               </div>
             </div>
             <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 28, margin: '0 0 16px', lineHeight: 1.3 }}>Let&apos;s find your starting point.</h1>
-            <p style={{ fontSize: 17, lineHeight: 1.6, color: 'var(--c-ink-2)', margin: '0 0 36px' }}>6 quick questions, about 2 minutes. No account needed — just answer honestly, there&apos;s no wrong way to do this.</p>
+            <p style={{ fontSize: 17, lineHeight: 1.6, color: 'var(--c-ink-2)', margin: '0 0 36px' }}>{QUESTIONS.length} quick questions, about 2 minutes. No account needed — just answer honestly, there&apos;s no wrong way to do this.</p>
             <button onClick={() => setScreen('question')} style={{ background: 'var(--c-primary)', color: 'white', border: 'none', borderRadius: 999, padding: '18px 48px', fontWeight: 800, fontSize: 17, fontFamily: 'var(--font-display)', cursor: 'pointer', boxShadow: '0 6px 0 var(--c-primary-shadow)' }}>Start</button>
           </div>
         )}
@@ -100,7 +106,7 @@ export function PlacementTest() {
         {screen === 'question' && (
           <div style={{ maxWidth: 560, width: '100%' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <span style={{ fontWeight: 700, fontSize: 14 }}>Question {qIndex + 1} of 6</span>
+              <span style={{ fontWeight: 700, fontSize: 14 }}>Question {qIndex + 1} of {QUESTIONS.length}</span>
               <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--c-ink-soft)' }}>{progressPct}%</span>
             </div>
             <div style={{ width: '100%', height: 10, borderRadius: 999, background: 'var(--c-primary-tint)', marginBottom: 20, overflow: 'hidden' }}>
@@ -154,18 +160,26 @@ export function PlacementTest() {
             <div style={{ width: 88, height: 88, borderRadius: '50%', background: 'var(--c-warning-bg)', margin: '0 auto 28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <div style={{ width: 36, height: 36, background: 'var(--c-warning)', clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)' }} />
             </div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 26, margin: '0 0 8px' }}>Stage {resultStage} — {STAGE_NAMES[resultStage]}</h1>
-            <p style={{ fontSize: 17, lineHeight: 1.6, color: 'var(--c-ink-2)', margin: '0 0 36px', maxWidth: 480, marginLeft: 'auto', marginRight: 'auto' }}>{STAGE_MESSAGES[resultStage]}</p>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 26, margin: '0 0 8px' }}>Stage {resultStage} — {resultCopy?.name ?? ''}</h1>
+            <p style={{ fontSize: 17, lineHeight: 1.6, color: 'var(--c-ink-2)', margin: '0 0 36px', maxWidth: 480, marginLeft: 'auto', marginRight: 'auto' }}>{resultCopy?.message ?? ''}</p>
             <div className="card" style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 20 }}>
               <p style={{ margin: 0, fontSize: 16, lineHeight: 1.6, fontWeight: 600 }}>Save this so you don&apos;t lose it. Create a free account to start Stage {resultStage} and keep your progress, XP, and streak as you go.</p>
               <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-                <Link to="/signup" style={{ background: 'var(--c-primary)', color: 'white', borderRadius: 999, padding: '14px 30px', fontWeight: 700, fontSize: 15, fontFamily: 'var(--font-display)', boxShadow: '0 4px 0 var(--c-primary-shadow)', display: 'inline-block' }}>Create account</Link>
-                <button type="button" onClick={tryLessonFirst} style={{ background: 'white', color: 'var(--c-primary)', border: '2px solid var(--c-primary)', borderRadius: 999, padding: '14px 30px', fontWeight: 700, fontSize: 15, fontFamily: 'var(--font-display)', cursor: 'pointer' }}>Try a lesson first →</button>
+                <Link to={resultStageId ? `/signup?placementStage=${encodeURIComponent(resultStageId)}` : '/signup'} style={{ background: 'var(--c-primary)', color: 'white', borderRadius: 999, padding: '14px 30px', fontWeight: 700, fontSize: 15, fontFamily: 'var(--font-display)', boxShadow: '0 4px 0 var(--c-primary-shadow)', display: 'inline-block' }}>Create account</Link>
+                <button type="button" disabled={busy} onClick={tryLessonFirst} style={{ background: 'white', color: 'var(--c-primary)', border: '2px solid var(--c-primary)', borderRadius: 999, padding: '14px 30px', fontWeight: 700, fontSize: 15, fontFamily: 'var(--font-display)', cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.7 : 1 }}>Try a lesson first →</button>
               </div>
             </div>
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function CenteredShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ fontFamily: 'var(--font-body)', background: 'var(--c-bg)', color: 'var(--c-ink)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>
+      {children}
     </div>
   );
 }

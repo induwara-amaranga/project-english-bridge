@@ -1,3 +1,4 @@
+import { apiGet, apiPut } from '../lib/apiClient';
 import type { Card, Curriculum, Exercise, ExerciseType, Lesson, Payload, Stage } from './types';
 
 // ---------------------------------------------------------------------------
@@ -151,20 +152,8 @@ export const CURRICULUM_DEFAULT: Curriculum = {
   ],
 };
 
-// ---------------------------------------------------------------------------
-// Learner analytics — deliberately not part of the content object (see
-// curriculum.js). Demo figures.
-// ---------------------------------------------------------------------------
-export const ANALYTICS = {
-  activeLearners: 248,
-  weeklyActive: 171,
-  avgSessionMin: 12,
-  byStage: {
-    tenses: { learners: 248, completionPct: 62, avgAccuracyPct: 81 },
-    'complex-sentences': { learners: 154, completionPct: 34, avgAccuracyPct: 73 },
-    translation: { learners: 61, completionPct: 11, avgAccuracyPct: 68 },
-  } as Record<string, { learners: number; completionPct: number; avgAccuracyPct: number }>,
-};
+/** The empty document a hook renders before its first fetch resolves — never persisted. */
+export const EMPTY_CURRICULUM: Curriculum = { version: 0, stages: [] };
 
 // ---------------------------------------------------------------------------
 // MARKUP — real CommonMark now (rendered by markdown-it, edited via Tiptap +
@@ -281,27 +270,19 @@ export function repairUnlocks(c: Curriculum): void {
 }
 
 // ---------------------------------------------------------------------------
-// Persistence
+// Persistence — GET /api/curriculum, PUT /api/admin/curriculum (see
+// SPRINGBOOT-MIGRATION.md section 3). Reading works for any signed-in role;
+// writing is admin-only and enforced server-side, not just by RequireRole.
 // ---------------------------------------------------------------------------
-const KEY = 'englisher.curriculum.draft';
 
-export function loadCurriculum(): Curriculum {
-  try {
-    const raw = window.localStorage.getItem(KEY);
-    if (raw) return JSON.parse(raw) as Curriculum;
-  } catch {
-    /* storage blocked — fall through to the default */
-  }
-  return JSON.parse(JSON.stringify(CURRICULUM_DEFAULT)) as Curriculum;
+export function loadCurriculum(): Promise<Curriculum> {
+  return apiGet<Curriculum>('/api/curriculum');
 }
 
-export function saveCurriculum(c: Curriculum): boolean {
-  try {
-    window.localStorage.setItem(KEY, JSON.stringify(c));
-    return true;
-  } catch {
-    return false;
-  }
+/** Whole-document replace. Returns what the server actually stored — its own
+ * repairUnlocks/card-sync pass may have adjusted what was sent. */
+export function saveCurriculum(c: Curriculum): Promise<Curriculum> {
+  return apiPut<Curriculum>('/api/admin/curriculum', c);
 }
 
 // ---------------------------------------------------------------------------

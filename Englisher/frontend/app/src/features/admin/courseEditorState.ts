@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { emptyPayload, loadCurriculum, makeCard, normaliseCurriculum, repairUnlocks, saveCurriculum, syncLessonFromCards } from '../../domain/curriculum';
+import { EMPTY_CURRICULUM, emptyPayload, loadCurriculum, makeCard, normaliseCurriculum, repairUnlocks, saveCurriculum, syncLessonFromCards } from '../../domain/curriculum';
+import { errorMessage } from '../../lib/apiClient';
 import type { Card, CardType, Column, Curriculum, Exercise, Lesson, Payload, Stage } from '../../domain/types';
 
 // Ported from Course Editor.dc.html's Component class (its `edit`/`structuralEdit`/
@@ -81,45 +82,72 @@ function initialSelection(cur: Curriculum, stageIdQ: string | null, lessonIdQ: s
   return { stageId: stage.id, lessonId: lesson.id, exerciseId: ex ? ex.id : null, cardId: null };
 }
 
-export function useCourseEditor() {
-  const [params] = useSearchParams();
+interface InitialState { curriculum: Curriculum; sel: Selection; expanded: Record<string, boolean>; draft: Draft | null; dirty: number }
 
-  const [init] = useState(() => {
-    const cur = normaliseCurriculum(loadCurriculum());
-    const isNew = params.get('new');
-    const stageIdQ = params.get('stage');
-    const lessonIdQ = params.get('lesson');
-    let draft: Draft | null = null;
-    let sel: Selection;
-    if (isNew === 'course') {
-      const st = makeStage(cur);
-      cur.stages.push(st);
-      draft = { kind: 'course', stageId: st.id, lessonId: null };
-      sel = { stageId: st.id, lessonId: null, exerciseId: null, cardId: null };
-    } else if (isNew === 'lesson') {
-      const st = stageIdQ ? cur.stages.find((s) => s.id === stageIdQ) : cur.stages[0];
-      if (st) {
-        const ls = makeLesson(st);
-        st.lessons.push(ls);
-        draft = { kind: 'lesson', stageId: st.id, lessonId: ls.id };
-        sel = { stageId: st.id, lessonId: ls.id, exerciseId: null, cardId: null };
-      } else {
-        sel = initialSelection(cur, stageIdQ, lessonIdQ, params.get('exercise'));
-      }
+function buildInitialState(rawCur: Curriculum, params: URLSearchParams): InitialState {
+  const cur = normaliseCurriculum(rawCur);
+  const isNew = params.get('new');
+  const stageIdQ = params.get('stage');
+  const lessonIdQ = params.get('lesson');
+  let draft: Draft | null = null;
+  let sel: Selection;
+  if (isNew === 'course') {
+    const st = makeStage(cur);
+    cur.stages.push(st);
+    draft = { kind: 'course', stageId: st.id, lessonId: null };
+    sel = { stageId: st.id, lessonId: null, exerciseId: null, cardId: null };
+  } else if (isNew === 'lesson') {
+    const st = stageIdQ ? cur.stages.find((s) => s.id === stageIdQ) : cur.stages[0];
+    if (st) {
+      const ls = makeLesson(st);
+      st.lessons.push(ls);
+      draft = { kind: 'lesson', stageId: st.id, lessonId: ls.id };
+      sel = { stageId: st.id, lessonId: ls.id, exerciseId: null, cardId: null };
     } else {
       sel = initialSelection(cur, stageIdQ, lessonIdQ, params.get('exercise'));
     }
-    const expanded: Record<string, boolean> = {};
-    cur.stages.forEach((s) => { expanded[s.id] = s.id === sel.stageId; });
-    return { curriculum: cur, sel, expanded, draft, dirty: draft ? 1 : 0 };
-  });
+  } else {
+    sel = initialSelection(cur, stageIdQ, lessonIdQ, params.get('exercise'));
+  }
+  const expanded: Record<string, boolean> = {};
+  cur.stages.forEach((s) => { expanded[s.id] = s.id === sel.stageId; });
+  return { curriculum: cur, sel, expanded, draft, dirty: draft ? 1 : 0 };
+}
 
-  const [curriculum, setCurriculum_] = useState(init.curriculum);
-  const [sel, setSel] = useState<Selection>(init.sel);
-  const [expanded, setExpanded] = useState(init.expanded);
-  const [draft, setDraft] = useState<Draft | null>(init.draft);
-  const [dirty, setDirty] = useState(init.dirty);
+export function useCourseEditor() {
+  const [params] = useSearchParams();
+
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [curriculum, setCurriculum_] = useState<Curriculum>(EMPTY_CURRICULUM);
+  const [sel, setSel] = useState<Selection>({ stageId: null, lessonId: null, exerciseId: null, cardId: null });
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [dirty, setDirty] = useState(0);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Runs once, against the query params present at first mount — matching
+  // the original lazy-useState behaviour this replaced, including how a
+  // later change to ?stage=/?lesson= is deliberately ignored.
+  useEffect(() => {
+    let alive = true;
+    loadCurriculum()
+      .then((raw) => {
+        if (!alive) return;
+        const init = buildInitialState(raw, params);
+        setCurriculum_(init.curriculum);
+        setSel(init.sel);
+        setExpanded(init.expanded);
+        setDraft(init.draft);
+        setDirty(init.dirty);
+      })
+      .catch((err) => { if (alive) setLoadError(errorMessage(err)); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [showKey, setShowKey] = useState(false);
   const freshCompose = (): Card => makeCard('compose', 'text', 'full');
@@ -197,15 +225,23 @@ export function useCourseEditor() {
   const selectCard = (cardId: string | null) => { setSel((s) => ({ ...s, cardId })); setPendingDelete(null); };
   const newCard = () => { setSel((s) => ({ ...s, cardId: null })); setPendingDelete(null); setCompose(freshCompose()); };
 
-  const save = () => {
+  const save = async () => {
     const c = clone(curriculum);
     const finalSel = finaliseDraft(c, draft);
-    saveCurriculum(c);
-    setCurriculum_(c);
-    if (finalSel) { setSel(finalSel); setExpanded((e) => ({ ...e, [finalSel.stageId as string]: true })); }
-    setDraft(null);
-    setDirty(0);
-    setSaved(true);
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const server = normaliseCurriculum(await saveCurriculum(c));
+      setCurriculum_(server);
+      if (finalSel) { setSel(finalSel); setExpanded((e) => ({ ...e, [finalSel.stageId as string]: true })); }
+      setDraft(null);
+      setDirty(0);
+      setSaved(true);
+    } catch (err) {
+      setSaveError(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
   };
 
   // ---- structure: lessons / exercises ----
@@ -334,6 +370,7 @@ export function useCourseEditor() {
 
   return useMemo(() => ({
     curriculum, sel, expanded, dirty, saved, showKey, pendingDelete, compose, draft,
+    loading, loadError, saving, saveError,
     stage, lesson, exercise, card, isComposing: !sel.cardId,
     setShowKey, selectStage, selectLesson, selectExercise, selectCard, newCard,
     save, edit, editCard, editExercisePayload,
@@ -341,7 +378,7 @@ export function useCourseEditor() {
     moveStage, moveLesson, moveExercise, deleteStage, deleteLesson, deleteExercise,
     requestDelete, makeCardIn,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [curriculum, sel, expanded, dirty, saved, showKey, pendingDelete, compose, draft, stage, lesson, exercise, card]);
+  }), [curriculum, sel, expanded, dirty, saved, showKey, pendingDelete, compose, draft, loading, loadError, saving, saveError, stage, lesson, exercise, card]);
 }
 
 export type CourseEditorApi = ReturnType<typeof useCourseEditor>;

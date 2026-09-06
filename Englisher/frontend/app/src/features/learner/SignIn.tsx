@@ -1,26 +1,27 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LangToggle, RoleToggle } from '../../components/Primitives';
-import { roleHome, useAuth, type Role } from '../../hooks/useAuth';
+import { LangToggle } from '../../components/Primitives';
+import { roleHome, useAuth } from '../../hooks/useAuth';
+import { errorMessage } from '../../lib/apiClient';
 
 const COPY = {
   en: {
     framing: 'Welcome back! Pick up right where you left off.',
-    accountType: 'Signing in as',
     emailLabel: 'Email address', emailPlaceholder: 'Email address',
     passwordLabel: 'Password', passwordPlaceholder: 'Password',
-    forgot: 'Forgot password?', submit: 'Sign in',
+    forgot: 'Forgot password?', submit: 'Sign in', submitting: 'Signing in…',
     or: 'OR', google: 'Continue with Google', facebook: 'Continue with Facebook',
     noAccount: "Don't have an account?", signUp: 'Sign up',
+    oauthUnavailable: 'Social sign-in is not available yet — please use your email and password.',
   },
   si: {
     framing: 'නැවත සාදරයෙන් පිළිගනිමු! ඔබ නැවතුම් තැනින්ම ආරම්භ කරන්න.',
-    accountType: 'ගිණුම් වර්ගය',
     emailLabel: 'විද්‍යුත් තැපැල් ලිපිනය', emailPlaceholder: 'විද්‍යුත් තැපැල් ලිපිනය',
     passwordLabel: 'මුරපදය', passwordPlaceholder: 'මුරපදය',
-    forgot: 'මුරපදය අමතකද?', submit: 'පිවිසෙන්න',
+    forgot: 'මුරපදය අමතකද?', submit: 'පිවිසෙන්න', submitting: 'පිවිසෙමින්…',
     or: 'හෝ', google: 'Google සමඟ ඉදිරියට යන්න', facebook: 'Facebook සමඟ ඉදිරියට යන්න',
     noAccount: 'ගිණුමක් නැද්ද?', signUp: 'ලියාපදිංචි වන්න',
+    oauthUnavailable: 'සමාජ මාධ්‍ය පිවිසුම තවම නොමැත — කරුණාකර විද්‍යුත් තැපෑල සහ මුරපදය භාවිත කරන්න.',
   },
 };
 
@@ -29,17 +30,31 @@ const FacebookMark = () => <svg width="20" height="20" viewBox="0 0 24 24"><path
 
 export function SignIn() {
   const [lang, setLang] = useState<'en' | 'si'>('en');
-  const [role, setRole] = useState<Role>('student');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
   const { signIn } = useAuth();
   const navigate = useNavigate();
   const c = COPY[lang];
   const isSi = lang === 'si';
   const headFont = isSi ? 'var(--font-si-display)' : 'var(--font-display)';
 
-  const submit = (e: React.FormEvent) => { e.preventDefault(); signIn(email, role); navigate(roleHome(role)); };
-  const oauth = () => { signIn('learner@example.com', role); navigate(roleHome(role)); };
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (busy) return;
+    setError('');
+    setBusy(true);
+    try {
+      const user = await signIn(email, password);
+      navigate(roleHome(user.role));
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const oauth = () => setError(c.oauthUnavailable);
 
   return (
     <div style={{ fontFamily: isSi ? 'var(--font-si-body)' : 'var(--font-body)', background: 'var(--c-bg)', color: 'var(--c-ink)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -53,11 +68,11 @@ export function SignIn() {
           <h1 style={{ fontFamily: headFont, fontWeight: 800, fontSize: 26, margin: '0 0 12px', lineHeight: 1.35, textAlign: 'center' }}>{c.framing}</h1>
 
           <form onSubmit={submit} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 18, marginTop: 28 }}>
-            <div className="field"><label className="field__label">{c.accountType}</label><RoleToggle role={role} onChange={setRole} /></div>
             <div className="field"><label className="field__label">{c.emailLabel}</label><input type="email" className="field__input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={c.emailPlaceholder} /></div>
             <div className="field"><label className="field__label">{c.passwordLabel}</label><input type="password" className="field__input" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={c.passwordPlaceholder} /></div>
+            {error && <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--c-danger-ink-2, #C2354A)' }}>{error}</div>}
             <div style={{ textAlign: 'right' }}><a href="#" style={{ fontSize: 13, fontWeight: 600 }}>{c.forgot}</a></div>
-            <button type="submit" style={{ background: 'var(--c-primary)', color: 'white', border: 'none', borderRadius: 999, padding: 16, fontWeight: 700, fontSize: 16, fontFamily: headFont, cursor: 'pointer', boxShadow: '0 5px 0 var(--c-primary-shadow)', marginTop: 8 }}>{c.submit}</button>
+            <button type="submit" disabled={busy} style={{ background: 'var(--c-primary)', color: 'white', border: 'none', borderRadius: 999, padding: 16, fontWeight: 700, fontSize: 16, fontFamily: headFont, cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.7 : 1, boxShadow: '0 5px 0 var(--c-primary-shadow)', marginTop: 8 }}>{busy ? c.submitting : c.submit}</button>
           </form>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 22 }}>

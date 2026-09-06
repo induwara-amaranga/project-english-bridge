@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCurriculum } from '../../hooks/useCurriculum';
 import { useProgress } from '../../hooks/useProgress';
@@ -33,13 +33,26 @@ const LockIcon = () => <svg width="20" height="20" viewBox="0 0 20 20" fill="non
 const CheckIcon = ({ size = 22 }: { size?: number }) => <svg width={size} height={size} viewBox="0 0 22 22" fill="none"><path d="M5 11.5L9.5 16L17 6" stroke="white" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 
 export function Roadmap() {
-  const { curriculum } = useCurriculum();
+  const { curriculum, loading } = useCurriculum();
   const { progress } = useProgress();
   const navigate = useNavigate();
   const [lang, setLang] = useState<'en' | 'si'>('en');
   const [view, setView] = useState<'list' | 'map'>('list');
   const [mascotStage, setMascotStage] = useState(() => Math.max(0, curriculum.stages.findIndex((s) => s.id === progress.currentStageId)));
   const [jumping, setJumping] = useState(false);
+
+  // Curriculum and progress load independently; once both are in, snap the
+  // mascot to the learner's actual stage rather than the loading-time default.
+  useEffect(() => {
+    if (loading) return;
+    const idx = curriculum.stages.findIndex((s) => s.id === progress.currentStageId);
+    if (idx >= 0) setMascotStage(idx);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, progress.currentStageId, curriculum.stages.length]);
+
+  if (loading || curriculum.stages.length === 0) {
+    return <div className="app-shell" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B6580', fontWeight: 600 }}>{loading ? 'Loading your roadmap…' : 'No courses yet.'}</div>;
+  }
 
   const isSi = lang === 'si';
   const bodyFont = isSi ? 'var(--font-si-body)' : 'var(--font-body)';
