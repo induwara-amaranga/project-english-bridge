@@ -8,6 +8,16 @@ Read [REACT-MIGRATION.md](REACT-MIGRATION.md) first — this document assumes th
 React app it describes is built (it is, under `app/`) and picks up exactly
 where that one left off, at its own "Phase 8 — Backend swap."
 
+> **Status: the server described here now exists, under [`server/`](server/).**
+> Phases 1–3 and the server halves of 4–7 are built and tested — every endpoint
+> in §3, against PostgreSQL, with `repairUnlocks` and `gradeCard` ported and the
+> frontend's own Vitest cases carried over as JUnit. What is *not* done is the
+> frontend cutover: `app/` is untouched and still on `localStorage`, so the
+> "**Frontend**" step in each of Phases 4–6, and all of Phase 8, remain open.
+> See [server/README.md](server/README.md) for how to run it and for the
+> deliberate gaps (invitations are logged rather than emailed; two analytics
+> figures have no source yet).
+
 ---
 
 ## 0. The premise
@@ -16,8 +26,8 @@ The frontend was built with this migration in mind, not as an afterthought:
 
 | Already in place | What it gives the backend |
 |---|---|
-| `app/src/domain/types.ts` | The API contract. `Curriculum`, `Stage`, `Lesson`, `Exercise`, `Card`, the five `*Payload` unions, `Progress`, `ParentLink` — these TypeScript interfaces **are** the DTO shapes to serialize. |
-| `app/src/lib/storage.ts` | The one seam. `getCurriculum/setCurriculum`, `getProgress/setProgress`, `getParentLink/setParentLink` are called from every page instead of touching storage directly. Swapping their implementation from `localStorage` to `fetch` touches this one file, not every page. |
+| `app/src/domain/types.ts` | The API contract. `Curriculum`, `Stage`, `Lesson`, `Exercise`, `Card`, the eight `*Payload` unions, `Progress`, `ParentLink` — these TypeScript interfaces **are** the DTO shapes to serialize. |
+| `app/src/lib/storage.ts` | The one seam. `getCurriculum/setCurriculum`, `getProgress/setProgress`, `getParentLink/setParentLink` are called from every page instead of touching storage directly. It is a pure re-export barrel over `domain/curriculum.ts`, `domain/progress.ts` and `domain/parentLink.ts` — so the `fetch` rewrite lands in those three `load*`/`save*` pairs, and no page import changes at all. |
 | `app/src/hooks/useAuth.tsx` | The auth seam. `signIn/signUp/signOut` and the `Role` type (`student \| parent \| admin`) are already the exact shape a real login needs to fill. |
 | `app/src/components/RequireRole.tsx` | Client-side route gating already exists. The backend's job is to make the same three roles authoritative, not to invent a new model. |
 | `curriculum.js`'s own header comment (ported into `domain/curriculum.ts`) | Documents its own seams: `GET /api/curriculum`, `PUT /api/admin/curriculum`, `GET /api/admin/analytics` (deliberately separate from content — "content is edited, analytics are observed"), and `parent-link.js` notes its state is "really a row in a `parent_links` table." |
@@ -26,6 +36,36 @@ The frontend was built with this migration in mind, not as an afterthought:
 that serve exactly what `domain/types.ts` already describes, put real auth
 and authorization behind them, and repoint `lib/storage.ts` +
 `useAuth.tsx` at them.
+
+### Screens that landed after this plan was first drafted
+
+Four things have shipped frontend-side since. Three of them fit the plan
+unchanged; two of them need backend storage this document originally had
+no home for, and both are called out again where the work actually falls
+(§2, §3, §5).
+
+| Shipped | Backend consequence |
+|---|---|
+| **Onboarding flow** — `/onboarding/goal → language → streak → walkthrough`, four pages | Collects three real answers (learning goal, language mode `en\|si\|both`, streak-goal days) and **persists none of them** — every one is a `useState` that dies on navigate. Needs a user-preferences store; see §2. |
+| **Writing tasks** — `/write/guided`, `/write/solo`, `/write/letter` over a shared `WritingTask.tsx` | The learner's text and rubric ticks are `useState`, and "Submit" is a `<Link>` back to the stage — **nothing is saved anywhere**. Needs a submissions table; see §2 and §3's third design call. |
+| **Placement test** — `/placement` | Already writes through the right seam (`setCurrentStage` → `useProgress`), so §3's `POST /api/progress/placement` covers it. Two catches: its *questions* are hardcoded in the component (§7 rule 6), and its "try a lesson first" button mints a fake `guest@example.com` account (Phase 3, step 5). |
+| **Profile** — `/profile` | Reads `useAuth` and `useParentLink`; no new persistence except the language toggle, which is the same preferences gap as onboarding. |
+
+### The four keys this migration retires
+
+Every piece of persisted state in the app, and where it goes:
+
+| `localStorage` key | Written by | Replaced by | Phase |
+|---|---|---|---|
+| `englisher.curriculum.draft` | `domain/curriculum.ts` | `GET /api/curriculum`, `PUT /api/admin/curriculum` | 4 |
+| `englisher.progress` | `domain/progress.ts` | `GET /api/progress` + the completion/placement endpoints | 5 |
+| `englisher.parentLink` | `domain/parentLink.ts` | `/api/parent-links/*` | 6 |
+| `englisher.auth` | `hooks/useAuth.tsx` | in-memory access token + httpOnly refresh cookie (§4) | 3 (API) / 4 (client) |
+
+When no module writes any of those four keys, the migration is done — that
+is the whole checklist. Nothing else in `app/src` touches `localStorage`;
+grep confirms the only call sites are the three `domain/*.ts` load/save
+pairs and `useAuth.tsx`.
 
 ---
 
@@ -72,31 +112,37 @@ erDiagram
   USER ||--o| PARENT_LINK : "invites (as child)"
   USER ||--o| PARENT_LINK : "accepts (as parent)"
   USER ||--|| PROGRESS : has
+  USER ||--o{ SUBMISSION : writes
+  CARD ||--o{ SUBMISSION : "answers (essay/rubric only)"
   STAGE ||--o{ LESSON : contains
   LESSON ||--o{ EXERCISE : contains
   LESSON ||--o{ CARD : "cards (holder_type=lesson)"
   EXERCISE ||--o{ CARD : "cards (holder_type=exercise)"
 
-  USER { uuid id  string email UK  string password_hash  string name  enum role  timestamp created_at }
-  STAGE { uuid id  string slug UK  int order  jsonb title  jsonb theme  jsonb unlock  bool placeholder  string task_href }
+  USER { uuid id  string email UK  string password_hash  string name  enum role  jsonb preferences  timestamp created_at }
+  STAGE { uuid id  string slug UK  int order  jsonb title  jsonb theme  jsonb unlock  bool placeholder }
   LESSON { uuid id  uuid stage_id FK  string slug  int order  enum kind  jsonb title }
   EXERCISE { uuid id  uuid lesson_id FK  enum type  int order }
-  CARD { uuid id  uuid holder_id  enum holder_type  enum card_type  enum column  jsonb body_or_prompt  jsonb payload  jsonb feedback  int order }
+  CARD { uuid id  uuid holder_id  enum holder_type  enum card_type  enum column  bool border  jsonb body_or_prompt  jsonb payload  jsonb feedback  int order }
   PROGRESS { uuid id  uuid user_id FK UK  int xp  int streak_days  timestamp last_active  jsonb completed_lesson_ids  uuid current_stage_id  int current_stage_pct }
   PARENT_LINK { uuid id  uuid child_user_id FK  uuid parent_user_id FK "nullable until accepted"  string contact  enum channel  enum status  string invite_token UK  timestamp invited_at  timestamp accepted_at  timestamp expires_at }
+  SUBMISSION { uuid id  uuid user_id FK  uuid card_id FK  text body  jsonb rubric_ticks  enum status  timestamp submitted_at  timestamp updated_at }
 ```
 
-Notes on the two deliberate departures from a naive 1:1 table-per-TS-interface mapping:
+Notes on the deliberate departures from a naive 1:1 table-per-TS-interface mapping:
 
-- **`Card.payload` stays JSON (JSONB), not five payload tables.** The
+- **`Card.payload` stays JSON (JSONB), not eight payload tables.** The
   frontend already models this as a discriminated union
   (`McqPayload | GapFillPayload | DragOrderPayload | MatchPayload |
-  FreeTextPayload`) keyed on `card_type` — mirroring that with a JSONB
+  FreeTextPayload | MultiSelectPayload | EssayPayload | RubricPayload`)
+  keyed on `card_type` — mirroring that with a JSONB
   column plus a Jackson polymorphic deserializer (keyed the same way) is
-  less code than five tables and an equal number of join fetches, and it's
+  less code than eight tables and an equal number of join fetches, and it's
   exactly as type-safe at the DTO boundary. Only add a real table for a
   payload shape if it needs to be queried or joined on directly — none do
-  yet.
+  yet. The payoff is already visible: the three newest card types
+  (`multi_select`, `essay`, `rubric`) were added frontend-side as pure
+  additions to this union, and cost a JSONB schema exactly nothing.
 - **`ParentLink` needs a real account model the prototype didn't have.**
   `parent-link.js` only ever stored a `contact` string — there was no
   concept of the parent as an account, because the whole app was one
@@ -107,6 +153,26 @@ Notes on the two deliberate departures from a naive 1:1 table-per-TS-interface m
   — which is also the point where a parent who doesn't have an account yet
   gets prompted to create one. This is genuinely new backend logic, not a
   straight port.
+- **`User.preferences` is JSONB for the same reason `Card.payload` is.**
+  The onboarding flow asks three questions — learning goal, language mode
+  (`en | si | both`), streak-goal days — and today throws all three away
+  the moment the page unmounts. They belong on the account, but they are
+  read as a blob, never queried or joined on, and the set will grow as
+  onboarding does. One `preferences` JSONB column beats three nullable
+  columns and a migration per question. `Profile.tsx`'s language toggle
+  (its own `useState<'en' | 'si'>`, defaulting to `en` on every visit)
+  reads from the same place once it exists — as does every other page
+  that currently keeps a private copy of that toggle.
+- **`Submission` is new — the writing tasks currently persist nothing.**
+  `/write/guided`, `/write/solo` and `/write/letter` render a prompt, a
+  `<textarea>`, an optional self-assessment rubric, and a "Submit" button
+  that is a `<Link>` back to the stage. The learner's paragraph is never
+  stored, never seen by a parent, and never counted toward XP. A row per
+  learner-per-card (`body`, `rubric_ticks`, `status`) is the smallest
+  thing that fixes it, and it is the same shape whether the prompt comes
+  from a hardcoded page or, later, from an `essay`/`rubric` card — which
+  is exactly why those two card types were added to `types.ts` (§3's
+  third design call).
 
 Content-model invariants to carry over from `curriculum.js` / `domain/curriculum.ts`,
 enforced server-side wherever the editor currently enforces them client-side only:
@@ -141,13 +207,18 @@ exports, plus auth and analytics).
 | `GET /api/progress` | student (own), parent (linked child's) | `getProgress()` |
 | `POST /api/progress/lessons/{lessonId}/complete` | student | `markLessonComplete()` — becomes a server call so XP can't be forged client-side |
 | `POST /api/progress/placement` | student | `setCurrentStage()` — placement test result |
+| `GET /api/placement` | public | `PlacementTest.tsx`'s hardcoded `QUESTIONS` — served, not baked in (§7 rule 6) |
+| `GET /api/me/preferences` | authenticated | new — onboarding's three answers, currently discarded |
+| `PUT /api/me/preferences` | authenticated | new — Profile's language toggle, onboarding's Continue buttons |
+| `PUT /api/submissions/{cardId}` | student | new — autosave/submit a writing task's text + rubric ticks |
+| `GET /api/submissions` | student (own), parent (linked child's) | new — "what has my child written" on the parent dashboard |
 | `POST /api/parent-links/invite` | student | `ParentAccess`'s `onInvite` |
 | `POST /api/parent-links/resend` | student | `onResend` |
 | `DELETE /api/parent-links` | student | `onCancel` / `onRevoke` |
 | `POST /api/parent-links/accept?token=…` | parent (or unauthenticated → prompts signup) | replaces the prototype's "Simulate the parent accepting" button — now a real emailed link |
 | `GET /api/parent/dashboard` | parent | `ParentDashboard` — resolves the accepted link, then returns the child's progress + curriculum-derived stage names in one call |
 
-Two design calls worth stating explicitly:
+Three design calls worth stating explicitly:
 
 1. **`PUT /api/admin/curriculum` stays whole-document for now, not
    per-node REST resources** (`POST /api/admin/stages`,
@@ -166,6 +237,37 @@ Two design calls worth stating explicitly:
    the exercise's answers, the server grades them with the ported logic,
    and only a passing grade updates `Progress`. This is the one place the
    backend does more than "persist what the frontend already computed."
+
+   **Two of the eight card types are deliberately ungradeable**, and the
+   server must not pretend otherwise: `essay` (a long-form written
+   response) and `rubric` (a self-evaluation checklist) both always
+   return `true` from `gradeCard`. That is correct — nobody can
+   auto-grade an essay — but it means XP on an essay exercise is gated
+   only on *having answered*, not on quality, and a determined learner
+   can submit junk. Accept that rather than fake a check: the honest
+   server-side rule is "essay requires non-empty text, rubric requires
+   nothing," exactly mirroring `isAnswered`. If essays ever need real
+   assessment it belongs in a teacher-review queue, not in `gradeCard`.
+
+3. **The `/write/*` pages are content that escaped the curriculum — the
+   backend should not enshrine that.** All three are hardcoded React
+   components: `GuidedEssay.tsx` carries its own prompt, idea bank and
+   outline as module constants, `FormalLetter.tsx` its own rubric. That
+   is the *exact* shape of the "five disagreeing stage lists" problem
+   `REACT-MIGRATION.md` already solved once — content living in a page
+   instead of in `CURRICULUM_DEFAULT`, drifting the moment anyone edits
+   one and not the others. It is also why the `essay` and `rubric` card
+   types exist: an `EssayPayload` is `{ ideaBank, outline, minWords }`
+   and a `RubricPayload` is `{ sections }` — precisely what these three
+   pages hardcode.
+
+   So: **do not build endpoints for the writing tasks.** Author those
+   three tasks as `essay`/`rubric` cards on stages 6–8 in the seed
+   curriculum (§5, Phase 2), point the pages at `useCurriculum()`, and
+   they are served by `GET /api/curriculum` like everything else. The
+   only genuinely new endpoint is `PUT /api/submissions/{cardId}` for
+   what the learner writes back. Shipping bespoke `/api/write/guided`
+   endpoints instead would make the drift permanent and load-bearing.
 
 ---
 
@@ -222,10 +324,10 @@ real API (phases 4 onward, cut over per-domain-slice).
 
 ```mermaid
 flowchart TD
-  P1["1 · Scaffold<br/>Spring Boot + Postgres + Flyway"] --> P2["2 · Domain entities<br/>+ seed migration"]
-  P2 --> P3["3 · Auth<br/>Spring Security + JWT"]
-  P3 --> P4["4 · Curriculum API<br/>+ frontend cutover"]
-  P4 --> P5["5 · Progress API<br/>+ server-side grading"]
+  P1["1 · Scaffold<br/>Spring Boot + Postgres + Flyway"] --> P2["2 · Domain entities<br/>+ seed migration<br/>+ /write/* authored as cards"]
+  P2 --> P3["3 · Auth<br/>Spring Security + JWT<br/>+ user preferences"]
+  P3 --> P4["4 · Curriculum API<br/>+ frontend + auth cutover"]
+  P4 --> P5["5 · Progress API<br/>+ server-side grading<br/>+ submissions"]
   P5 --> P6["6 · Parent-link API<br/>+ real invite tokens"]
   P6 --> P7["7 · Analytics API"]
   P7 --> P8["8 · Hardening<br/>tests, rate limits, deploy"]
@@ -242,23 +344,33 @@ flowchart TD
 
 **Exit criterion:** `./mvnw spring-boot:run` boots against local Postgres with no schema yet.
 
-### Phase 2 — Domain entities + seed data (1.5–2 days)
+### Phase 2 — Domain entities + seed data (2–3 days)
 
 1. Entities per the ER diagram in §2. `Card` uses single-table inheritance
    by `holder_type` (lesson vs exercise) with a `holder_id` — simpler than
    two nullable FKs.
 2. `V2__seed_curriculum.sql` (or a `@Profile("dev")` `CommandLineRunner`
    seeder, whichever the team prefers for repeatability) — the exact 8
-   stages from `CURRICULUM_DEFAULT` in `domain/curriculum.ts`, including
-   the 5 `placeholder: true` stages and their `taskHref`s. This is a
-   content decision already made on the frontend; don't re-derive it,
-   copy it.
-3. Port `repairUnlocks` and `ensureCards`/`syncLessonFromCards` from
+   stages from `CURRICULUM_DEFAULT` in `domain/curriculum.ts`: 3 authored
+   (`tenses`, `complex-sentences`, `translation`) and 5 with
+   `placeholder: true` and no lessons. This is a content decision already
+   made on the frontend; don't re-derive it, copy it. (`Stage` no longer
+   carries a `taskHref` — the roadmap routes by stage id, so there is no
+   such column to seed.)
+3. **While seeding, fold the three `/write/*` tasks into the curriculum**
+   as `essay` + `rubric` cards on stages 6–8 (`guided-essays`,
+   `solo-essays`, `formal-letters`) — the prompts, idea banks, outlines
+   and rubric sections currently hardcoded in `GuidedEssay.tsx`,
+   `SoloEssay.tsx` and `FormalLetter.tsx` map field-for-field onto
+   `EssayPayload` and `RubricPayload` (§3, third design call). Doing it
+   here costs one seed row each and turns three placeholder stages into
+   authored ones; doing it later means migrating live submissions.
+4. Port `repairUnlocks` and `ensureCards`/`syncLessonFromCards` from
    `domain/curriculum.ts` into `CurriculumService` — same algorithms, same
    invariants, now enforced server-side too. Bring their Vitest test
    *cases* over as JUnit tests (same inputs/outputs); the frontend
    versions stay as the client-side fast-path.
-4. Repository layer: Spring Data JPA repositories, nothing exotic —
+5. Repository layer: Spring Data JPA repositories, nothing exotic —
    `StageRepository.findAllByOrderByOrderAsc()` with `@EntityGraph` to
    avoid N+1 across stage → lesson → exercise → card.
 
@@ -266,42 +378,71 @@ flowchart TD
 curriculum and asserts it deep-equals the shape `domain/types.ts` expects
 once serialized.
 
-### Phase 3 — Auth (1.5–2 days)
+### Phase 3 — Auth + user preferences (2–2.5 days)
 
 1. `User` entity + `Role` enum (`STUDENT`, `PARENT`, `ADMIN`) — literally
    the frontend's `Role` type, uppercased per Spring Security convention.
+   Include the `preferences` JSONB column (§2) and
+   `GET`/`PUT /api/me/preferences`; it is three fields on the entity that
+   already has to exist, and skipping it here means a second migration
+   later.
 2. `AuthController`: signup, signin, refresh, signout, per §4.
 3. `SecurityConfig`: stateless session, JWT filter, method security
    enabled (`@EnableMethodSecurity`), CORS config from §4.
 4. Seed one admin account in the dev seeder (`admin@englisher.test` /
    env-var password) — there is no path to becoming an admin through the
    UI, same as the prototype had no such path either.
+5. **Decide what a guest is.** `PlacementTest.tsx`'s "try a lesson first"
+   calls `signUp('Guest', 'guest@example.com', 'student')` — a fake
+   account the fake auth was happy to mint. Against a real backend that
+   is either a duplicate-email collision on the second visitor or an
+   anonymous-account feature nobody scoped. Cheapest honest fix: let the
+   placement test run unauthenticated (it needs `GET /api/placement` and
+   nothing else), hold its result in memory, and post it via
+   `POST /api/progress/placement` immediately after the real signup.
+Note this phase stays backend-only, per the rule above — the frontend is
+still on `localStorage` when it ends. `useAuth.tsx`'s rework (§4: in-memory
+access token, httpOnly refresh cookie) and onboarding's preference wiring
+both land in Phase 4, because both need the `apiClient.ts` that phase
+introduces.
 
 **Exit criterion:** `curl` signup → signin → hit a `@PreAuthorize`-guarded
 placeholder endpoint with the token, get 200; without it, get 401; with
-the wrong role, get 403.
+the wrong role, get 403; `PUT` then `GET /api/me/preferences` round-trips
+all three onboarding answers.
 
-### Phase 4 — Curriculum API + frontend cutover (2–3 days)
+### Phase 4 — Curriculum API + frontend/auth cutover (3–4 days)
 
 1. `GET /api/curriculum`, `PUT /api/admin/curriculum` per §3.
-2. **Frontend**: rewrite `lib/storage.ts`'s `getCurriculum`/`setCurriculum`
-   to `fetch` from the API instead of `localStorage`. Add an `apiClient.ts`
-   (base URL, attaches the bearer token, retries once through
-   `/api/auth/refresh` on 401). Every caller of `getCurriculum`/`setCurriculum`
-   — `useCurriculum.ts`, `courseEditorState.ts` — is unaffected, because
-   they only ever went through this seam.
-3. Course Editor's `save()` now `await`s a network call instead of writing
+2. **Frontend**: add `apiClient.ts` (base URL, attaches the bearer token,
+   retries once through `/api/auth/refresh` on 401), then rewrite
+   `loadCurriculum`/`saveCurriculum` in `domain/curriculum.ts` to `fetch`
+   through it instead of `localStorage`. Every caller of
+   `getCurriculum`/`setCurriculum` — `useCurriculum.ts`,
+   `courseEditorState.ts` — is unaffected, because they only ever went
+   through the `lib/storage.ts` seam.
+3. **Frontend, auth**: `useAuth.tsx` moves off `englisher.auth` to the
+   real thing — in-memory access token, httpOnly refresh cookie, role
+   read from the JWT rather than picked in the sign-in form (§4). This is
+   the phase's second-biggest change after the editor's async save, and
+   it has to happen here: every endpoint from Phase 4 onward is
+   `@PreAuthorize`-gated, so nothing else can cut over until the client
+   can actually authenticate. Onboarding's Goal / Language / Streak
+   selections ride along with signup and thereafter go through
+   `PUT /api/me/preferences`; `Profile.tsx`'s language toggle reads the
+   same value instead of resetting to `en` on every visit.
+4. Course Editor's `save()` now `await`s a network call instead of writing
    synchronously — add a loading/error state to the "Save draft" button
    (`courseEditorState.ts`'s `save` becomes async; `CourseEditor.tsx`
    shows a spinner and a failure toast). This is the one real UI change
-   in this phase.
+   in this phase beyond the sign-in form losing its role picker.
 
 **Exit criterion:** Course Editor's full flow (add course → add lesson →
 add card of each type → Save draft → reload the page → content persists)
 works against the live API with the browser's Network tab open, zero
 `localStorage.getItem('englisher.curriculum.draft')` calls left.
 
-### Phase 5 — Progress API + server-side grading (2 days)
+### Phase 5 — Progress API + server-side grading + submissions (3–3.5 days)
 
 1. Port `domain/grading.ts` (`gradeCard`, `norm`, `isAnswered`) into
    `ExerciseGradingService` — same pure functions, same test cases as
@@ -310,8 +451,15 @@ works against the live API with the browser's Network tab open, zero
    answers per interactive card, grades them server-side, and only then
    updates XP/streak/`completedLessonIds`.
 3. `POST /api/progress/placement` — same shape as `setCurrentStage` in
-   `domain/progress.ts`.
-4. **Frontend**: `Exercise.tsx`'s `check()` sends answers to the server
+   `domain/progress.ts` — plus `GET /api/placement` to serve the question
+   set that `PlacementTest.tsx` currently hardcodes (§7 rule 6).
+4. `PUT /api/submissions/{cardId}` + `GET /api/submissions` — the writing
+   tasks' text and rubric ticks, graded by the honest rule from §3's
+   second design call (essay: non-empty; rubric: nothing). With the
+   tasks now authored as cards (Phase 2), `WritingTask.tsx` reads its
+   prompt from `useCurriculum()` and its Submit button becomes a real
+   `PUT` instead of a `<Link>`.
+5. **Frontend**: `Exercise.tsx`'s `check()` sends answers to the server
    instead of grading locally; `useProgress.ts`'s `update()` becomes a
    thin wrapper over `GET`/the completion endpoint rather than a direct
    `localStorage` writer.
@@ -330,7 +478,10 @@ server re-grades independently.
    ONLY — the real invitation is a signed link" banner, just one layer
    more real.
 3. `GET /api/parent/dashboard` resolves `parent_user_id` → `child_user_id`
-   → that child's `Progress`, in one call — the frontend's
+   → that child's `Progress` (and, now that they exist, the child's
+   recent `Submission` rows — a parent seeing what their child actually
+   wrote is the single most useful thing that table unlocks), in one
+   call — the frontend's
    `ParentDashboard.tsx` currently does this resolution itself from two
    separate pieces of local state; the endpoint collapses it.
 4. **Frontend**: `useParentLink.ts` and `ParentAccess.tsx`/`ParentDashboard.tsx`
@@ -377,20 +528,28 @@ identical to `domain/curriculum.ts`'s `ANALYTICS` type so
 | Phase | Scope | Estimate |
 |---|---|---|
 | 1 · Scaffold | Spring Boot, Postgres, Flyway wired up | 0.5 d |
-| 2 · Domain + seed | Entities, repositories, ported invariants | 1.5–2 d |
-| 3 · Auth | Signup/signin/refresh, JWT, role security | 1.5–2 d |
-| 4 · Curriculum API | Endpoints + frontend cutover | 2–3 d |
-| 5 · Progress + grading | Endpoints, server-side grading, frontend cutover | 2 d |
+| 2 · Domain + seed | Entities, repositories, ported invariants, `/write/*` authored as cards | 2–3 d |
+| 3 · Auth | Signup/signin/refresh, JWT, role security, preferences, guest decision | 2–2.5 d |
+| 4 · Curriculum API | Endpoints + frontend cutover, `useAuth` on real tokens | 3–4 d |
+| 5 · Progress + grading | Endpoints, server-side grading, submissions, placement, frontend cutover | 3–3.5 d |
 | 6 · Parent-link API | Real invite tokens, dashboard resolution | 1.5–2 d |
 | 7 · Analytics | Real aggregates | 0.5–1 d |
 | 8 · Hardening | Rate limits, tests, deploy | 2–3 d |
-| **Total** | | **~11.5–15.5 days** |
+| **Total** | | **~14.5–19.5 days** |
+
+Up from the ~11.5–15.5 days this table carried before the onboarding,
+writing-task, placement and profile screens landed. The added work is
+almost entirely Phases 2–5: authoring three writing tasks as curriculum
+cards, a `preferences` column and its two endpoints, the `Submission`
+table with its save/read pair, and the `useAuth.tsx` cutover — which was
+always implied by §4 but had never been given a phase.
 
 Phases 4–7 each end with a working, fully-cut-over slice — the app is never
 half-migrated in a way that breaks it. If time is short, phases 1–4 alone
-(curriculum served from a real API, everything else still on `localStorage`)
-already remove the biggest single-source-of-truth risk: the admin editor
-writing content nobody but that one browser can see.
+(real accounts, and curriculum served from a real API; progress and the
+parent link still on `localStorage`) already remove the biggest
+single-source-of-truth risk: the admin editor writing content nobody but
+that one browser can see.
 
 ---
 
@@ -420,6 +579,22 @@ writing content nobody but that one browser can see.
    Progress exists means grading against nothing; doing it much later
    means shipping a real-money-shaped feature (XP, streaks) that a user
    can trivially forge from devtools for however long that gap lasts.
+6. **Content in a component is a bug, not a shortcut — fix it while
+   seeding, not after.** Three places still hold content the curriculum
+   should own: the `/write/*` prompts and rubrics, `PlacementTest.tsx`'s
+   `QUESTIONS`, and that same file's `STAGE_NAMES`, which has *already*
+   drifted — it says "Adjectives & Prepositions" and "Everyday
+   Translation" where `CURRICULUM_DEFAULT` says "Adjectives, Adverbs &
+   Prepositions" and "Sinhala–English Translation". That is the
+   ARCHITECTURE.md Weakness 1 relapse, caught early. Each one is cheap to
+   move into the seed curriculum in Phase 2 and expensive to move once
+   there are `Submission` rows and live learners pointing at it.
+7. **Persist onboarding's answers in Phase 3 or delete the questions.**
+   Asking a learner their goal, their language and their streak target
+   and then discarding all three is worse than not asking: it is three
+   screens of friction that buy nothing. Either the `preferences` column
+   lands with the `User` entity, or the flow should be honest and drop to
+   a single welcome screen.
 
 ---
 

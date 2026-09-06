@@ -1,0 +1,20 @@
+# Integration-test profile. The datasource URL is injected by
+# AbstractPostgresIT's @DynamicPropertySource, pointing at the embedded server.
+englisher:
+  auth:
+    jwt-secret: test-only-signing-key-at-least-32-bytes-long
+    cookie-secure: false
+    # No admin password: DataSeeder deliberately skips the admin account rather
+    # than provisioning a well-known one, and ApiFlowIT asserts that.
+    admin-password: ""
+    allowed-origins: http://localhost:5173
+
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+logging:
+  level:
+    lk.englisher: INFO
+    org.flywaydb: INFO

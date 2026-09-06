@@ -1,0 +1,22 @@
+# Local development. Activate with:  --spring.profiles.active=dev
+#
+# The two defaults below are throwaways, and are safe here only because this
+# profile is never the one a deployment runs: the JWT secret is a fixed literal
+# so restarts do not invalidate your session, and cookie-secure is off so the
+# refresh cookie survives plain-HTTP localhost. Both are exactly what must not
+# happen in production, which is why they live in this file and not the base one.
+englisher:
+  auth:
+    jwt-secret: dev-only-insecure-signing-key-change-me-32b
+    cookie-secure: false
+    admin-password: ${ENGLISHER_ADMIN_PASSWORD:admin12345}
+
+spring:
+  jpa:
+    show-sql: false
+
+logging:
+  level:
+    lk.englisher: DEBUG
+    # Uncomment to watch the SQL Flyway and Hibernate actually run.
+    # org.hibernate.SQL: DEBUG

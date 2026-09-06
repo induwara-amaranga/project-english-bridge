@@ -1,0 +1,662 @@
+{
+  "version": 7,
+  "stages": [
+    {
+      "id": "tenses",
+      "order": 1,
+      "title": {
+        "en": "Tenses",
+        "si": "කාල වචන"
+      },
+      "theme": {
+        "from": "#6EE7A8",
+        "to": "#2FAE63"
+      },
+      "unlock": {
+        "kind": "always"
+      },
+      "lessons": [
+        {
+          "id": "word-order",
+          "order": 1,
+          "kind": "teach",
+          "title": {
+            "en": "Word order",
+            "si": "වචන අනුපිළිවෙල"
+          },
+          "explanation": {
+            "en": "English almost always follows Subject → Verb → Object. Sinhala puts the verb last, which is why direct translation feels wrong.",
+            "si": ""
+          },
+          "cards": [
+            {
+              "id": "word-order-c1",
+              "type": "text",
+              "column": "full",
+              "body": {
+                "en": "English almost always follows Subject → Verb → Object. Sinhala puts the verb last, which is why direct translation feels wrong.",
+                "si": ""
+              }
+            }
+          ],
+          "exercises": [
+            {
+              "id": "wo-1",
+              "type": "mcq",
+              "prompt": {
+                "en": "Which sentence has the correct word order?",
+                "si": "නිවැරදි වචන අනුපිළිවෙල ඇති වාක්‍යය කුමක්ද?"
+              },
+              "feedback": {
+                "correct": {
+                  "en": "Correct! Subject → Verb → Object — that's the English pattern.",
+                  "si": ""
+                },
+                "incorrect": {
+                  "en": "Not quite. In English, the verb comes right after the subject: I eat rice.",
+                  "si": ""
+                }
+              },
+              "payload": {
+                "options": [
+                  {
+                    "en": "I rice eat",
+                    "si": ""
+                  },
+                  {
+                    "en": "I eat rice",
+                    "si": ""
+                  },
+                  {
+                    "en": "Rice I eat",
+                    "si": ""
+                  }
+                ],
+                "correctIndex": 1,
+                "shuffle": true
+              },
+              "cards": [
+                {
+                  "id": "wo-1-c1",
+                  "type": "mcq",
+                  "column": "full",
+                  "prompt": {
+                    "en": "Which sentence has the correct word order?",
+                    "si": "නිවැරදි වචන අනුපිළිවෙල ඇති වාක්‍යය කුමක්ද?"
+                  },
+                  "payload": {
+                    "options": [
+                      {
+                        "en": "I rice eat",
+                        "si": ""
+                      },
+                      {
+                        "en": "I eat rice",
+                        "si": ""
+                      },
+                      {
+                        "en": "Rice I eat",
+                        "si": ""
+                      }
+                    ],
+                    "correctIndex": 1,
+                    "shuffle": true
+                  },
+                  "feedback": {
+                    "correct": {
+                      "en": "Correct! Subject → Verb → Object — that's the English pattern.",
+                      "si": ""
+                    },
+                    "incorrect": {
+                      "en": "Not quite. In English, the verb comes right after the subject: I eat rice.",
+                      "si": ""
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "id": "wo-2",
+              "type": "drag_order",
+              "prompt": {
+                "en": "Put the words in the correct order.",
+                "si": "වචන නිවැරදි අනුපිළිවෙලට සකසන්න."
+              },
+              "feedback": {
+                "correct": {
+                  "en": "Exactly — subject, verb, then object.",
+                  "si": ""
+                },
+                "incorrect": {
+                  "en": "Close. Start with who is doing the action.",
+                  "si": ""
+                }
+              },
+              "payload": {
+                "tokens": [
+                  {
+                    "en": "She",
+                    "si": ""
+                  },
+                  {
+                    "en": "reads",
+                    "si": ""
+                  },
+                  {
+                    "en": "a book",
+                    "si": ""
+                  }
+                ]
+              },
+              "cards": [
+                {
+                  "id": "wo-2-c1",
+                  "type": "drag_order",
+                  "column": "full",
+                  "prompt": {
+                    "en": "Put the words in the correct order.",
+                    "si": "වචන නිවැරදි අනුපිළිවෙලට සකසන්න."
+                  },
+                  "payload": {
+                    "tokens": [
+                      {
+                        "en": "She",
+                        "si": ""
+                      },
+                      {
+                        "en": "reads",
+                        "si": ""
+                      },
+                      {
+                        "en": "a book",
+                        "si": ""
+                      }
+                    ]
+                  },
+                  "feedback": {
+                    "correct": {
+                      "en": "Exactly — subject, verb, then object.",
+                      "si": ""
+                    },
+                    "incorrect": {
+                      "en": "Close. Start with who is doing the action.",
+                      "si": ""
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "present-simple",
+          "order": 2,
+          "kind": "practice",
+          "title": {
+            "en": "Present simple",
+            "si": "වර්තමාන කාලය"
+          },
+          "explanation": {
+            "en": "Use the base verb with I / you / we / they, and add -s for he / she / it.",
+            "si": ""
+          },
+          "cards": [
+            {
+              "id": "present-simple-c1",
+              "type": "text",
+              "column": "full",
+              "body": {
+                "en": "Use the base verb with I / you / we / they, and add -s for he / she / it.",
+                "si": ""
+              }
+            }
+          ],
+          "exercises": [
+            {
+              "id": "ps-1",
+              "type": "gap_fill",
+              "prompt": {
+                "en": "Complete the sentence.",
+                "si": "වාක්‍යය සම්පූර්ණ කරන්න."
+              },
+              "feedback": {
+                "correct": {
+                  "en": "Correct! 'We' takes the base form of the verb.",
+                  "si": ""
+                },
+                "incorrect": {
+                  "en": "Almost — with 'we', use the base verb form.",
+                  "si": ""
+                }
+              },
+              "payload": {
+                "template": {
+                  "en": "We ___ English every day.",
+                  "si": ""
+                },
+                "accept": [
+                  "watch"
+                ],
+                "choices": [
+                  "watch",
+                  "watches",
+                  "watching"
+                ]
+              },
+              "cards": [
+                {
+                  "id": "ps-1-c1",
+                  "type": "gap_fill",
+                  "column": "full",
+                  "prompt": {
+                    "en": "Complete the sentence.",
+                    "si": "වාක්‍යය සම්පූර්ණ කරන්න."
+                  },
+                  "payload": {
+                    "template": {
+                      "en": "We ___ English every day.",
+                      "si": ""
+                    },
+                    "accept": [
+                      "watch"
+                    ],
+                    "choices": [
+                      "watch",
+                      "watches",
+                      "watching"
+                    ]
+                  },
+                  "feedback": {
+                    "correct": {
+                      "en": "Correct! 'We' takes the base form of the verb.",
+                      "si": ""
+                    },
+                    "incorrect": {
+                      "en": "Almost — with 'we', use the base verb form.",
+                      "si": ""
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "complex-sentences",
+      "order": 2,
+      "title": {
+        "en": "Complex Sentences",
+        "si": "සංකීර්ණ වාක්‍ය"
+      },
+      "theme": {
+        "from": "#6EF2E4",
+        "to": "#0FA593"
+      },
+      "unlock": {
+        "kind": "afterStage",
+        "stageId": "tenses"
+      },
+      "lessons": [
+        {
+          "id": "because-although",
+          "order": 1,
+          "kind": "teach",
+          "title": {
+            "en": "Because & although",
+            "si": "නිසා සහ නමුත්"
+          },
+          "explanation": {
+            "en": "Joining words let you give a reason or show contrast inside one sentence.",
+            "si": ""
+          },
+          "cards": [
+            {
+              "id": "because-although-c1",
+              "type": "text",
+              "column": "full",
+              "body": {
+                "en": "Joining words let you give a reason or show contrast inside one sentence.",
+                "si": ""
+              }
+            }
+          ],
+          "exercises": [
+            {
+              "id": "ba-1",
+              "type": "match",
+              "prompt": {
+                "en": "Match each Sinhala phrase to its English joining word.",
+                "si": "සිංහල වාක්‍ය ඛණ්ඩය ගැළපෙන ඉංග්‍රීසි වචනයට ගළපන්න."
+              },
+              "feedback": {
+                "correct": {
+                  "en": "All matched.",
+                  "si": ""
+                },
+                "incorrect": {
+                  "en": "Some pairs are not matched yet.",
+                  "si": ""
+                }
+              },
+              "payload": {
+                "pairs": [
+                  {
+                    "left": "නිසා",
+                    "right": "because"
+                  },
+                  {
+                    "left": "නමුත්",
+                    "right": "although"
+                  },
+                  {
+                    "left": "නම්",
+                    "right": "if"
+                  }
+                ]
+              },
+              "cards": [
+                {
+                  "id": "ba-1-c1",
+                  "type": "match",
+                  "column": "full",
+                  "prompt": {
+                    "en": "Match each Sinhala phrase to its English joining word.",
+                    "si": "සිංහල වාක්‍ය ඛණ්ඩය ගැළපෙන ඉංග්‍රීසි වචනයට ගළපන්න."
+                  },
+                  "payload": {
+                    "pairs": [
+                      {
+                        "left": "නිසා",
+                        "right": "because"
+                      },
+                      {
+                        "left": "නමුත්",
+                        "right": "although"
+                      },
+                      {
+                        "left": "නම්",
+                        "right": "if"
+                      }
+                    ]
+                  },
+                  "feedback": {
+                    "correct": {
+                      "en": "All matched.",
+                      "si": ""
+                    },
+                    "incorrect": {
+                      "en": "Some pairs are not matched yet.",
+                      "si": ""
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "id": "ba-2",
+              "type": "mcq",
+              "prompt": {
+                "en": "Which sentence uses \"because\" correctly?",
+                "si": ""
+              },
+              "feedback": {
+                "correct": {
+                  "en": "Right — \"because\" needs a full clause after it.",
+                  "si": ""
+                },
+                "incorrect": {
+                  "en": "\"Because\" must be followed by subject + verb.",
+                  "si": ""
+                }
+              },
+              "payload": {
+                "options": [
+                  {
+                    "en": "I was late because traffic.",
+                    "si": ""
+                  },
+                  {
+                    "en": "I was late because the traffic was heavy.",
+                    "si": ""
+                  }
+                ],
+                "correctIndex": 1,
+                "shuffle": true
+              },
+              "cards": [
+                {
+                  "id": "ba-2-c1",
+                  "type": "mcq",
+                  "column": "full",
+                  "prompt": {
+                    "en": "Which sentence uses \"because\" correctly?",
+                    "si": ""
+                  },
+                  "payload": {
+                    "options": [
+                      {
+                        "en": "I was late because traffic.",
+                        "si": ""
+                      },
+                      {
+                        "en": "I was late because the traffic was heavy.",
+                        "si": ""
+                      }
+                    ],
+                    "correctIndex": 1,
+                    "shuffle": true
+                  },
+                  "feedback": {
+                    "correct": {
+                      "en": "Right — \"because\" needs a full clause after it.",
+                      "si": ""
+                    },
+                    "incorrect": {
+                      "en": "\"Because\" must be followed by subject + verb.",
+                      "si": ""
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "adjectives-adverbs-prepositions",
+      "order": 3,
+      "title": {
+        "en": "Adjectives, Adverbs & Prepositions",
+        "si": "විශේෂණ, ක්‍රියා විශේෂණ සහ නිපාත"
+      },
+      "theme": {
+        "from": "#A78BFA",
+        "to": "#6C4FF6"
+      },
+      "unlock": {
+        "kind": "afterStage",
+        "stageId": "complex-sentences"
+      },
+      "lessons": [],
+      "placeholder": true
+    },
+    {
+      "id": "passive-voice",
+      "order": 4,
+      "title": {
+        "en": "Passive Voice",
+        "si": "කර්ම කාරකය"
+      },
+      "theme": {
+        "from": "#FF9B7E",
+        "to": "#FF6B4A"
+      },
+      "unlock": {
+        "kind": "afterStage",
+        "stageId": "adjectives-adverbs-prepositions"
+      },
+      "lessons": [],
+      "placeholder": true
+    },
+    {
+      "id": "translation",
+      "order": 5,
+      "title": {
+        "en": "Sinhala–English Translation",
+        "si": "සිංහල–ඉංග්‍රීසි පරිවර්තනය"
+      },
+      "theme": {
+        "from": "#FFD976",
+        "to": "#FFB800"
+      },
+      "unlock": {
+        "kind": "afterStage",
+        "stageId": "passive-voice"
+      },
+      "lessons": [
+        {
+          "id": "everyday",
+          "order": 1,
+          "kind": "practice",
+          "title": {
+            "en": "Everyday sentences",
+            "si": "දෛනික වාක්‍ය"
+          },
+          "explanation": {
+            "en": "Translate meaning, not word by word.",
+            "si": ""
+          },
+          "cards": [
+            {
+              "id": "everyday-c1",
+              "type": "text",
+              "column": "full",
+              "body": {
+                "en": "Translate meaning, not word by word.",
+                "si": ""
+              }
+            }
+          ],
+          "exercises": [
+            {
+              "id": "ev-1",
+              "type": "free_text",
+              "prompt": {
+                "en": "Translate into English: මම පාසැලට යනවා",
+                "si": ""
+              },
+              "feedback": {
+                "correct": {
+                  "en": "Correct.",
+                  "si": ""
+                },
+                "incorrect": {
+                  "en": "Check your verb form.",
+                  "si": ""
+                }
+              },
+              "payload": {
+                "accept": [
+                  "I go to school",
+                  "I am going to school"
+                ],
+                "normalize": {
+                  "lowercase": true,
+                  "stripPunctuation": true
+                }
+              },
+              "cards": [
+                {
+                  "id": "ev-1-c1",
+                  "type": "free_text",
+                  "column": "full",
+                  "prompt": {
+                    "en": "Translate into English: මම පාසැලට යනවා",
+                    "si": ""
+                  },
+                  "payload": {
+                    "accept": [
+                      "I go to school",
+                      "I am going to school"
+                    ],
+                    "normalize": {
+                      "lowercase": true,
+                      "stripPunctuation": true
+                    }
+                  },
+                  "feedback": {
+                    "correct": {
+                      "en": "Correct.",
+                      "si": ""
+                    },
+                    "incorrect": {
+                      "en": "Check your verb form.",
+                      "si": ""
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "guided-essays",
+      "order": 6,
+      "title": {
+        "en": "Guided Essays",
+        "si": "මඟපෙන්වූ රචනා"
+      },
+      "theme": {
+        "from": "#FF8B98",
+        "to": "#FF4D5E"
+      },
+      "unlock": {
+        "kind": "afterStage",
+        "stageId": "translation"
+      },
+      "lessons": [],
+      "placeholder": true
+    },
+    {
+      "id": "solo-essays",
+      "order": 7,
+      "title": {
+        "en": "Solo Essays",
+        "si": "ස්වාධීන රචනා"
+      },
+      "theme": {
+        "from": "#8C7BF0",
+        "to": "#5539E0"
+      },
+      "unlock": {
+        "kind": "afterStage",
+        "stageId": "guided-essays"
+      },
+      "lessons": [],
+      "placeholder": true
+    },
+    {
+      "id": "formal-letters",
+      "order": 8,
+      "title": {
+        "en": "Formal Letters",
+        "si": "විධිමත් ලිපි"
+      },
+      "theme": {
+        "from": "#8A84A8",
+        "to": "#3A3550"
+      },
+      "unlock": {
+        "kind": "afterStage",
+        "stageId": "solo-essays"
+      },
+      "lessons": [],
+      "placeholder": true
+    }
+  ]
+}

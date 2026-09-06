@@ -1,0 +1,35 @@
+# Local development stack: PostgreSQL, plus a mail catcher for the parent
+# invitations once ParentLinkService.deliver() is wired to real email.
+#
+# The API itself is not in here on purpose — running it from the IDE or
+# `./mvnw spring-boot:run` is what you want while developing, and the
+# Dockerfile covers the deployed case.
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: englisher-db
+    environment:
+      POSTGRES_DB: englisher
+      POSTGRES_USER: englisher
+      POSTGRES_PASSWORD: englisher
+    ports:
+      - "5432:5432"
+    volumes:
+      - englisher-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U englisher -d englisher"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Catches invitation emails so the flow can be exercised end to end without
+  # sending anything. Web UI on http://localhost:8025.
+  mail:
+    image: axllent/mailpit:latest
+    container_name: englisher-mail
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
+volumes:
+  englisher-db-data:
