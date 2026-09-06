@@ -1,0 +1,8 @@
+flowchart TD
+  P1["1 · Scaffold<br/>Spring Boot + Postgres + Flyway"] --> P2["2 · Domain entities<br/>+ seed migration<br/>+ /write/* authored as cards"]
+  P2 --> P3["3 · Auth<br/>Spring Security + JWT<br/>+ user preferences"]
+  P3 --> P4["4 · Curriculum API<br/>+ frontend + auth cutover"]
+  P4 --> P5["5 · Progress API<br/>+ server-side grading<br/>+ submissions"]
+  P5 --> P6["6 · Parent-link API<br/>+ real invite tokens"]
+  P6 --> P7["7 · Analytics API"]
+  P7 --> P8["8 · Hardening<br/>tests, rate limits, deploy"]
