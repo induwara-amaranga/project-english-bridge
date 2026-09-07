@@ -1,12 +1,60 @@
 /* Primitive component styles. Each component owns one prefix. */
 
+/* ---- Press feedback ----------------------------------------------------
+   `.bubble-host` clips the bubble that lib/bubble.ts spawns at the pointer;
+   `.press` is the squash every tappable thing shares. Both are opt-in classes
+   so a control gets the effect by asking for it, not by being a <button>. */
+.bubble-host { position: relative; overflow: hidden; }
+/* For hosts that must keep their overflow visible (the roadmap planets draw an
+   orbit ring outside themselves) — the bubble is clipped by this layer instead. */
+.bubble-layer { position: absolute; inset: 0; overflow: hidden; pointer-events: none; border-radius: inherit; }
+.bubble {
+  position: absolute; border-radius: 50%; pointer-events: none;
+  background: currentColor; opacity: 0.22; transform: scale(0);
+  animation: bubble-out 560ms cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+@keyframes bubble-out { to { transform: scale(1); opacity: 0; } }
+
+.press { transition: transform 110ms ease, box-shadow 110ms ease, background 130ms ease, border-color 130ms ease; }
+.press:active:not(:disabled) { transform: scale(0.97); }
+
+/* ---- Hover shrink -------------------------------------------------------
+   The roadmap's stages and a stage's lesson nodes draw back under the pointer
+   and further when pressed. These carry `.hover-shrink` *instead of* `.press`
+   so one class owns their transform and the two rules never fight over it.
+
+   `.hover-target` is for when the thing you point at is not the thing that
+   should move: the roadmap planet has its caption below it, and the planet is
+   what shrinks when the pointer is anywhere over the pair. */
+.hover-shrink { transition: transform 170ms cubic-bezier(0.22, 0.61, 0.36, 1); }
+/* Guarded, because on a touch screen `:hover` sticks to the last thing tapped
+   and the node would sit shrunk long after the finger left it. */
+@media (hover: hover) {
+  .hover-shrink:hover,
+  .hover-target:hover .hover-shrink { transform: scale(0.965); }
+}
+/* After the hover rule on purpose — same specificity, so pressing wins. */
+.hover-shrink:active:not(:disabled),
+.hover-target:active .hover-shrink { transform: scale(0.93); }
+
+@media (prefers-reduced-motion: reduce) {
+  .hover-shrink { transition: none; }
+  .hover-shrink:hover, .hover-target:hover .hover-shrink,
+  .hover-shrink:active:not(:disabled), .hover-target:active .hover-shrink { transform: none; }
+}
+
 /* Button */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   border: none; border-radius: var(--r-btn); cursor: pointer;
   font-family: var(--font-display); font-weight: 800;
   text-decoration: none;
+  position: relative; overflow: hidden;
+  transition: transform 110ms ease, box-shadow 110ms ease, background 130ms ease;
 }
+/* The chunky shadow doubles as travel: the button drops onto its own shadow. */
+.btn:active:not(:disabled) { transform: translateY(3px); }
+.btn--primary:active:not(:disabled) { box-shadow: 0 3px 0 var(--c-primary-hover); }
 .btn:disabled { cursor: not-allowed; }
 .btn--lg { padding: 16px 40px; font-size: 17px; }
 .btn--md { padding: 12px 28px; font-size: 15px; }
@@ -83,6 +131,14 @@
   font-size: 15px; color: var(--c-ink); cursor: pointer; width: 100%;
 }
 .social-btn:hover { border-color: var(--c-primary); }
+
+/* Switch */
+.switch { position: relative; display: inline-flex; width: 44px; height: 26px; flex-shrink: 0; }
+.switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.switch__track { position: absolute; inset: 0; background: var(--c-line); border-radius: 999px; transition: background 0.2s ease; pointer-events: none; }
+.switch__track::before { content: ''; position: absolute; width: 20px; height: 20px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: transform 0.2s ease; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+.switch input:checked + .switch__track { background: var(--c-primary); }
+.switch input:checked + .switch__track::before { transform: translateX(18px); }
 
 /* CheckboxRow */
 .check-row { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; }

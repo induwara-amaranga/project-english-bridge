@@ -4,6 +4,7 @@ import { useCurriculum } from '../../hooks/useCurriculum';
 import { useProgress } from '../../hooks/useProgress';
 import { isLessonComplete } from '../../domain/progress';
 import { LangToggle } from '../../components/Primitives';
+import { bubble } from '../../lib/bubble';
 
 const PLANET_GRADIENTS = [
   'radial-gradient(circle at 35% 30%, #6EE7A8, #2FAE63 70%)',
@@ -16,6 +17,9 @@ const PLANET_GRADIENTS = [
   'radial-gradient(circle at 35% 30%, #8A84A8, #3A3550 70%)',
 ];
 const GLOW_COLORS = ['#3ECF6E', '#14D8C4', '#6C4FF6', '#FF6B4A', '#FFB800', '#FF4D5E', '#5539E0', '#3A3550'];
+// In folder order — background_1, background_2, background_3 — then wraps
+// back to the first once there are more courses than backgrounds.
+const STAGE_BACKGROUNDS = ['/assets/planets/background_1.png', '/assets/planets/background_2.png', '/assets/planets/background_3.png'];
 const OFFSETS_BY_COUNT = (n: number) => {
   const base = [0, 80, -70, 90, -50, 70, -80, 60];
   return base.slice(0, Math.max(n, 1));
@@ -85,8 +89,13 @@ export function StageLessons() {
     <div className="app-shell" style={{ fontFamily: 'var(--font-body)', color: 'white', position: 'relative', overflow: 'hidden', background: '#FFFFFF', paddingBottom: 60 }}>
       <StageHeader stage={stage} stageNo={stageNo} lang={lang} onToggleLang={() => setLang((l) => (l === 'en' ? 'si' : 'en'))} titleFont={titleFont} idx={idx} />
 
-      <div style={{ position: 'absolute', left: 0, right: 0, top: 100, bottom: 0, zIndex: 0, overflow: 'hidden' }}>
-        <img src="/assets/stage_bg_planets.png" alt="" style={{ width: '100%', height: '100%', minHeight: 1006, objectFit: 'cover', objectPosition: 'center top', opacity: 0.7 }} />
+      {/* Spans the full app-shell — including behind the header, which paints
+          its own opaque background over it — rather than starting at a
+          hardcoded offset below the header. A fixed offset left a strip of
+          plain white showing whenever the header rendered taller than that
+          guess (a wrapped stage title on a narrow screen, for one). */}
+      <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden' }}>
+        <img src={STAGE_BACKGROUNDS[idx % STAGE_BACKGROUNDS.length]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', opacity: 0.7 }} />
       </div>
 
       <div style={{ position: 'relative', zIndex: 2, maxWidth: 640, margin: '0 auto', padding: '24px 24px 0' }}>
@@ -96,9 +105,13 @@ export function StageLessons() {
           </svg>
           {lessons.map((l, i) => (
             <div key={l.lesson.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, transform: `translateX(${l.offset}px)`, position: 'relative', zIndex: 1 }}>
-              <div style={{ position: 'relative' }}>
+              {/* The float lives on the wrapper, not the button: a running
+                  keyframe animation owns `transform`, and the button needs it
+                  free for the hover and press scale. Bobbing the wrapper also
+                  carries the pulse ring along, which used to stay behind. */}
+              <div style={{ position: 'relative', animation: l.floatAnim }}>
                 {l.isNext && <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', animation: 'pulse-ring 1.8s ease-out infinite' }} />}
-                <button onClick={() => navigate(`/learn/${stage.id}/${l.lesson.id}`)} style={{ width: 78, height: 78, borderRadius: '50%', background: l.bg, border: `4px solid ${l.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: l.shadow, animation: l.floatAnim, position: 'relative' }}>
+                <button className="bubble-host hover-shrink" onPointerDown={bubble} onClick={() => navigate(`/learn/${stage.id}/${l.lesson.id}`)} style={{ width: 78, height: 78, borderRadius: '50%', background: l.bg, border: `4px solid ${l.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: l.shadow, position: 'relative' }}>
                   <div style={{ position: 'absolute', top: 10, left: 14, width: 20, height: 11, borderRadius: '50%', background: 'rgba(255,255,255,0.28)' }} />
                   {l.isLocked && <LockIcon />}
                   {l.isDone && <CheckIcon />}

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useParentLink } from '../../hooks/useParentLink';
 import { useAuth } from '../../hooks/useAuth';
 import { BottomNav } from '../../components/BottomNav';
+import { isSoundMuted, setSoundMuted } from '../../lib/sounds';
 
 const PARENT_STATUS = {
   none: { en: 'Not connected', si: 'සම්බන්ධ නැත', color: '#6B6580', bg: '#ECE8FB' },
@@ -11,12 +12,13 @@ const PARENT_STATUS = {
 };
 
 const COPY = {
-  en: { title: 'Profile', language: 'Language', parent: 'Parent Dashboard', progress: 'Your Progress', logout: 'Log out' },
-  si: { title: 'පැතිකඩ', language: 'භාෂාව', parent: 'මාපිය පුවරුව', progress: 'ඔබේ ප්‍රගතිය', logout: 'ඉවත් වන්න' },
+  en: { title: 'Profile', language: 'Language', parent: 'Parent Dashboard', progress: 'Your Progress', sound: 'Sound effects', logout: 'Log out' },
+  si: { title: 'පැතිකඩ', language: 'භාෂාව', parent: 'මාපිය පුවරුව', progress: 'ඔබේ ප්‍රගතිය', sound: 'ශබ්ද ප්‍රතිචාර', logout: 'ඉවත් වන්න' },
 };
 
 export function Profile() {
   const [lang, setLang] = useState<'en' | 'si'>('en');
+  const [muted, setMuted] = useState(isSoundMuted);
   const { link } = useParentLink();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -30,6 +32,12 @@ export function Profile() {
   const initials = name.split(' ').map((s) => s[0]).join('').slice(0, 2).toUpperCase();
 
   const logout = () => { signOut(); navigate('/signin'); };
+
+  const toggleSound = () => {
+    const next = !muted;
+    setMuted(next);
+    setSoundMuted(next);
+  };
 
   return (
     <div className="app-shell app-shell--nav-pad" style={{ fontFamily: bodyFont, background: 'var(--c-bg)', color: 'var(--c-ink)' }}>
@@ -53,6 +61,14 @@ export function Profile() {
             <span style={{ fontSize: 15, fontWeight: 700 }}>{c.language}</span>
             <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--c-primary)' }}>{isSi ? 'සිංහල' : 'English'}</span>
           </button>
+          <div style={{ height: 1, background: 'var(--c-line)', margin: '0 16px' }} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16 }}>
+            <span style={{ fontSize: 15, fontWeight: 700 }}>{c.sound}</span>
+            <label className="switch">
+              <input type="checkbox" checked={!muted} onChange={toggleSound} aria-label={c.sound} />
+              <span className="switch__track" />
+            </label>
+          </div>
           <div style={{ height: 1, background: 'var(--c-line)', margin: '0 16px' }} />
           <Link to="/parent/access" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: 16, fontSize: 15, fontWeight: 700, color: 'var(--c-ink)' }}>
             {c.parent}

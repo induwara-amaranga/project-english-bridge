@@ -13,6 +13,9 @@ import { Roadmap } from './features/learner/Roadmap';
 import { StageLessons } from './features/learner/StageLessons';
 import { LessonPage } from './features/learner/Lesson';
 import { ExercisePage } from './features/learner/Exercise';
+import { ReviewAnswers } from './features/learner/ReviewAnswers';
+import { CourseComplete } from './features/learner/CourseComplete';
+import { Congratulations } from './features/learner/Congratulations';
 import { GuidedEssay } from './features/learner/GuidedEssay';
 import { SoloEssay } from './features/learner/SoloEssay';
 import { FormalLetter } from './features/learner/FormalLetter';
@@ -45,6 +48,15 @@ export default function App() {
         <Route path="/learn/:stageId" element={<RequireRole role="student"><StageLessons /></RequireRole>} />
         <Route path="/learn/:stageId/:lessonId" element={<RequireRole role="student"><LessonPage /></RequireRole>} />
         <Route path="/learn/:stageId/:lessonId/practice" element={<RequireRole role="student"><ExercisePage /></RequireRole>} />
+        {/* A course is a stage here, so finishing a stage's last lesson ends a
+            course: /complete is its celebration screen and /review-wrong is
+            every question missed along the way. Both sit above :lessonId, which
+            React Router ranks below them because their third segment is fixed. */}
+        <Route path="/learn/:stageId/complete" element={<RequireRole role="student"><CourseComplete /></RequireRole>} />
+        <Route path="/learn/:stageId/review-wrong" element={<RequireRole role="student"><ReviewAnswers scope="stage-wrong" /></RequireRole>} />
+        <Route path="/learn/:stageId/:lessonId/review" element={<RequireRole role="student"><ReviewAnswers /></RequireRole>} />
+        {/* The end of the roadmap, past the last course's own screen. */}
+        <Route path="/congratulations" element={<RequireRole role="student"><Congratulations /></RequireRole>} />
 
         <Route path="/write/guided" element={<RequireRole role="student"><GuidedEssay /></RequireRole>} />
         <Route path="/write/solo" element={<RequireRole role="student"><SoloEssay /></RequireRole>} />

@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   CURRICULUM_DEFAULT,
   ensureCards,
+  isFinalStage,
+  isLastLessonOfStage,
   makeCard,
   normaliseCurriculum,
   pickByIdOrPosition,
@@ -9,7 +11,7 @@ import {
   repairUnlocks,
   syncLessonFromCards,
 } from './curriculum';
-import type { Curriculum, Lesson } from './types';
+import type { Curriculum, Lesson, Stage } from './types';
 
 function clone<T>(x: T): T {
   return JSON.parse(JSON.stringify(x));
@@ -97,5 +99,58 @@ describe('pickByIdOrPosition', () => {
   });
   it('falls back to the first item when nothing is given', () => {
     expect(pickByIdOrPosition(list, null)?.id).toBe('a');
+  });
+});
+
+describe('isLastLessonOfStage', () => {
+  const stage = (id: string, lessonIds: string[]): Stage => ({
+    id, order: 1, title: { en: id, si: '' }, theme: { from: '', to: '' }, unlock: { kind: 'always' },
+    lessons: lessonIds.map((lid, i) => ({
+      id: lid, order: i + 1, kind: 'practice', title: { en: lid, si: '' },
+      explanation: { en: '', si: '' }, exercises: [], cards: [],
+    })),
+  });
+
+  it('is true only for the stage\'s final lesson', () => {
+    const tenses = stage('tenses', ['l1', 'l2', 'l3']);
+    expect(isLastLessonOfStage(tenses, 'l3')).toBe(true);
+    expect(isLastLessonOfStage(tenses, 'l2')).toBe(false);
+    expect(isLastLessonOfStage(tenses, 'l1')).toBe(false);
+  });
+
+  it('holds for every stage, not just the last one in the curriculum', () => {
+    // A course is a stage here, so each stage ends in its own completion screen.
+    expect(isLastLessonOfStage(stage('translation', ['only']), 'only')).toBe(true);
+  });
+
+  it('is false for a lesson the stage does not have', () => {
+    expect(isLastLessonOfStage(stage('tenses', ['l1']), 'somewhere-else')).toBe(false);
+  });
+
+  it('is false for a placeholder stage — there is no lesson to finish', () => {
+    expect(isLastLessonOfStage(stage('formal-letters', []), 'l1')).toBe(false);
+  });
+
+  describe('isFinalStage', () => {
+    // The seeded shape: content up front, empty placeholder stages trailing it.
+    const curriculum: Curriculum = {
+      version: 1,
+      stages: [stage('tenses', ['l1']), stage('translation', ['l2']), stage('letters', []), stage('essays', [])],
+    };
+
+    it('is the last stage that has lessons, not the last in the array', () => {
+      expect(isFinalStage(curriculum, 'translation')).toBe(true);
+      expect(isFinalStage(curriculum, 'essays')).toBe(false);
+    });
+
+    it('is false for an earlier stage, an unknown one, and no stage at all', () => {
+      expect(isFinalStage(curriculum, 'tenses')).toBe(false);
+      expect(isFinalStage(curriculum, 'nope')).toBe(false);
+      expect(isFinalStage(curriculum, undefined)).toBe(false);
+    });
+
+    it('is false when nothing has content yet', () => {
+      expect(isFinalStage({ version: 1, stages: [stage('empty', [])] }, 'empty')).toBe(false);
+    });
   });
 });

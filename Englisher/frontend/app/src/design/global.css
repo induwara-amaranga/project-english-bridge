@@ -28,12 +28,86 @@ input::placeholder, textarea::placeholder { color: var(--c-input-placeholder); }
 .app-shell--nav-pad { padding-bottom: 88px; }
 
 @keyframes twinkle { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
-@keyframes hop { 0% { transform: translateY(0) scale(1) rotate(0deg); } 25% { transform: translateY(-50px) scale(1.1) rotate(-8deg); } 55% { transform: translateY(-60px) scale(1.12) rotate(6deg); } 100% { transform: translateY(0) scale(1) rotate(0deg); } }
 @keyframes spin-ring { 0% { transform: translate(-50%,-50%) rotate(0deg); } 100% { transform: translate(-50%,-50%) rotate(360deg); } }
 @keyframes meteor { 0% { transform: translate(0,0); opacity: 0; } 10% { opacity: 0.8; } 90% { opacity: 0.5; } 100% { transform: translate(160px, 220px); opacity: 0; } }
 @keyframes rocket-launch { 0% { transform: translateY(160px); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(0); opacity: 1; } }
 @keyframes float-node { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 @keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(255,184,0,0.5); } 100% { box-shadow: 0 0 0 14px rgba(255,184,0,0); } }
+
+/* ---- Screen and element entrances -------------------------------------
+   The exercise player swaps screens inside one route (question → feedback →
+   lesson complete), so these run on mount via a changing React `key` rather
+   than on navigation. `.screen-in` is the page-level one; `.pop-in` is for
+   the thing that should feel like it landed (a feedback banner, a score). */
+@keyframes screen-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes pop-in { 0% { opacity: 0; transform: scale(0.86); } 60% { transform: scale(1.03); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes shake-in { 0% { opacity: 0; transform: scale(0.94); } 40% { opacity: 1; transform: scale(1) translateX(-6px); } 60% { transform: translateX(5px); } 80% { transform: translateX(-3px); } 100% { opacity: 1; transform: none; } }
+@keyframes rise-in { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+@keyframes count-up { from { opacity: 0; transform: scale(0.7); } to { opacity: 1; transform: scale(1); } }
+
+.screen-in { animation: screen-in 340ms cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+.pop-in { animation: pop-in 420ms cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+.shake-in { animation: shake-in 480ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
+.rise-in { animation: rise-in 420ms cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+.count-up { animation: count-up 520ms cubic-bezier(0.22, 0.61, 0.36, 1) 120ms both; }
+/* Lets a list of results arrive one after another instead of all at once. */
+.stagger > * { animation: rise-in 420ms cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+.stagger > *:nth-child(1) { animation-delay: 40ms; }
+.stagger > *:nth-child(2) { animation-delay: 90ms; }
+.stagger > *:nth-child(3) { animation-delay: 140ms; }
+.stagger > *:nth-child(4) { animation-delay: 190ms; }
+.stagger > *:nth-child(n+5) { animation-delay: 240ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .screen-in, .pop-in, .shake-in, .rise-in, .count-up, .stagger > *, .bubble { animation: none !important; }
+  .press:active:not(:disabled), .btn:active:not(:disabled) { transform: none; }
+}
+
+/* ---- Page transition overlay -------------------------------------------
+   Full-screen bridge between two screens — see components/PageTransition.tsx
+   for who drives `visible` and why. Opacity-only, so it degrades safely: even
+   with the transition below stripped to nothing under reduced motion, the
+   overlay still shows and still clears, just without the fade. */
+.page-transition {
+  position: fixed; inset: 0; z-index: 60;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+  padding: 24px; text-align: center; color: white;
+  opacity: 0; pointer-events: none;
+  transition: opacity 380ms ease;
+}
+.page-transition--in { opacity: 1; pointer-events: auto; }
+.page-transition__label {
+  font-family: var(--font-display); font-weight: 700; font-size: 15px;
+  letter-spacing: 0.02em; color: rgba(255, 255, 255, 0.9);
+}
+
+/* Entering a course — TravelTransition */
+.travel-transition__stars { position: absolute; inset: 0; overflow: hidden; }
+.travel-transition__star {
+  position: absolute; width: 2px; height: 2px; border-radius: 50%; background: white;
+  animation: twinkle 2.4s ease-in-out infinite;
+}
+.travel-transition__rocket {
+  width: 72px; height: auto; position: relative; z-index: 1;
+  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.35));
+  animation: rocket-launch 0.8s cubic-bezier(0.2, 0.7, 0.3, 1) both, float-node 1.6s ease-in-out 0.8s infinite;
+}
+
+/* Grading a finished lesson — CheckingTransition. Its own keyframe (not the
+   roadmap's `spin-ring`) because that one assumes the centering transform of
+   an absolutely-positioned planet, which does not apply here. */
+.checking-badge { position: relative; width: 92px; height: 92px; display: flex; align-items: center; justify-content: center; }
+.checking-badge__ring {
+  position: absolute; inset: 0; border-radius: 50%; border: 3px dashed rgba(255, 255, 255, 0.55);
+  animation: checking-spin 5s linear infinite;
+}
+.checking-badge__core { width: 60px; height: 60px; border-radius: 50%; background: rgba(255, 255, 255, 0.16); display: flex; align-items: center; justify-content: center; }
+@keyframes checking-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .page-transition { transition: none; }
+  .travel-transition__rocket, .travel-transition__star, .checking-badge__ring { animation: none !important; }
+}
 
 /* ---- RichText — markdown-it output for card body/prompt text (see
    components/RichText.tsx). `.rt--dense` is the Course Editor's compact

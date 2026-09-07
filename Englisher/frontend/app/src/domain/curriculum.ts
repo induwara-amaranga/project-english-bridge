@@ -303,3 +303,42 @@ export function pickByIdOrPosition<T extends { id: string }>(list: T[], raw: str
 export function stageIndexOf(c: Curriculum, stage: Stage): number {
   return c.stages.indexOf(stage) + 1;
 }
+
+/**
+ * Whether this is the lesson that finishes its stage.
+ *
+ * <p>A stage is what a learner calls a course — one subject, start to finish —
+ * so finishing a stage's last lesson is what earns the course-complete screen.
+ * There is no whole-curriculum equivalent: the roadmap's later stages are
+ * placeholders holding no lessons yet, and a stage with none cannot be
+ * finished at all, which is why an empty one is never the final lesson of
+ * anything.
+ */
+export function isLastLessonOfStage(stage: Stage, lessonId: string): boolean {
+  const lessons = stage.lessons || [];
+  return lessons.length > 0 && lessons[lessons.length - 1].id === lessonId;
+}
+
+/**
+ * The stages a learner can actually finish.
+ *
+ * <p>The roadmap deliberately shows stages holding no lessons yet — they are
+ * the shape of the course to come, and several of the seeded eight are marked
+ * `placeholder` for exactly that. Emptiness is the test rather than that flag:
+ * a stage with no lessons cannot be finished however it is labelled.
+ */
+export function playableStages(c: Curriculum): Stage[] {
+  return c.stages.filter((s) => (s.lessons || []).length > 0);
+}
+
+/**
+ * Whether this is the last stage with anything in it — finishing it is the end
+ * of the whole curriculum, which is what earns the congratulations screen.
+ *
+ * <p>Deliberately not "the last stage in the array": that is a placeholder with
+ * no lessons, so the end of the road would be somewhere nobody can reach.
+ */
+export function isFinalStage(c: Curriculum, stageId: string | undefined): boolean {
+  const playable = playableStages(c);
+  return playable.length > 0 && !!stageId && playable[playable.length - 1].id === stageId;
+}

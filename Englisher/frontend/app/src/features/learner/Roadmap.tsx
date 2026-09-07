@@ -1,10 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCurriculum } from '../../hooks/useCurriculum';
 import { useProgress } from '../../hooks/useProgress';
+import { playableStages } from '../../domain/curriculum';
 import { stageStatus } from '../../domain/progress';
 import { BottomNav } from '../../components/BottomNav';
 import { LangToggle } from '../../components/Primitives';
+import { TravelTransition } from '../../components/TravelTransition';
+import { LottieBox } from '../../components/LottieBox';
+import { ROCKET } from '../../lib/animations';
+import { bubble } from '../../lib/bubble';
 
 const SECTORS = [
   { from: 1, to: 2, label: 'SECTOR I · FOUNDATIONS' },
@@ -15,7 +20,8 @@ const SECTORS = [
 const PLANET_GRADIENTS = {
   completed: 'radial-gradient(circle at 35% 30%, #6EE7A8, #2FAE63 70%)',
   current: 'radial-gradient(circle at 35% 30%, #A78BFA, #6C4FF6 70%)',
-  locked: 'radial-gradient(circle at 35% 30%, #4A4560, #2B2740 70%)',
+  // Warmed up from a flat charcoal — a "not yet" should read as dormant, not bleak.
+  locked: 'radial-gradient(circle at 35% 30%, #5B5570, #332F47 70%)',
 };
 const X_OFFSETS = [50, 66, 50, 34, 50, 66, 50, 34];
 const V_GAP = 170;
@@ -23,6 +29,15 @@ const V_GAP = 170;
 const STARS = Array.from({ length: 20 }, (_, i) => ({
   top: (i * 37) % 100, left: (i * 53) % 100, size: 1 + (i % 3), opacity: 0.35 + (i % 4) * 0.15, dur: 2 + (i % 5) * 0.4,
 }));
+/**
+ * Shooting stars. Each travels the same fixed (dx, dy) — 160px right, 220px
+ * down — so one streak angle, matched to that vector below, is correct for
+ * all of them; only position, speed and delay vary per star.
+ */
+const METEOR_DX = 160;
+const METEOR_DY = 220;
+/** The angle a streak needs to lie along (METEOR_DX, METEOR_DY) — see the note by its markup for why this can't just be a static `rotate` next to the animated one. */
+const METEOR_ANGLE = -(Math.atan2(METEOR_DX, METEOR_DY) * 180) / Math.PI;
 const METEORS = [
   { top: 20, left: 15, dur: 4.2, delay: 0 }, { top: 60, left: 70, dur: 5.1, delay: 1.4 },
   { top: 10, left: 45, dur: 3.6, delay: 2.6 }, { top: 90, left: 85, dur: 4.8, delay: 0.8 },
@@ -38,17 +53,7 @@ export function Roadmap() {
   const navigate = useNavigate();
   const [lang, setLang] = useState<'en' | 'si'>('en');
   const [view, setView] = useState<'list' | 'map'>('list');
-  const [mascotStage, setMascotStage] = useState(() => Math.max(0, curriculum.stages.findIndex((s) => s.id === progress.currentStageId)));
-  const [jumping, setJumping] = useState(false);
-
-  // Curriculum and progress load independently; once both are in, snap the
-  // mascot to the learner's actual stage rather than the loading-time default.
-  useEffect(() => {
-    if (loading) return;
-    const idx = curriculum.stages.findIndex((s) => s.id === progress.currentStageId);
-    if (idx >= 0) setMascotStage(idx);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, progress.currentStageId, curriculum.stages.length]);
+  const [travelTo, setTravelTo] = useState<{ id: string; label: string } | null>(null);
 
   if (loading || curriculum.stages.length === 0) {
     return <div className="app-shell" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B6580', fontWeight: 600 }}>{loading ? 'Loading your roadmap…' : 'No courses yet.'}</div>;
@@ -58,13 +63,19 @@ export function Roadmap() {
   const bodyFont = isSi ? 'var(--font-si-body)' : 'var(--font-body)';
   const headFont = isSi ? 'var(--font-si-display)' : 'var(--font-display)';
 
-  const jumpTo = (i: number) => {
-    const stage = curriculum.stages[i];
-    if (i === mascotStage) { navigate(`/learn/${stage.id}`); return; }
-    setMascotStage(i);
-    setJumping(true);
-    setTimeout(() => { setJumping(false); navigate(`/learn/${stage.id}`); }, 650);
+  /**
+   * Shows the travel overlay, then navigates a beat later while it is still
+   * fully opaque — the route swap underneath is never actually seen. Used
+   * everywhere a click lands directly on a course, in either view.
+   */
+  const goToStage = (stageId: string, title: string) => {
+    if (travelTo) return;
+    const label = isSi ? `${title} වෙත යනවා…` : `Entering ${title}…`;
+    setTravelTo({ id: stageId, label });
+    setTimeout(() => navigate(`/learn/${stageId}`), 620);
   };
+
+  const totalCourses = playableStages(curriculum).length;
 
   const stages = curriculum.stages.map((stage, i) => {
     const n = i + 1;
@@ -106,8 +117,6 @@ export function Roadmap() {
     const midY = (prev.y + cur.y) / 2;
     pathD += ` C ${prev.x} ${midY}, ${cur.x} ${midY}, ${cur.x} ${cur.y}`;
   }
-  const mascotStageObj = mapStages[mascotStage] || mapStages[0];
-
   return (
     <div className="app-shell app-shell--nav-pad" style={{ fontFamily: bodyFont, background: '#F7F5FF', color: '#1E1B2E' }}>
       <div style={{ background: '#6C4FF6', padding: '24px 24px 32px' }}>
@@ -143,7 +152,7 @@ export function Roadmap() {
         {view === 'list' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {stages.map((s) => (
-              <div key={s.stage.id} onClick={() => navigate(`/learn/${s.stage.id}`)} style={{ cursor: 'pointer', background: s.bg, borderRadius: 20, padding: '20px 22px', display: 'flex', alignItems: 'center', gap: 16, border: s.border }}>
+              <div key={s.stage.id} className="bubble-host hover-shrink" onPointerDown={bubble} onClick={() => goToStage(s.stage.id, s.title)} style={{ cursor: 'pointer', background: s.bg, borderRadius: 20, padding: '20px 22px', display: 'flex', alignItems: 'center', gap: 16, border: s.border }}>
                 <div style={{ width: 48, height: 48, borderRadius: '50%', background: s.badgeBg, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {s.status === 'locked' && <LockIcon />}
                   {s.status === 'completed' && <CheckIcon />}
@@ -167,41 +176,58 @@ export function Roadmap() {
         )}
 
         {view === 'map' && (
-          <div style={{ background: '#0B0A16', borderRadius: 24, position: 'relative', overflow: 'hidden' }}>
+          <div style={{ background: '#0B0A16', borderRadius: 28, position: 'relative', overflow: 'hidden' }}>
             {STARS.map((star, i) => (
               <div key={i} style={{ position: 'absolute', width: star.size, height: star.size, borderRadius: '50%', background: 'white', opacity: star.opacity, top: `${star.top}%`, left: `${star.left}%`, animation: `twinkle ${star.dur}s ease-in-out infinite` }} />
             ))}
             <div style={{ position: 'absolute', top: -60, left: -80, width: 320, height: 320, borderRadius: '50%', background: 'radial-gradient(circle, rgba(108,79,246,0.28), transparent 70%)', filter: 'blur(10px)' }} />
             <div style={{ position: 'absolute', top: '40%', right: -100, width: 300, height: 300, borderRadius: '50%', background: 'radial-gradient(circle, rgba(20,216,196,0.18), transparent 70%)', filter: 'blur(10px)' }} />
+            {/* A warm glow low in the frame, balancing the two cool ones above so
+                the space reads as cozy rather than just cold and vast. */}
+            <div style={{ position: 'absolute', bottom: -80, left: '30%', width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,184,0,0.14), transparent 70%)', filter: 'blur(10px)' }} />
+            {/* Movement and orientation are two different divs on purpose: an
+                animation's `transform` replaces the element's whole computed
+                transform at each frame, so a static `rotate` sitting next to
+                the animated `translate` was being silently discarded — the
+                streak animated diagonally while rendering perfectly upright.
+                The rotate now lives on an inner div the animation never touches. */}
             {METEORS.map((m, i) => (
-              <div key={i} style={{ position: 'absolute', top: m.top, left: `${m.left}%`, width: 2, height: 46, background: 'linear-gradient(to bottom, transparent, white)', transform: 'rotate(-35deg)', animation: `meteor ${m.dur}s linear ${m.delay}s infinite` }} />
+              <div key={i} style={{ position: 'absolute', top: m.top, left: `${m.left}%`, width: 2, height: 46, animation: `meteor ${m.dur}s linear ${m.delay}s infinite` }}>
+                <div style={{ width: '100%', height: '100%', background: 'linear-gradient(to bottom, transparent, white)', transform: `rotate(${METEOR_ANGLE}deg)` }} />
+              </div>
             ))}
 
             <div style={{ position: 'relative', padding: '44px 24px 20px', textAlign: 'center' }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(108,79,246,0.18)', border: '1px solid rgba(108,79,246,0.4)', color: '#B7A6FF', padding: '7px 16px', borderRadius: 999, fontWeight: 700, fontSize: 11, letterSpacing: '0.06em', marginBottom: 20 }}>CELESTIAL STAGE SYSTEM</div>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(108,79,246,0.18)', border: '1px solid rgba(108,79,246,0.4)', color: '#B7A6FF', padding: '7px 16px', borderRadius: 999, fontWeight: 700, fontSize: 11, letterSpacing: '0.06em', marginBottom: 20 }}>YOUR LEARNING GALAXY</div>
               <h1 style={{ fontFamily: headFont, fontWeight: 800, fontSize: 30, color: 'white', margin: '0 0 8px' }}>{isSi ? 'ඔබේ මාවත' : 'Your roadmap'}</h1>
-              <p style={{ fontSize: 14, color: '#9B94BE', margin: '0 0 20px' }}>{isSi ? 'අදියර 1 සිට 8 දක්වා' : 'Eight stages, from tenses to formal letters.'}</p>
-              <img src="/assets/rocket_ship.png" alt="" style={{ width: 64, height: 'auto', objectFit: 'contain', animation: 'rocket-launch 2.4s cubic-bezier(.2,.7,.3,1) both' }} />
+              <p style={{ fontSize: 14, color: '#9B94BE', margin: '0 0 20px' }}>
+                {isSi
+                  ? `ගවේෂණය කිරීමට පාඨමාලා ${totalCourses}ක්.`
+                  : `${totalCourses} course${totalCourses === 1 ? '' : 's'} to explore, one planet at a time.`}
+              </p>
+              {/* The launch entrance lives on this wrapper so it still plays
+                  even while the animations folder is empty and the plain
+                  image fallback is showing. */}
+              <div style={{ width: 64, height: 64, margin: '0 auto', animation: 'rocket-launch 2.4s cubic-bezier(.2,.7,.3,1) both' }}>
+                <LottieBox name={ROCKET} size={64} loop fallback={<img src="/assets/rocket_ship.png" alt="" style={{ width: '100%', height: 'auto', objectFit: 'contain' }} />} />
+              </div>
             </div>
 
             <div style={{ position: 'relative', height: mapHeight, marginTop: 10 }}>
               <svg style={{ position: 'absolute', top: 0, left: 0 }} width="100%" height={mapHeight} viewBox={`0 0 400 ${mapHeight}`} preserveAspectRatio="none">
                 <path d={pathD} stroke="rgba(255,255,255,0.18)" strokeWidth="3" strokeDasharray="3 12" strokeLinecap="round" fill="none" />
               </svg>
-              <img src="/assets/mascot_spacesuit.png" alt="" style={{
-                position: 'absolute', width: 60, height: 60, objectFit: 'contain', top: mascotStageObj.top + 8, left: `${mascotStageObj.left}%`,
-                transform: 'translate(-50%, -80%)', transition: 'top 0.6s cubic-bezier(.34,1.56,.64,1), left 0.6s cubic-bezier(.34,1.56,.64,1)',
-                animation: jumping ? 'hop 0.65s cubic-bezier(.34,1.56,.64,1)' : 'none', filter: 'drop-shadow(0 0 18px rgba(108,79,246,0.7))', zIndex: 5,
-              }} />
-              {mapStages.map((s, i) => (
+              {mapStages.map((s) => (
                 <div key={s.stage.id}>
                   {s.sectorLabel && (
                     <div style={{ position: 'absolute', top: s.top, left: '50%', transform: 'translate(-50%, -56px)', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(11,10,22,0.7)', borderRadius: 14, padding: '8px 18px', textAlign: 'center', whiteSpace: 'nowrap' }}>
                       <div style={{ fontFamily: headFont, fontWeight: 700, fontSize: 12, color: 'white' }}>{s.sectorLabel}</div>
                     </div>
                   )}
-                  <div onClick={() => jumpTo(i)} style={{ position: 'absolute', top: s.top, left: `${s.left}%`, transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, width: 140, cursor: 'pointer' }}>
-                    <div style={{ width: 88, height: 88, borderRadius: '50%', background: s.planetGradient, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', boxShadow: s.glow }}>
+                  <div className="hover-target" onClick={() => goToStage(s.stage.id, s.title)} style={{ position: 'absolute', top: s.top, left: `${s.left}%`, transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, width: 140, cursor: 'pointer' }}>
+                    <div className="hover-shrink" onPointerDown={bubble} style={{ width: 88, height: 88, borderRadius: '50%', background: s.planetGradient, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', boxShadow: s.glow }}>
+                      {/* Clips the press bubble to the planet without hiding the orbit ring, which is drawn wider than the planet. */}
+                      <span className="bubble-layer" />
                       {s.status === 'current' && <div style={{ position: 'absolute', width: 128, height: 44, border: '2px dashed rgba(255,255,255,0.55)', borderRadius: '50%', top: '50%', left: '50%', animation: 'spin-ring 9s linear infinite' }} />}
                       <div style={{ position: 'absolute', top: 14, left: 18, width: 22, height: 13, borderRadius: '50%', background: 'rgba(255,255,255,0.35)' }} />
                       <div style={{ position: 'absolute', bottom: 16, right: 16, width: 11, height: 11, borderRadius: '50%', background: 'rgba(0,0,0,0.2)' }} />
@@ -223,6 +249,7 @@ export function Roadmap() {
       </div>
 
       <BottomNav />
+      {travelTo && <TravelTransition label={travelTo.label} />}
     </div>
   );
 }
