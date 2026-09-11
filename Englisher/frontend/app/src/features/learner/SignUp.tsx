@@ -3,7 +3,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { LangToggle, RoleToggle } from '../../components/Primitives';
 import { roleHome, useAuth, type Role } from '../../hooks/useAuth';
 import { errorMessage } from '../../lib/apiClient';
-import { submitPlacement } from '../../domain/progress';
+import { completeLesson, submitPlacement } from '../../domain/progress';
+import { clearGuestSession, setGuestStage, takePendingGuestLesson } from '../../domain/guestProgress';
 
 const COPY = {
   en: {
@@ -42,12 +43,15 @@ export function SignUp() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const { signUp, continueAsGuest } = useAuth();
+  const { signUp, enterGuestMode, exitGuestMode } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   // Set by PlacementTest's "Create account" link so a result taken before
   // signing up is not lost the moment a real account exists to hold it.
   const placementStage = params.get('placementStage');
+  // Set by GuestSavePrompt's "Continue" button — this signup is claiming a
+  // guest session's progress, not starting fresh.
+  const claimGuest = params.get('claimGuest') === '1';
   const c = COPY[lang];
   const isSi = lang === 'si';
   const headFont = isSi ? 'var(--font-si-display)' : 'var(--font-display)';
@@ -64,6 +68,22 @@ export function SignUp() {
     setBusy(true);
     try {
       const user = await signUp(name || 'Learner', email, password, role);
+      // The new account is real and signed in at this point — replaying the
+      // guest's one lesson through the normal, server-graded completeLesson
+      // call is what actually awards it, exactly as if they had done it
+      // signed in the whole time. Nothing about the award is trusted from
+      // the client's own local preview.
+      if (claimGuest && user.role === 'student') {
+        const pending = takePendingGuestLesson();
+        if (pending) {
+          try { await completeLesson(pending.stageId, pending.lessonId, pending.answers); } catch { /* best-effort */ }
+        }
+      }
+      // Both matter: exitGuestMode flips the React state (useProgress reads
+      // it immediately, no reload needed), clearGuestSession wipes the data
+      // it was reading.
+      exitGuestMode();
+      clearGuestSession();
       await applyPlacement(user.role);
       navigate(roleHome(user.role));
     } catch (err) {
@@ -73,19 +93,10 @@ export function SignUp() {
     }
   };
   const oauth = () => setError(c.oauthUnavailable);
-  const continueAsGuestClick = async () => {
-    if (busy) return;
-    setError('');
-    setBusy(true);
-    try {
-      const user = await continueAsGuest();
-      await applyPlacement(user.role);
-      navigate('/learn');
-    } catch (err) {
-      setError(errorMessage(err));
-    } finally {
-      setBusy(false);
-    }
+  const continueAsGuestClick = () => {
+    enterGuestMode();
+    if (placementStage) setGuestStage(placementStage);
+    navigate('/learn');
   };
 
   return (

@@ -13,6 +13,7 @@ import { Roadmap } from './features/learner/Roadmap';
 import { StageLessons } from './features/learner/StageLessons';
 import { LessonPage } from './features/learner/Lesson';
 import { ExercisePage } from './features/learner/Exercise';
+import { GuestSavePrompt } from './features/learner/GuestSavePrompt';
 import { ReviewAnswers } from './features/learner/ReviewAnswers';
 import { CourseComplete } from './features/learner/CourseComplete';
 import { Congratulations } from './features/learner/Congratulations';
@@ -43,20 +44,26 @@ export default function App() {
         <Route path="/onboarding/streak" element={<OnboardingStreak />} />
         <Route path="/onboarding/walkthrough" element={<OnboardingWalkthrough />} />
 
-        {/* Student — the course page */}
-        <Route path="/learn" element={<RequireRole role="student"><Roadmap /></RequireRole>} />
-        <Route path="/learn/:stageId" element={<RequireRole role="student"><StageLessons /></RequireRole>} />
-        <Route path="/learn/:stageId/:lessonId" element={<RequireRole role="student"><LessonPage /></RequireRole>} />
-        <Route path="/learn/:stageId/:lessonId/practice" element={<RequireRole role="student"><ExercisePage /></RequireRole>} />
+        {/* Student — the course page. The four routes a guest preview needs
+            (roadmap, a stage, a lesson, the exercise player) plus the review
+            screen and the save-prompt itself allow guest mode through; a
+            guest never earns access to anything past their one lesson, so
+            everything else here still requires a real account. */}
+        <Route path="/learn" element={<RequireRole role="student" allowGuestPreview><Roadmap /></RequireRole>} />
+        <Route path="/learn/:stageId" element={<RequireRole role="student" allowGuestPreview><StageLessons /></RequireRole>} />
+        <Route path="/learn/:stageId/:lessonId" element={<RequireRole role="student" allowGuestPreview><LessonPage /></RequireRole>} />
+        <Route path="/learn/:stageId/:lessonId/practice" element={<RequireRole role="student" allowGuestPreview><ExercisePage /></RequireRole>} />
         {/* A course is a stage here, so finishing a stage's last lesson ends a
             course: /complete is its celebration screen and /review-wrong is
             every question missed along the way. Both sit above :lessonId, which
             React Router ranks below them because their third segment is fixed. */}
         <Route path="/learn/:stageId/complete" element={<RequireRole role="student"><CourseComplete /></RequireRole>} />
         <Route path="/learn/:stageId/review-wrong" element={<RequireRole role="student"><ReviewAnswers scope="stage-wrong" /></RequireRole>} />
-        <Route path="/learn/:stageId/:lessonId/review" element={<RequireRole role="student"><ReviewAnswers /></RequireRole>} />
+        <Route path="/learn/:stageId/:lessonId/review" element={<RequireRole role="student" allowGuestPreview><ReviewAnswers /></RequireRole>} />
         {/* The end of the roadmap, past the last course's own screen. */}
         <Route path="/congratulations" element={<RequireRole role="student"><Congratulations /></RequireRole>} />
+        {/* Shown once, after a guest's first-ever lesson completion. */}
+        <Route path="/guest-save" element={<RequireRole role="student" allowGuestPreview><GuestSavePrompt /></RequireRole>} />
 
         <Route path="/write/guided" element={<RequireRole role="student"><GuidedEssay /></RequireRole>} />
         <Route path="/write/solo" element={<RequireRole role="student"><SoloEssay /></RequireRole>} />

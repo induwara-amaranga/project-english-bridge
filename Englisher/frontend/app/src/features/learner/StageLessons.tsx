@@ -3,7 +3,9 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useCurriculum } from '../../hooks/useCurriculum';
 import { useProgress } from '../../hooks/useProgress';
 import { isLessonComplete } from '../../domain/progress';
+import type { Progress } from '../../domain/progress';
 import { LangToggle } from '../../components/Primitives';
+import { CoinsBadge, LevelBadge, XpBadge } from '../../components/StatBadges';
 import { bubble } from '../../lib/bubble';
 
 const PLANET_GRADIENTS = [
@@ -51,7 +53,7 @@ export function StageLessons() {
   if (stage.lessons.length === 0) {
     return (
       <div className="app-shell" style={{ background: '#FFFFFF' }}>
-        <StageHeader stage={stage} stageNo={stageNo} lang={lang} onToggleLang={() => setLang((l) => (l === 'en' ? 'si' : 'en'))} titleFont={titleFont} idx={idx} />
+        <StageHeader stage={stage} stageNo={stageNo} lang={lang} onToggleLang={() => setLang((l) => (l === 'en' ? 'si' : 'en'))} titleFont={titleFont} idx={idx} progress={progress} />
         <div style={{ maxWidth: 640, margin: '0 auto', padding: '48px 24px', textAlign: 'center' }}>
           <div className="card" style={{ color: '#9B94BE', fontWeight: 600 }}>{isSi ? 'මෙම අදියර සඳහා පාඩම් තවම නොමැත.' : 'This stage has no lessons yet.'}</div>
         </div>
@@ -87,7 +89,7 @@ export function StageLessons() {
 
   return (
     <div className="app-shell" style={{ fontFamily: 'var(--font-body)', color: 'white', position: 'relative', overflow: 'hidden', background: '#FFFFFF', paddingBottom: 60 }}>
-      <StageHeader stage={stage} stageNo={stageNo} lang={lang} onToggleLang={() => setLang((l) => (l === 'en' ? 'si' : 'en'))} titleFont={titleFont} idx={idx} />
+      <StageHeader stage={stage} stageNo={stageNo} lang={lang} onToggleLang={() => setLang((l) => (l === 'en' ? 'si' : 'en'))} titleFont={titleFont} idx={idx} progress={progress} />
 
       {/* Spans the full app-shell — including behind the header, which paints
           its own opaque background over it — rather than starting at a
@@ -127,8 +129,8 @@ export function StageLessons() {
   );
 }
 
-function StageHeader({ stage, stageNo, lang, onToggleLang, titleFont, idx }: {
-  stage: ReturnType<typeof useCurriculum>['curriculum']['stages'][number]; stageNo: number; lang: 'en' | 'si'; onToggleLang: () => void; titleFont: string; idx: number;
+function StageHeader({ stage, stageNo, lang, onToggleLang, titleFont, idx, progress }: {
+  stage: ReturnType<typeof useCurriculum>['curriculum']['stages'][number]; stageNo: number; lang: 'en' | 'si'; onToggleLang: () => void; titleFont: string; idx: number; progress: Progress;
 }) {
   const isSi = lang === 'si';
   return (
@@ -138,11 +140,10 @@ function StageHeader({ stage, stageNo, lang, onToggleLang, titleFont, idx }: {
           <Link to="/profile" style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg width="22" height="22" viewBox="0 0 22 22" fill="white"><circle cx="11" cy="7" r="4" /><path d="M3 20c0-4 3.5-7 8-7s8 3 8 7" /></svg>
           </Link>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.22)', borderRadius: 999, padding: '8px 14px' }}>
-              <div style={{ width: 16, height: 16, background: '#FFB800', clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)' }} />
-              <span style={{ color: 'white', fontWeight: 700, fontSize: 14 }}>240 XP</span>
-            </div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <LevelBadge level={progress.level} xpIntoLevel={progress.xpIntoLevel} xpForNextLevel={progress.xpForNextLevel} />
+            <XpBadge xp={progress.xp} />
+            <CoinsBadge coins={progress.coins} />
           </div>
         </div>
         <div style={{ position: 'absolute', right: 0, top: 0 }}><LangToggle lang={lang} onToggle={onToggleLang} /></div>

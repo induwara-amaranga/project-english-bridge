@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { apiPost, refreshSession, setAuthListener, type AuthSession } from '../lib/apiClient';
+import { isGuestActive, setGuestActive } from '../lib/guestSession';
 
 // Real auth, against the Spring Boot API (SPRINGBOOT-MIGRATION.md section 4).
 // The access token lives only in memory (in apiClient.ts); the refresh token
@@ -28,22 +29,22 @@ export function roleHome(role: Role): string {
   return '/learn';
 }
 
-// A single shared guest account, used by "Continue without an account" (Sign
-// Up) and "Try a lesson first" (Placement Test) — the real backend has no
-// concept of an anonymous session, so both flows sign into (or create) the
-// same fixed student account rather than minting a fresh one that would
-// collide on email the second time anyone tried it.
-const GUEST_NAME = 'Guest';
-const GUEST_EMAIL = 'guest@englisher.test';
-const GUEST_PASSWORD = 'guest-account-12345';
-
 interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
+  /**
+   * "Try a lesson first" / "Continue without an account" — a purely local
+   * mode with no backend account at all (see lib/guestSession.ts and
+   * domain/guestProgress.ts). Nothing is sent to the server until the guest
+   * signs up, at which point their one lesson is replayed for real — see
+   * SignUp.tsx.
+   */
+  isGuest: boolean;
   signIn: (email: string, password: string) => Promise<AuthUser>;
   signUp: (name: string, email: string, password: string, role: Role) => Promise<AuthUser>;
   signOut: () => Promise<void>;
-  continueAsGuest: () => Promise<AuthUser>;
+  enterGuestMode: () => void;
+  exitGuestMode: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -51,6 +52,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isGuest, setIsGuest] = useState(isGuestActive);
 
   const applySession = useCallback((session: AuthSession | null) => {
     setUser(session ? (session.user as AuthUser) : null);
@@ -85,17 +87,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     applySession(null);
   }, [applySession]);
 
-  const continueAsGuest = useCallback(async () => {
-    try {
-      return await signIn(GUEST_EMAIL, GUEST_PASSWORD);
-    } catch {
-      return await signUp(GUEST_NAME, GUEST_EMAIL, GUEST_PASSWORD, 'student');
-    }
-  }, [signIn, signUp]);
+  const enterGuestMode = useCallback(() => {
+    setGuestActive(true);
+    setIsGuest(true);
+  }, []);
+
+  const exitGuestMode = useCallback(() => {
+    setGuestActive(false);
+    setIsGuest(false);
+  }, []);
 
   const value = useMemo(
-    () => ({ user, loading, signIn, signUp, signOut, continueAsGuest }),
-    [user, loading, signIn, signUp, signOut, continueAsGuest],
+    () => ({ user, loading, isGuest, signIn, signUp, signOut, enterGuestMode, exitGuestMode }),
+    [user, loading, isGuest, signIn, signUp, signOut, enterGuestMode, exitGuestMode],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

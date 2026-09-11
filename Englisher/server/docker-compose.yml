@@ -1,9 +1,10 @@
-# Local development stack: PostgreSQL, plus a mail catcher for the parent
-# invitations once ParentLinkService.deliver() is wired to real email.
+# Local development / all-in-one stack: PostgreSQL, the API itself, and a
+# mail catcher for the parent invitations once ParentLinkService.deliver() is
+# wired to real email.
 #
-# The API itself is not in here on purpose — running it from the IDE or
-# `./mvnw spring-boot:run` is what you want while developing, and the
-# Dockerfile covers the deployed case.
+# Prefer running the API from the IDE or `./mvnw spring-boot:run` while
+# actively developing it — faster feedback than a rebuild — but `docker
+# compose up` here brings up the whole backend stack in one shot too.
 services:
   db:
     image: postgres:17-alpine
@@ -21,6 +22,25 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  # The API. Built with maven:3.9.6-eclipse-temurin-21 (see Dockerfile) and run
+  # under the `dev` profile so it comes up with a throwaway JWT secret and a
+  # seeded admin account without any extra configuration.
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: englisher-backend
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      ENGLISHER_DB_URL: jdbc:postgresql://db:5432/englisher
+      ENGLISHER_DB_USER: englisher
+      ENGLISHER_DB_PASSWORD: englisher
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
 
   # Catches invitation emails so the flow can be exercised end to end without
   # sending anything. Web UI on http://localhost:8025.

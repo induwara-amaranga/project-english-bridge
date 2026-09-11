@@ -68,12 +68,12 @@ export function ParentDashboard() {
         <div style={{ maxWidth: 640, margin: '0 auto', padding: '28px 24px 64px', display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div className="card">
-              <div style={{ width: 30, height: 30, background: 'var(--c-warning)', clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)', marginBottom: 10 }} />
+              <img src="/assets/icons/xp.svg" alt="" width={30} height={30} style={{ display: 'block', marginBottom: 10 }} />
               <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 21 }}>{data.progress.xp.toLocaleString()} XP total</div>
               <div style={{ fontSize: 13, color: 'var(--c-ink-soft)', fontWeight: 600, marginTop: 4 }}>Earned so far</div>
             </div>
             <div className="card">
-              <svg width="30" height="30" viewBox="0 0 16 16" fill="#FF6B4A" style={{ marginBottom: 10, display: 'block' }}><path d="M8 1C8 1 5 5 5 9C5 11.5 6.5 13.5 8 13.5C9.5 13.5 11 11.5 11 9C11 7.5 10.3 6.5 9.7 6.5C9.7 8 9 9 8.3 9C9 6.5 8 4.5 8 1Z" /></svg>
+              <img src="/assets/icons/streak.svg" alt="" width={30} height={30} style={{ display: 'block', marginBottom: 10 }} />
               <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 21 }}>{data.progress.streakDays}-day streak</div>
               <div style={{ fontSize: 13, color: 'var(--c-ink-soft)', fontWeight: 600, marginTop: 4 }}>Keep it going</div>
             </div>

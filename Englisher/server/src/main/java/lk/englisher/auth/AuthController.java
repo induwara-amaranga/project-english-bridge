@@ -4,12 +4,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.validation.Valid;
 import lk.englisher.auth.AuthDtos.AuthResponse;
 import lk.englisher.auth.AuthDtos.AuthUserDto;
+import lk.englisher.auth.AuthDtos.CreateAdminRequest;
 import lk.englisher.auth.AuthDtos.SignInRequest;
 import lk.englisher.auth.AuthDtos.SignUpRequest;
 import lk.englisher.config.AuthProperties;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -44,6 +46,17 @@ public class AuthController {
     @PostMapping("/auth/signup")
     public ResponseEntity<AuthResponse> signUp(@Valid @RequestBody SignUpRequest request) {
         return withRefreshCookie(auth.signUp(request));
+    }
+
+    /**
+     * The only way to get a new admin account — an existing admin creates it
+     * directly. {@code /auth/signup} refuses {@code role: "admin"} outright
+     * (see AuthService.signUp); this is the operator-only replacement for it.
+     */
+    @PostMapping("/admin/users")
+    @PreAuthorize("hasRole('ADMIN')")
+    public AuthUserDto createAdmin(@Valid @RequestBody CreateAdminRequest request) {
+        return auth.createAdmin(request);
     }
 
     @PostMapping("/auth/signin")

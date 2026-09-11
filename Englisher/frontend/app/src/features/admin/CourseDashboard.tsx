@@ -6,6 +6,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { TYPE_META } from '../../domain/types';
 import type { ExerciseType } from '../../domain/types';
 import { repairUnlocks } from '../../domain/curriculum';
+import { InviteAdminDialog } from './InviteAdminDialog';
 
 const TYPE_COLOR: Record<ExerciseType, string> = {
   mcq: '#6C4FF6', gap_fill: '#0FA593', drag_order: '#B37E00', match: '#FF4D5E', free_text: '#2FAE63',
@@ -25,6 +26,7 @@ export function CourseDashboard() {
     return e;
   });
   const [note, setNote] = useState('');
+  const [inviting, setInviting] = useState(false);
 
   const toggle = (id: string) => setExpanded((e) => ({ ...e, [id]: !e[id] }));
 
@@ -93,9 +95,12 @@ export function CourseDashboard() {
           <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--c-ink-soft)' }}>{note}</span>
           <div style={{ background: 'var(--c-primary-tint)', color: 'var(--c-primary)', borderRadius: 999, padding: '6px 14px', fontSize: 12, fontWeight: 700 }}>Draft · v{curriculum.version + 1}</div>
           {user && <span style={{ fontSize: 12, color: 'var(--c-ink-soft)' }}>{user.email}</span>}
+          <button onClick={() => setInviting(true)} style={{ background: 'var(--c-primary-tint)', color: 'var(--c-primary)', border: 'none', borderRadius: 999, padding: '6px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>+ Invite admin</button>
           <button onClick={logout} style={{ background: 'none', border: '1px solid var(--c-line)', borderRadius: 999, padding: '6px 14px', fontSize: 12, fontWeight: 700, color: 'var(--c-ink-2)', cursor: 'pointer' }}>Sign out</button>
         </div>
       </div>
+
+      {inviting && <InviteAdminDialog onClose={() => setInviting(false)} />}
 
       <div style={{ maxWidth: 1120, margin: '0 auto', padding: '28px 24px 64px' }}>
         <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>

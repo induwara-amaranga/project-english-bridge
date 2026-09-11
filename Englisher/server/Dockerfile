@@ -1,5 +1,5 @@
 # Multi-stage: build with the full JDK, ship on a JRE.
-FROM maven:3.9-eclipse-temurin-21 AS build
+FROM maven:3.9.6-eclipse-temurin-21 AS build
 WORKDIR /build
 
 # Dependencies first, so a source-only change does not re-download the world.

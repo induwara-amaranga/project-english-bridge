@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { loadPlacement, type Placement } from '../../domain/placement';
-import { submitPlacement } from '../../domain/progress';
+import { setGuestStage } from '../../domain/guestProgress';
 import { errorMessage } from '../../lib/apiClient';
 
 type Screen = 'loading' | 'error' | 'intro' | 'question' | 'feedback' | 'result';
 
 export function PlacementTest() {
-  const { continueAsGuest } = useAuth();
+  const { enterGuestMode } = useAuth();
   const navigate = useNavigate();
   const [placement, setPlacement] = useState<Placement | null>(null);
   const [screen, setScreen] = useState<Screen>('loading');
@@ -17,7 +17,6 @@ export function PlacementTest() {
   const [correctStages, setCorrectStages] = useState<number[]>([]);
   const [translateInput, setTranslateInput] = useState('');
   const [pending, setPending] = useState<{ isCorrect: boolean; correctLabel: string } | null>(null);
-  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -59,20 +58,13 @@ export function PlacementTest() {
   };
 
   // "Try a lesson first" is the no-account path the intro screen promises
-  // ("No account needed") — /learn is gated to signed-in students, so this
-  // signs into (or creates) the shared guest account, same as Sign Up's
-  // "Continue without an account", then posts the result the same way a real
-  // signup would.
-  const tryLessonFirst = async () => {
-    if (busy) return;
-    setBusy(true);
-    try {
-      await continueAsGuest();
-      if (resultStageId) { try { await submitPlacement(resultStageId); } catch { /* best-effort */ } }
-      navigate('/learn');
-    } finally {
-      setBusy(false);
-    }
+  // ("No account needed") — purely local guest mode, same as Sign Up's
+  // "Continue without an account": no backend call at all until a real
+  // signup replays whatever lesson gets played (see domain/guestProgress.ts).
+  const tryLessonFirst = () => {
+    enterGuestMode();
+    if (resultStageId) setGuestStage(resultStageId);
+    navigate('/learn');
   };
 
   const submitTranslate = () => {
@@ -158,7 +150,7 @@ export function PlacementTest() {
         {screen === 'result' && (
           <div style={{ maxWidth: 560, width: '100%', textAlign: 'center' }}>
             <div style={{ width: 88, height: 88, borderRadius: '50%', background: 'var(--c-warning-bg)', margin: '0 auto 28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ width: 36, height: 36, background: 'var(--c-warning)', clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)' }} />
+              <img src="/assets/icons/xp.svg" alt="" width={48} height={48} />
             </div>
             <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 26, margin: '0 0 8px' }}>Stage {resultStage} — {resultCopy?.name ?? ''}</h1>
             <p style={{ fontSize: 17, lineHeight: 1.6, color: 'var(--c-ink-2)', margin: '0 0 36px', maxWidth: 480, marginLeft: 'auto', marginRight: 'auto' }}>{resultCopy?.message ?? ''}</p>
@@ -166,7 +158,7 @@ export function PlacementTest() {
               <p style={{ margin: 0, fontSize: 16, lineHeight: 1.6, fontWeight: 600 }}>Save this so you don&apos;t lose it. Create a free account to start Stage {resultStage} and keep your progress, XP, and streak as you go.</p>
               <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
                 <Link to={resultStageId ? `/signup?placementStage=${encodeURIComponent(resultStageId)}` : '/signup'} style={{ background: 'var(--c-primary)', color: 'white', borderRadius: 999, padding: '14px 30px', fontWeight: 700, fontSize: 15, fontFamily: 'var(--font-display)', boxShadow: '0 4px 0 var(--c-primary-shadow)', display: 'inline-block' }}>Create account</Link>
-                <button type="button" disabled={busy} onClick={tryLessonFirst} style={{ background: 'white', color: 'var(--c-primary)', border: '2px solid var(--c-primary)', borderRadius: 999, padding: '14px 30px', fontWeight: 700, fontSize: 15, fontFamily: 'var(--font-display)', cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.7 : 1 }}>Try a lesson first →</button>
+                <button type="button" onClick={tryLessonFirst} style={{ background: 'white', color: 'var(--c-primary)', border: '2px solid var(--c-primary)', borderRadius: 999, padding: '14px 30px', fontWeight: 700, fontSize: 15, fontFamily: 'var(--font-display)', cursor: 'pointer' }}>Try a lesson first →</button>
               </div>
             </div>
           </div>

@@ -12,7 +12,14 @@ Phase 4 describes — not a redesign.
 
 ## Run it
 
-You need a PostgreSQL database and one environment variable.
+Either bring up the whole stack (database + API, built from the Dockerfile with
+`maven:3.9.6-eclipse-temurin-21`) with the compose file:
+
+```bash
+docker compose up -d
+```
+
+...or run the API from your machine, against just the database container:
 
 ```bash
 # 1. Database. Either use the compose file:
@@ -26,6 +33,10 @@ docker compose up -d db
 # 2. Run. The dev profile supplies a throwaway signing key and a default admin.
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
 ```
+
+The second path gives faster edit/rebuild feedback, so prefer it while actively
+changing the API; use `docker compose up -d` when you just need the backend
+running.
 
 The API comes up on <http://localhost:8080>, Swagger UI on
 <http://localhost:8080/swagger-ui.html>.

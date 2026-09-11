@@ -2,8 +2,10 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useCurriculum } from '../../hooks/useCurriculum';
 import { useProgress } from '../../hooks/useProgress';
+import { useAuth } from '../../hooks/useAuth';
 import { isLastLessonOfStage } from '../../domain/curriculum';
-import { completeLesson } from '../../domain/progress';
+import { completeLesson, type CompleteLessonResult } from '../../domain/progress';
+import { previewGuestLessonAward } from '../../domain/guestProgress';
 import { saveLessonResult, scoreOf, type ExerciseOutcome } from '../../domain/lessonResults';
 import { LangToggle } from '../../components/Primitives';
 import { LinkButton } from '../../components/Button';
@@ -35,6 +37,7 @@ export function ExercisePage() {
   const { stageId, lessonId } = useParams();
   const { curriculum } = useCurriculum();
   const { setProgress } = useProgress();
+  const { isGuest } = useAuth();
   const navigate = useNavigate();
 
   const stage = curriculum.stages.find((s) => s.id === stageId);
@@ -55,6 +58,8 @@ export function ExercisePage() {
   const [lang, setLang] = useState<'en' | 'si'>('en');
   /** One record per question, kept for the review screen — see domain/lessonResults.ts. */
   const [outcomes, setOutcomes] = useState<ExerciseOutcome[]>([]);
+  /** The server's award breakdown for the completion screen — null while still answering. */
+  const [award, setAward] = useState<CompleteLessonResult | null>(null);
   /** Picked once per lesson so the completion screen keeps the same animation while it is open. */
   const [celebration] = useState(randomCelebration);
 
@@ -90,6 +95,9 @@ export function ExercisePage() {
   // course-complete screen — not just the last stage in the curriculum.
   const isCourseComplete = isLastLessonOfStage(stage, lesson.id);
   const score = scoreOf(outcomes);
+  // A guest is always funneled to the save prompt right after their one
+  // lesson — there is no "keep going as a guest" path past it.
+  const showGuestPrompt = isGuest && !!award;
 
   const check = () => {
     if (checked || !answered) return;
@@ -120,16 +128,30 @@ export function ExercisePage() {
     // held concurrently with it so a fast reply still reads as deliberate
     // instead of flashing the overlay for a single frame.
     const minHold = new Promise<void>((resolve) => setTimeout(resolve, 700));
-    try {
-      const result = await completeLesson(stage.id, lesson.id, submitted);
+    if (isGuest) {
+      // No backend account yet — computed and stored locally, and the raw
+      // answers are kept aside to replay for real once signup creates one
+      // (see domain/guestProgress.ts and SignUp.tsx).
+      // This lesson is always a guest's first-ever completion.
+      const stagePct = Math.round((1 / Math.max(stage.lessons.length, 1)) * 100);
+      const result = previewGuestLessonAward(stage.id, lesson.id, lesson.kind, finalOutcomes, submitted, stagePct);
       setProgress(result.progress);
-    } catch {
-      // Best-effort — the completion screen still shows; the server is the
-      // source of truth for XP, so a failed save here costs nothing to
-      // pretend it succeeded locally.
-    } finally {
+      setAward(result);
       await minHold;
       setFinishing(false);
+    } else {
+      try {
+        const result = await completeLesson(stage.id, lesson.id, submitted);
+        setProgress(result.progress);
+        setAward(result);
+      } catch {
+        // Best-effort — the completion screen still shows; the server is the
+        // source of truth for XP, so a failed save here costs nothing to
+        // pretend it succeeded locally.
+      } finally {
+        await minHold;
+        setFinishing(false);
+      }
     }
     // Caches locally and syncs in the background — deliberately not awaited, so
     // the completion screen does not wait on a round-trip it does not need.
@@ -246,9 +268,51 @@ export function ExercisePage() {
               {score.correct} of {score.total} right{score.skipped > 0 ? ` · ${score.skipped} skipped` : ''}
             </div>
 
+            {award && award.streakMilestoneDays > 0 && (
+              <div style={{ background: 'var(--c-warning-bg)', border: '1px solid var(--c-warning-ink)', borderRadius: 16, padding: '14px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: 'var(--c-warning-ink)' }}>
+                  🔥 {award.streakMilestoneDays}-day streak!
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--c-warning-ink)' }}>
+                  +{award.streakMilestoneBonusXp} bonus XP · +{award.streakMilestoneBonusCoins} bonus coins
+                </div>
+              </div>
+            )}
+
+            {award && (award.xpAwarded > 0 || award.coinsAwarded > 0) && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+                <AwardChip label={`+${award.xpAwarded} XP`} bg="var(--c-warning-bg)" fg="var(--c-warning-ink)" />
+                <AwardChip label={`+${award.coinsAwarded} coins`} bg="#FFF3D6" fg="#8C5A08" />
+                {award.bonusXp > 0 && <AwardChip label={`+${award.bonusXp} XP flawless bonus!`} bg="var(--c-success-bg)" fg="var(--c-success-ink)" />}
+                {award.bonusCoins > 0 && <AwardChip label={`+${award.bonusCoins} bonus coins`} bg="var(--c-success-bg)" fg="var(--c-success-ink)" />}
+              </div>
+            )}
+
+            {award?.stageOutcome && (
+              award.stageOutcome.cleared ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--c-success-ink)' }}>
+                    Stage cleared — {award.stageOutcome.accuracyPct}% accuracy{award.stageOutcome.perfect ? ', a perfect run!' : ''}
+                  </div>
+                  {award.stageOutcome.perfect && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+                      <AwardChip label={`+${award.stageOutcome.bonusXp} XP stage-perfect bonus!`} bg="var(--c-success-bg)" fg="var(--c-success-ink)" />
+                      <AwardChip label={`+${award.stageOutcome.bonusCoins} bonus coins`} bg="var(--c-success-bg)" fg="var(--c-success-ink)" />
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--c-warning-ink)', maxWidth: 380 }}>
+                  {award.stageOutcome.accuracyPct}% accuracy — get to 75% to unlock the next stage. Review your wrong answers to retry them.
+                </div>
+              )
+            )}
+
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center', marginTop: 4 }}>
               <LinkButton to={`/learn/${stage.id}/${lesson.id}/review`} variant="secondary" size="lg">Review answers</LinkButton>
-              {isCourseComplete ? (
+              {showGuestPrompt ? (
+                <button onClick={() => navigate('/guest-save')} onPointerDown={bubble} className="btn btn--lg btn--primary bubble-host">Continue</button>
+              ) : isCourseComplete ? (
                 <button onClick={() => navigate(`/learn/${stage.id}/complete`)} onPointerDown={bubble} className="btn btn--lg btn--primary bubble-host">Continue</button>
               ) : (
                 <LinkButton to={backHref} variant="primary" size="lg">Back to lessons</LinkButton>
@@ -259,6 +323,12 @@ export function ExercisePage() {
       </div>
       <CheckingTransition visible={revealing} label="Checking your answers…" />
     </div>
+  );
+}
+
+function AwardChip({ label, bg, fg }: { label: string; bg: string; fg: string }) {
+  return (
+    <span style={{ background: bg, color: fg, borderRadius: 999, padding: '5px 12px', fontSize: 13, fontWeight: 700 }}>{label}</span>
   );
 }
 

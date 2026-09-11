@@ -88,6 +88,28 @@ public class AuthService {
         return newSession(user);
     }
 
+    /**
+     * The only path to a new admin account: an existing admin creates it
+     * directly, out of band from the public signup form (see the {@code
+     * role == Role.ADMIN} check in {@link #signUp}). Returns the account, not
+     * a session — the caller stays signed in as themselves; the person the
+     * account is for signs in separately with the password they were given.
+     */
+    @Transactional
+    public AuthUserDto createAdmin(AuthDtos.CreateAdminRequest request) {
+        String email = request.email().trim();
+        if (users.existsByEmailIgnoringCase(email)) {
+            throw ApiException.conflict("auth.emailTaken", "That email already has an account.");
+        }
+        UserEntity user = users.save(new UserEntity(
+                email,
+                passwords.encode(request.password()),
+                request.name().trim(),
+                Role.ADMIN,
+                json.createObjectNode()));
+        return AuthUserDto.of(user);
+    }
+
     @Transactional
     public Session signIn(SignInRequest request) {
         UserEntity user = users.findByEmailIgnoringCase(request.email().trim())

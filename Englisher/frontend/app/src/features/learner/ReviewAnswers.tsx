@@ -2,12 +2,15 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useCurriculum } from '../../hooks/useCurriculum';
 import { useLessonResults } from '../../hooks/useLessonResults';
-import { courseScore, scoreOf, type ExerciseOutcome, type LessonResult } from '../../domain/lessonResults';
+import { useProgress } from '../../hooks/useProgress';
+import { scoreOf, type ExerciseOutcome, type LessonResult } from '../../domain/lessonResults';
+import { retryQuestion, RETRY_QUESTION_COST_COINS, type Progress, type StageOutcome } from '../../domain/progress';
 import { LangToggle } from '../../components/Primitives';
 import { LinkButton } from '../../components/Button';
 import { ScoreDial } from '../../components/ScoreDial';
 import { ExerciseCardView } from './ExerciseCardView';
 import { bubble } from '../../lib/bubble';
+import { errorMessage } from '../../lib/apiClient';
 import type { Card, Curriculum, Exercise, Lesson, Stage } from '../../domain/types';
 import { defaultAnswerFor, type Answer } from '../../domain/grading';
 
@@ -46,23 +49,33 @@ export function ReviewAnswers({ scope = 'lesson' }: { scope?: Scope }) {
   const { stageId, lessonId } = useParams();
   const { curriculum, loading: curriculumLoading } = useCurriculum();
   const { results: allResults, loading: resultsLoading } = useLessonResults();
+  const { progress, setProgress } = useProgress();
   const [lang, setLang] = useState<'en' | 'si'>('en');
   const [wrongOnly, setWrongOnly] = useState(scope === 'stage-wrong');
   const loading = curriculumLoading || resultsLoading;
   const isCourse = scope === 'stage-wrong';
+  /** Overrides `outcome.correct` for a question just fixed by a retry — the cached results only refresh on next load. */
+  const [fixed, setFixed] = useState<Record<string, boolean>>({});
+  const [clearedOutcome, setClearedOutcome] = useState<StageOutcome | null>(null);
 
   const results = useMemo<LessonResult[]>(() => {
     if (isCourse) return allResults.filter((r) => r.stageId === stageId);
     return allResults.filter((r) => r.stageId === stageId && r.lessonId === lessonId);
   }, [isCourse, allResults, stageId, lessonId]);
 
-  const questions = useMemo(
-    () => results.flatMap((r) => resolveQuestions(curriculum, r)),
-    [results, curriculum],
-  );
+  const questions = useMemo(() => {
+    const base = results.flatMap((r) => resolveQuestions(curriculum, r));
+    return base.map((q) => (q.key in fixed ? { ...q, outcome: { ...q.outcome, correct: fixed[q.key] } } : q));
+  }, [results, curriculum, fixed]);
 
   const shown = wrongOnly ? questions.filter((q) => !q.outcome.correct) : questions;
-  const score = isCourse ? courseScore(results) : scoreOf(results[0]?.outcomes || []);
+  const score = scoreOf(questions.map((q) => q.outcome));
+
+  const handleRetried = (key: string, correct: boolean, stageOutcome: StageOutcome, newProgress: Progress) => {
+    setFixed((prev) => ({ ...prev, [key]: correct }));
+    setProgress(newProgress);
+    if (stageOutcome.cleared) setClearedOutcome(stageOutcome);
+  };
 
   const backHref = isCourse ? `/learn/${stageId}/complete` : `/learn/${stageId}`;
   const stageTitle = curriculum.stages.find((s) => s.id === stageId)?.title.en;
@@ -100,6 +113,23 @@ export function ReviewAnswers({ scope = 'lesson' }: { scope?: Scope }) {
 
         {!loading && questions.length > 0 && (
           <>
+            {isCourse && clearedOutcome && (
+              <div className="card screen-in" style={{ background: 'var(--c-success-bg)', border: '1px solid var(--c-success)', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
+                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, color: 'var(--c-success-ink)' }}>
+                    Stage unlocked! The next one is ready.{clearedOutcome.perfect ? ' A perfect run!' : ''}
+                  </div>
+                  <LinkButton to="/learn" variant="primary" size="md">Back to the roadmap</LinkButton>
+                </div>
+                {clearedOutcome.perfect && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    <span style={{ background: 'white', color: 'var(--c-success-ink)', borderRadius: 999, padding: '5px 12px', fontSize: 13, fontWeight: 700 }}>+{clearedOutcome.bonusXp} XP stage-perfect bonus!</span>
+                    <span style={{ background: 'white', color: 'var(--c-success-ink)', borderRadius: 999, padding: '5px 12px', fontSize: 13, fontWeight: 700 }}>+{clearedOutcome.bonusCoins} bonus coins</span>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="card screen-in" style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
               <ScoreDial pct={score.pct} size={112} label="CORRECT" />
               <div style={{ flex: 1, minWidth: 200 }}>
@@ -131,7 +161,10 @@ export function ReviewAnswers({ scope = 'lesson' }: { scope?: Scope }) {
 
             <div className="stagger" style={{ display: 'flex', flexDirection: 'column', gap: 26 }}>
               {shown.map((q, i) => (
-                <QuestionBlock key={q.key} q={q} number={i + 1} lang={lang} showLesson={isCourse} />
+                <QuestionBlock
+                  key={q.key} q={q} number={i + 1} lang={lang} showLesson={isCourse}
+                  retry={isCourse ? { coins: progress.coins, onRetried: handleRetried } : undefined}
+                />
               ))}
             </div>
           </>
@@ -155,7 +188,14 @@ function FilterTab({ active, onClick, children }: { active: boolean; onClick: ()
   );
 }
 
-function QuestionBlock({ q, number, lang, showLesson }: { q: ResolvedQuestion; number: number; lang: 'en' | 'si'; showLesson: boolean }) {
+interface RetryProps {
+  coins: number;
+  onRetried: (key: string, correct: boolean, stageOutcome: StageOutcome, progress: Progress) => void;
+}
+
+function QuestionBlock({ q, number, lang, showLesson, retry }: {
+  q: ResolvedQuestion; number: number; lang: 'en' | 'si'; showLesson: boolean; retry?: RetryProps;
+}) {
   const { outcome, exercise } = q;
   const status = outcome.skipped ? 'Skipped' : outcome.correct ? 'Correct' : 'Wrong';
   const tone = outcome.correct
@@ -193,6 +233,93 @@ function QuestionBlock({ q, number, lang, showLesson }: { q: ResolvedQuestion; n
           {fbText}
         </p>
       )}
+
+      {retry && !outcome.correct && <RetryPanel q={q} lang={lang} coins={retry.coins} onRetried={retry.onRetried} />}
     </section>
+  );
+}
+
+/**
+ * Spends RETRY_QUESTION_COST_COINS to re-answer one wrong question in place.
+ * Owns its own draft answers rather than touching the read-only view above —
+ * a wrong retry still leaves the original attempt visible for reference.
+ */
+function RetryPanel({ q, lang, coins, onRetried }: {
+  q: ResolvedQuestion; lang: 'en' | 'si'; coins: number; onRetried: RetryProps['onRetried'];
+}) {
+  const [active, setActive] = useState(false);
+  const [answers, setAnswers] = useState<Record<string, Answer>>({});
+  const [checked, setChecked] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<boolean | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const cards = q.exercise.cards || [];
+  const answerFor = (card: Card): Answer => (card.id in answers ? answers[card.id] : defaultAnswerFor(card));
+  const canAfford = coins >= RETRY_QUESTION_COST_COINS;
+
+  const start = () => { setActive(true); setChecked(false); setResult(null); setError(null); setAnswers({}); };
+
+  const submit = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const payload = Object.fromEntries(cards.filter((c) => c.type !== 'text').map((c) => [c.id, answerFor(c)]));
+      const res = await retryQuestion(q.stage.id, q.lesson.id, q.exercise.id, q.outcome.index, payload);
+      setChecked(true);
+      setResult(res.correct);
+      onRetried(q.key, res.correct, res.stageOutcome, res.progress);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!active) {
+    return (
+      <button
+        onClick={start} onPointerDown={canAfford ? bubble : undefined} disabled={!canAfford} className="bubble-host press"
+        style={{
+          alignSelf: 'flex-start', border: '2px solid var(--c-primary)', background: 'white', color: 'var(--c-primary)',
+          borderRadius: 999, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: canAfford ? 'pointer' : 'not-allowed',
+          opacity: canAfford ? 1 : 0.5,
+        }}
+      >
+        {canAfford ? `Retry for ${RETRY_QUESTION_COST_COINS} coins` : `Need ${RETRY_QUESTION_COST_COINS} coins to retry`}
+      </button>
+    );
+  }
+
+  return (
+    <div style={{ border: '2px dashed var(--c-primary-line)', borderRadius: 14, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--c-primary)', letterSpacing: '0.05em' }}>RETRY ATTEMPT</div>
+      <div className="cardgrid">
+        {cards.map((card) => (
+          <ExerciseCardView key={card.id} card={card} answer={answerFor(card)} setAnswer={(v) => setAnswers((a) => ({ ...a, [card.id]: v }))} checked={checked} lang={lang} readOnly={checked || busy} />
+        ))}
+      </div>
+      {error && <p style={{ margin: 0, fontSize: 13, color: 'var(--c-danger)', fontWeight: 600 }}>{error}</p>}
+      {!checked ? (
+        <button
+          onClick={submit} onPointerDown={bubble} disabled={busy} className="bubble-host press"
+          style={{ alignSelf: 'flex-start', background: 'var(--c-primary)', color: 'white', border: 'none', borderRadius: 12, padding: '10px 20px', fontWeight: 700, fontSize: 14, cursor: busy ? 'default' : 'pointer' }}
+        >
+          {busy ? 'Checking…' : `Submit (${RETRY_QUESTION_COST_COINS} coins)`}
+        </button>
+      ) : result ? (
+        <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--c-success-ink)' }}>Correct — fixed!</p>
+      ) : (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--c-danger-ink)' }}>Still not quite.</p>
+          <button
+            onClick={start} onPointerDown={coins >= RETRY_QUESTION_COST_COINS ? bubble : undefined} disabled={coins < RETRY_QUESTION_COST_COINS} className="bubble-host press"
+            style={{ border: '2px solid var(--c-primary)', background: 'white', color: 'var(--c-primary)', borderRadius: 999, padding: '7px 14px', fontSize: 13, fontWeight: 700, cursor: coins >= RETRY_QUESTION_COST_COINS ? 'pointer' : 'not-allowed', opacity: coins >= RETRY_QUESTION_COST_COINS ? 1 : 0.5 }}
+          >
+            Try again for {RETRY_QUESTION_COST_COINS} coins
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

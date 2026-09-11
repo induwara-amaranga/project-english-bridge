@@ -8,6 +8,7 @@ import { BottomNav } from '../../components/BottomNav';
 import { LangToggle } from '../../components/Primitives';
 import { TravelTransition } from '../../components/TravelTransition';
 import { LottieBox } from '../../components/LottieBox';
+import { CoinsBadge, LevelBadge, XpBadge } from '../../components/StatBadges';
 import { ROCKET } from '../../lib/animations';
 import { bubble } from '../../lib/bubble';
 
@@ -124,14 +125,18 @@ export function Roadmap() {
           <Link to="/profile" style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg width="22" height="22" viewBox="0 0 22 22" fill="white"><circle cx="11" cy="7" r="4" /><path d="M3 20c0-4 3.5-7 8-7s8 3 8 7" /></svg>
           </Link>
-          <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <LevelBadge level={progress.level} xpIntoLevel={progress.xpIntoLevel} xpForNextLevel={progress.xpForNextLevel} />
+            <XpBadge xp={progress.xp} />
+            <CoinsBadge coins={progress.coins} />
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.22)', borderRadius: 999, padding: '8px 14px' }}>
-              <div style={{ width: 16, height: 16, background: '#FFB800', clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)' }} />
-              <span style={{ color: 'white', fontWeight: 700, fontSize: 14 }}>{progress.xp} XP</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.22)', borderRadius: 999, padding: '8px 14px' }}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="#FF6B4A"><path d="M8 1C8 1 5 5 5 9C5 11.5 6.5 13.5 8 13.5C9.5 13.5 11 11.5 11 9C11 7.5 10.3 6.5 9.7 6.5C9.7 8 9 9 8.3 9C9 6.5 8 4.5 8 1Z" /></svg>
+              <img src="/assets/icons/streak.svg" alt="" width={18} height={18} />
               <span style={{ color: 'white', fontWeight: 700, fontSize: 14 }}>{isSi ? `දින ${progress.streakDays} අඛණ්ඩව` : `${progress.streakDays}-day streak`}</span>
+              {progress.streakFreezes > 0 && (
+                <span style={{ color: 'white', fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 4, marginLeft: 2, paddingLeft: 8, borderLeft: '1px solid rgba(255,255,255,0.35)' }}>
+                  <img src="/assets/icons/streak_freeze.svg" alt="" width={16} height={16} />×{progress.streakFreezes}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -168,7 +173,7 @@ export function Roadmap() {
                   )}
                 </div>
                 {s.status === 'completed' && (
-                  <div style={{ width: 22, height: 22, background: '#FFB800', flexShrink: 0, clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)' }} />
+                  <img src="/assets/icons/xp.svg" alt="" width={22} height={22} style={{ flexShrink: 0 }} />
                 )}
               </div>
             ))}

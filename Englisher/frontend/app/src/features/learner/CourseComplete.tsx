@@ -42,6 +42,12 @@ export function CourseComplete() {
   const wrongCount = score.total - score.correct;
   const lessonCount = stage?.lessons.length ?? 0;
   const isFinal = isFinalStage(curriculum, stageId);
+  // The same >=75%-correct gate the backend checks before advancing the stage
+  // (ProgressService.evaluateStageCompletion) — computed the same way, from
+  // every question answered in the course, so this reads true exactly when
+  // the learner is stuck below it. (Index-vs-currentStageId would misfire on
+  // the last stage, which never advances past itself even once cleared.)
+  const stuck = score.total > 0 && score.pct < 75;
 
   if (!loading && !stage) {
     return (
@@ -97,6 +103,18 @@ export function CourseComplete() {
           <Stat value={String(lessonCount)} label={lessonCount === 1 ? 'Lesson finished' : 'Lessons finished'} />
           <Stat value={String(wrongCount)} label={wrongCount === 1 ? 'Question to revisit' : 'Questions to revisit'} />
         </div>
+
+        {stuck && (
+          <div className="card screen-in" style={{ background: 'var(--c-warning-bg)', border: '1px solid var(--c-warning)' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, color: 'var(--c-warning-ink)' }}>
+              Not quite 75% yet
+            </div>
+            <p style={{ margin: '6px 0 0', fontSize: 14, lineHeight: 1.6, color: 'var(--c-warning-ink)', fontWeight: 600 }}>
+              This course needs at least 75% of its questions right to unlock the next one. Spend coins to retry your
+              wrong answers below — the next stage unlocks automatically once you cross that line.
+            </p>
+          </div>
+        )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 6 }}>
           {/* Finishing the last course on the roadmap finishes the roadmap, so

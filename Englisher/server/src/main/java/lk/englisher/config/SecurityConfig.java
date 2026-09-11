@@ -57,6 +57,11 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        // Guest mode (see useAuth.tsx's isGuest / domain/guestProgress.ts)
+                        // has no account at all until signup, so it has to be able to
+                        // read the curriculum with no token — writing still requires
+                        // ADMIN via /api/admin/curriculum's own @PreAuthorize.
+                        .requestMatchers(HttpMethod.GET, "/api/curriculum").permitAll()
                         .requestMatchers(
                                 "/api/auth/signup",
                                 "/api/auth/signin",

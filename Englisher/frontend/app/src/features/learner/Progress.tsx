@@ -1,15 +1,33 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCurriculum } from '../../hooks/useCurriculum';
 import { useProgress } from '../../hooks/useProgress';
-import { completedStageCount, overallPercent, stagePercent, stageStatus } from '../../domain/progress';
+import { buyStreakFreeze, completedStageCount, overallPercent, stagePercent, stageStatus, STREAK_FREEZE_COST_COINS } from '../../domain/progress';
 import { BottomNav } from '../../components/BottomNav';
+import { errorMessage } from '../../lib/apiClient';
 
 export function ProgressPage() {
   const { curriculum } = useCurriculum();
-  const { progress } = useProgress();
+  const { progress, setProgress } = useProgress();
+  const [buying, setBuying] = useState(false);
+  const [buyError, setBuyError] = useState<string | null>(null);
   const completed = completedStageCount(progress, curriculum);
   const overallPct = overallPercent(progress, curriculum);
   const stagesToGo = curriculum.stages.length - completed;
+  const levelPct = progress.xpForNextLevel > 0 ? Math.min(100, Math.round((progress.xpIntoLevel / progress.xpForNextLevel) * 100)) : 100;
+
+  const purchaseStreakFreeze = async () => {
+    if (buying || progress.coins < STREAK_FREEZE_COST_COINS) return;
+    setBuying(true);
+    setBuyError(null);
+    try {
+      setProgress(await buyStreakFreeze());
+    } catch (err) {
+      setBuyError(errorMessage(err));
+    } finally {
+      setBuying(false);
+    }
+  };
 
   const stageRows = curriculum.stages.map((stage, i) => {
     const status = stageStatus(progress, stage, curriculum);
@@ -35,17 +53,62 @@ export function ProgressPage() {
       <div style={{ maxWidth: 640, margin: '0 auto', padding: '28px 24px 0', display: 'flex', flexDirection: 'column', gap: 20 }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
           <div className="card">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-              <div style={{ width: 30, height: 30, background: 'var(--c-warning)', clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)' }} />
+            <div style={{ marginBottom: 10 }}>
+              <img src="/assets/icons/xp.svg" alt="" width={30} height={30} />
             </div>
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 24 }}>{progress.xp.toLocaleString()} XP total</div>
             <div style={{ fontSize: 13, color: 'var(--c-ink-soft)', fontWeight: 600, marginTop: 4 }}>Earned across {completed + 1} stages</div>
           </div>
           <div className="card">
-            <div style={{ marginBottom: 10 }}><svg width="30" height="30" viewBox="0 0 16 16" fill="#FF6B4A"><path d="M8 1C8 1 5 5 5 9C5 11.5 6.5 13.5 8 13.5C9.5 13.5 11 11.5 11 9C11 7.5 10.3 6.5 9.7 6.5C9.7 8 9 9 8.3 9C9 6.5 8 4.5 8 1Z" /></svg></div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 24 }}>{progress.streakDays}-day streak</div>
+            <div style={{ marginBottom: 10 }}><img src="/assets/icons/streak.svg" alt="" width={30} height={30} /></div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 24 }}>{progress.streakDays}-day streak</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, fontWeight: 700, color: 'var(--c-ink-soft)' }}>
+                <img src="/assets/icons/streak_freeze.svg" alt="" width={16} height={16} />
+                ×{progress.streakFreezes}
+              </div>
+            </div>
             <div style={{ fontSize: 13, color: 'var(--c-ink-soft)', fontWeight: 600, marginTop: 4 }}>Keep it going — come back tomorrow</div>
           </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div className="card">
+            <div style={{ marginBottom: 10 }}>
+              <img src="/assets/icons/coins.svg" alt="" width={28} height={28} />
+            </div>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 24 }}>{progress.coins.toLocaleString()} coins</div>
+            <div style={{ fontSize: 13, color: 'var(--c-ink-soft)', fontWeight: 600, marginTop: 4 }}>Spend on streak freezes or question retries</div>
+          </div>
+          <div className="card">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--c-primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13 }}>{progress.level}</div>
+            </div>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 24 }}>Level {progress.level}</div>
+            <div style={{ width: '100%', height: 8, borderRadius: 999, background: 'var(--c-primary-tint)', overflow: 'hidden', margin: '8px 0 4px' }}>
+              <div style={{ height: '100%', borderRadius: 999, background: 'var(--c-primary)', width: `${levelPct}%` }} />
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--c-ink-soft)', fontWeight: 600 }}>{progress.xpIntoLevel} / {progress.xpForNextLevel} XP to next level</div>
+          </div>
+        </div>
+
+        <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15 }}>
+              <img src="/assets/icons/streak_freeze.svg" alt="" width={18} height={18} />
+              Streak freeze ×{progress.streakFreezes}
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--c-ink-soft)', fontWeight: 600, marginTop: 2 }}>Protects your streak the next time you miss a day</div>
+            {buyError && <div style={{ fontSize: 12, color: 'var(--c-danger)', fontWeight: 600, marginTop: 4 }}>{buyError}</div>}
+          </div>
+          <button
+            onClick={purchaseStreakFreeze}
+            disabled={buying || progress.coins < STREAK_FREEZE_COST_COINS}
+            className="btn btn--primary"
+            style={{ padding: '10px 18px', borderRadius: 12, fontWeight: 700, fontSize: 14, flexShrink: 0, opacity: buying || progress.coins < STREAK_FREEZE_COST_COINS ? 0.5 : 1, cursor: buying || progress.coins < STREAK_FREEZE_COST_COINS ? 'not-allowed' : 'pointer' }}
+          >
+            {buying ? 'Buying…' : `Buy for ${STREAK_FREEZE_COST_COINS} coins`}
+          </button>
         </div>
 
         <div className="card">

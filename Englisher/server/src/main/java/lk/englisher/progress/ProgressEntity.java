@@ -44,6 +44,29 @@ public class ProgressEntity {
     @Column(name = "current_stage_pct", nullable = false)
     private int currentStagePct;
 
+    /** Spendable currency — separate from {@code xp}, which never decreases. See ProgressService. */
+    @Column(name = "coins", nullable = false)
+    private int coins;
+
+    /** Unspent streak-freeze tokens, bought with coins; consumed by ProgressService.applyStreak. */
+    @Column(name = "streak_freezes", nullable = false)
+    private int streakFreezes;
+
+    /**
+     * The streak length lost the last time a gap exceeded the learner's unspent
+     * freezes — 0 when there is nothing to repair. Cleared by
+     * {@code ProgressService.repairStreak} (pays it back) or
+     * {@code dismissBrokenStreak} (waves it off); otherwise it survives until
+     * one of those happens, so the repair prompt does not depend on catching
+     * the learner on the exact day it happened.
+     */
+    @Column(name = "last_broken_streak", nullable = false)
+    private int lastBrokenStreak;
+
+    /** When {@link #lastBrokenStreak} was set; null once it is cleared. */
+    @Column(name = "streak_broken_at")
+    private Instant streakBrokenAt;
+
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt = Instant.now();
 
@@ -52,12 +75,19 @@ public class ProgressEntity {
 
     public ProgressEntity(UUID userId, int xp, int streakDays, JsonNode completedLessonIds,
                           String currentStageSlug, int currentStagePct) {
+        this(userId, xp, streakDays, completedLessonIds, currentStageSlug, currentStagePct, 0, 0);
+    }
+
+    public ProgressEntity(UUID userId, int xp, int streakDays, JsonNode completedLessonIds,
+                          String currentStageSlug, int currentStagePct, int coins, int streakFreezes) {
         this.userId = userId;
         this.xp = xp;
         this.streakDays = streakDays;
         this.completedLessonIds = completedLessonIds;
         this.currentStageSlug = currentStageSlug;
         this.currentStagePct = currentStagePct;
+        this.coins = coins;
+        this.streakFreezes = streakFreezes;
     }
 
     public UUID getUserId() {
@@ -110,6 +140,38 @@ public class ProgressEntity {
 
     public void setCurrentStagePct(int currentStagePct) {
         this.currentStagePct = currentStagePct;
+    }
+
+    public int getCoins() {
+        return coins;
+    }
+
+    public void setCoins(int coins) {
+        this.coins = coins;
+    }
+
+    public int getStreakFreezes() {
+        return streakFreezes;
+    }
+
+    public void setStreakFreezes(int streakFreezes) {
+        this.streakFreezes = streakFreezes;
+    }
+
+    public int getLastBrokenStreak() {
+        return lastBrokenStreak;
+    }
+
+    public void setLastBrokenStreak(int lastBrokenStreak) {
+        this.lastBrokenStreak = lastBrokenStreak;
+    }
+
+    public Instant getStreakBrokenAt() {
+        return streakBrokenAt;
+    }
+
+    public void setStreakBrokenAt(Instant streakBrokenAt) {
+        this.streakBrokenAt = streakBrokenAt;
     }
 
     public void touch() {

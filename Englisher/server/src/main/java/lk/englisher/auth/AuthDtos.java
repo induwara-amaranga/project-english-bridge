@@ -36,6 +36,17 @@ public final class AuthDtos {
             @NotBlank String password) {
     }
 
+    /**
+     * An existing admin provisioning a new one — see
+     * {@code AuthService.createAdmin}. No {@code role} field: the caller
+     * cannot choose it, unlike {@link SignUpRequest}.
+     */
+    public record CreateAdminRequest(
+            @NotBlank @Size(max = 120) String name,
+            @NotBlank @Email @Size(max = 255) String email,
+            @NotBlank @Size(min = 8, max = 200) String password) {
+    }
+
     /** {@code AuthUser} in useAuth.tsx, plus the id the API needs. */
     public record AuthUserDto(String id, String name, String email, String role, JsonNode preferences) {
         public static AuthUserDto of(UserEntity user) {

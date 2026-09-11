@@ -38,10 +38,16 @@ export function LangToggle({ lang, onToggle }: { lang: 'en' | 'si'; onToggle: ()
 
 const ROLE_LABEL: Record<Role, string> = { student: 'Student', parent: 'Parent', admin: 'Admin' };
 
+/**
+ * Student or parent only — there is no signup path to an admin account
+ * (server/src/main/java/lk/englisher/auth/AuthService.java's signUp rejects
+ * role=admin outright). Admins are provisioned by another admin via
+ * POST /api/admin/users, not through this public form.
+ */
 export function RoleToggle({ role, onChange }: { role: Role; onChange: (r: Role) => void }) {
   return (
     <div className="role-toggle" role="radiogroup" aria-label="Account type">
-      {(['student', 'parent', 'admin'] as Role[]).map((r) => (
+      {(['student', 'parent'] as Role[]).map((r) => (
         <button
           key={r} type="button" role="radio" aria-checked={role === r}
           className={`role-toggle__opt ${role === r ? 'role-toggle__opt--active' : ''}`}
