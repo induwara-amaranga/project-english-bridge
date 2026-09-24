@@ -36,10 +36,13 @@ public class AuthService {
     private final AuthProperties properties;
     private final ProgressService progress;
     private final ObjectMapper json;
+    private final GoogleTokenVerifier googleVerifier;
+    private final FacebookTokenVerifier facebookVerifier;
 
     public AuthService(UserRepository users, RefreshTokenRepository refreshTokens,
                        PasswordEncoder passwords, JwtService jwt, AuthProperties properties,
-                       ProgressService progress, ObjectMapper json) {
+                       ProgressService progress, ObjectMapper json,
+                       GoogleTokenVerifier googleVerifier, FacebookTokenVerifier facebookVerifier) {
         this.users = users;
         this.refreshTokens = refreshTokens;
         this.passwords = passwords;
@@ -47,6 +50,8 @@ public class AuthService {
         this.properties = properties;
         this.progress = progress;
         this.json = json;
+        this.googleVerifier = googleVerifier;
+        this.facebookVerifier = facebookVerifier;
     }
 
     /** Signup plus the raw refresh token the controller turns into a cookie. */
@@ -125,6 +130,72 @@ public class AuthService {
             throw invalidCredentials();
         }
         return newSession(user);
+    }
+
+    @Transactional
+    public Session signInWithGoogle(String accessToken, String roleHint) {
+        GoogleTokenVerifier.GoogleProfile profile = googleVerifier.verify(accessToken);
+        return oauthSession(true, profile.subject(), profile.email(), profile.name(), roleHint);
+    }
+
+    @Transactional
+    public Session signInWithFacebook(String accessToken, String roleHint) {
+        FacebookTokenVerifier.FacebookProfile profile = facebookVerifier.verify(accessToken);
+        return oauthSession(false, profile.id(), profile.email(), profile.name(), roleHint);
+    }
+
+    /**
+     * Find-or-link-or-create, shared by both providers once each has turned
+     * its token into a (providerId, email, name) triple.
+     *
+     * <p>Three cases, in order: the provider id is already linked to an
+     * account (repeat sign-in); the email matches an existing account made
+     * some other way, in which case this provider is linked onto it (so
+     * "sign up with a password, later use Google" works); or neither matches,
+     * in which case a new account is created with {@code roleHint} (defaulting
+     * to {@code student} — the sign-in page's buttons have no role toggle).
+     * Both providers only ever hand back a verified email (see
+     * GoogleTokenVerifier/FacebookTokenVerifier), so linking on email match is
+     * as trustworthy as the password-signup email itself.
+     */
+    private Session oauthSession(boolean isGoogle, String providerId, String email, String name, String roleHint) {
+        UserEntity user = (isGoogle ? users.findByGoogleId(providerId) : users.findByFacebookId(providerId))
+                .orElse(null);
+        if (user == null) {
+            user = users.findByEmailIgnoringCase(email).orElse(null);
+            if (user != null) {
+                linkProvider(user, isGoogle, providerId);
+                user = users.save(user);
+            }
+        }
+        if (user == null) {
+            Role role;
+            try {
+                role = roleHint == null || roleHint.isBlank() ? Role.STUDENT : Role.from(roleHint);
+            } catch (IllegalArgumentException ex) {
+                throw ApiException.badRequest("auth.badRole", "Role must be student or parent.");
+            }
+            if (role == Role.ADMIN) {
+                throw ApiException.forbidden("auth.adminSignupClosed",
+                        "Admin accounts are provisioned by the operator, not through signup.");
+            }
+            UserEntity created = new UserEntity(
+                    email, null, name == null || name.isBlank() ? email : name, role, json.createObjectNode());
+            linkProvider(created, isGoogle, providerId);
+            user = users.save(created);
+            if (role == Role.STUDENT) {
+                progress.createInitial(user.getId());
+            }
+        }
+        return newSession(user);
+    }
+
+    private static void linkProvider(UserEntity user, boolean isGoogle, String providerId) {
+        if (isGoogle) {
+            user.setGoogleId(providerId);
+        } else {
+            user.setFacebookId(providerId);
+        }
     }
 
     /**

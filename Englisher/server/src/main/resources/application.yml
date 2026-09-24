@@ -9,7 +9,7 @@ spring:
     open-in-view: false
     hibernate:
       # Flyway owns the schema. ddl-auto stays off so a mapping mistake fails
-      # loudly against the real schema instead of silently altering it.
+      # loudly against the real schema instead of silently altering it.`
       ddl-auto: validate
     properties:
       hibernate:
@@ -42,6 +42,10 @@ englisher:
     admin-email: ${ENGLISHER_ADMIN_EMAIL:admin@englisher.test}
     admin-password: ${ENGLISHER_ADMIN_PASSWORD:}
     admin-name: Course Admin
+  oauth:
+    google-client-id: ${ENGLISHER_GOOGLE_CLIENT_ID:}
+    facebook-app-id: ${ENGLISHER_FACEBOOK_APP_ID:}
+    facebook-app-secret: ${ENGLISHER_FACEBOOK_APP_SECRET:}
 
 management:
   endpoints:

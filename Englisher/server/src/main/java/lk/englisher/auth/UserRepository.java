@@ -14,4 +14,8 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
 
     @Query("select count(u) > 0 from UserEntity u where lower(u.email) = lower(?1)")
     boolean existsByEmailIgnoringCase(String email);
+
+    Optional<UserEntity> findByGoogleId(String googleId);
+
+    Optional<UserEntity> findByFacebookId(String facebookId);
 }

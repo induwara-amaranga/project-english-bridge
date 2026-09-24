@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { LangToggle, RoleToggle } from '../../components/Primitives';
-import { roleHome, useAuth, type Role } from '../../hooks/useAuth';
+import { roleHome, useAuth, type AuthUser, type Role } from '../../hooks/useAuth';
 import { errorMessage } from '../../lib/apiClient';
 import { completeLesson, submitPlacement } from '../../domain/progress';
 import { clearGuestSession, setGuestStage, takePendingGuestLesson } from '../../domain/guestProgress';
+import { preloadOAuthScripts, signInWithFacebook, signInWithGoogle } from '../../lib/oauth';
 
 const COPY = {
   en: {
@@ -16,7 +17,6 @@ const COPY = {
     passwordLabel: 'Create a password', passwordPlaceholder: 'At least 8 characters',
     submit: 'Save and continue', submitting: 'Creating your account…', secondary: 'Continue without an account',
     or: 'OR', google: 'Continue with Google', facebook: 'Continue with Facebook', signIn: 'Sign In',
-    oauthUnavailable: 'Social sign-up is not available yet — please fill in the form.',
   },
   si: {
     framing: 'ඔබේ ප්‍රගතිය සුරකින්න, ඊළඟ වතාවේ ආපහු එනකොට තියෙන්න.',
@@ -27,7 +27,6 @@ const COPY = {
     passwordLabel: 'මුරපදයක් සාදන්න', passwordPlaceholder: 'අවම වශයෙන් අකුරු 8ක්',
     submit: 'සුරකින්න, ඉදිරියට යන්න', submitting: 'ගිණුම සාදමින්…', secondary: 'ගිණුමකින් තොරව ඉදිරියට යන්න',
     or: 'හෝ', google: 'Google සමඟ ඉදිරියට යන්න', facebook: 'Facebook සමඟ ඉදිරියට යන්න', signIn: 'පිවිසෙන්න',
-    oauthUnavailable: 'සමාජ මාධ්‍ය ලියාපදිංචිය තවම නොමැත — කරුණාකර පෝරමය පුරවන්න.',
   },
 };
 
@@ -43,7 +42,7 @@ export function SignUp() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const { signUp, enterGuestMode, exitGuestMode } = useAuth();
+  const { signUp, signInWithGoogle: signInWithGoogleSession, signInWithFacebook: signInWithFacebookSession, enterGuestMode, exitGuestMode } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   // Set by PlacementTest's "Create account" link so a result taken before
@@ -61,6 +60,27 @@ export function SignUp() {
     try { await submitPlacement(placementStage); } catch { /* best-effort — the roadmap still works without it */ }
   };
 
+  const finishSignUp = async (user: AuthUser) => {
+    // The new account is real and signed in at this point — replaying the
+    // guest's one lesson through the normal, server-graded completeLesson
+    // call is what actually awards it, exactly as if they had done it
+    // signed in the whole time. Nothing about the award is trusted from
+    // the client's own local preview.
+    if (claimGuest && user.role === 'student') {
+      const pending = takePendingGuestLesson();
+      if (pending) {
+        try { await completeLesson(pending.stageId, pending.lessonId, pending.answers); } catch { /* best-effort */ }
+      }
+    }
+    // Both matter: exitGuestMode flips the React state (useProgress reads
+    // it immediately, no reload needed), clearGuestSession wipes the data
+    // it was reading.
+    exitGuestMode();
+    clearGuestSession();
+    await applyPlacement(user.role);
+    navigate(roleHome(user.role));
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
@@ -68,31 +88,32 @@ export function SignUp() {
     setBusy(true);
     try {
       const user = await signUp(name || 'Learner', email, password, role);
-      // The new account is real and signed in at this point — replaying the
-      // guest's one lesson through the normal, server-graded completeLesson
-      // call is what actually awards it, exactly as if they had done it
-      // signed in the whole time. Nothing about the award is trusted from
-      // the client's own local preview.
-      if (claimGuest && user.role === 'student') {
-        const pending = takePendingGuestLesson();
-        if (pending) {
-          try { await completeLesson(pending.stageId, pending.lessonId, pending.answers); } catch { /* best-effort */ }
-        }
-      }
-      // Both matter: exitGuestMode flips the React state (useProgress reads
-      // it immediately, no reload needed), clearGuestSession wipes the data
-      // it was reading.
-      exitGuestMode();
-      clearGuestSession();
-      await applyPlacement(user.role);
-      navigate(roleHome(user.role));
+      await finishSignUp(user);
     } catch (err) {
       setError(errorMessage(err));
     } finally {
       setBusy(false);
     }
   };
-  const oauth = () => setError(c.oauthUnavailable);
+
+  useEffect(() => { preloadOAuthScripts(); }, []);
+
+  const withOAuth = (getToken: () => Promise<string>, signInSession: (token: string, role: Role) => ReturnType<typeof signUp>) => async () => {
+    if (busy) return;
+    setError('');
+    setBusy(true);
+    try {
+      const token = await getToken();
+      const user = await signInSession(token, role);
+      await finishSignUp(user);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const oauthGoogle = withOAuth(signInWithGoogle, signInWithGoogleSession);
+  const oauthFacebook = withOAuth(signInWithFacebook, signInWithFacebookSession);
   const continueAsGuestClick = () => {
     enterGuestMode();
     if (placementStage) setGuestStage(placementStage);
@@ -130,11 +151,14 @@ export function SignUp() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 18 }}>
-            <button className="social-btn" onClick={oauth} type="button"><GoogleMark />{c.google}</button>
-            <button className="social-btn" onClick={oauth} type="button"><FacebookMark />{c.facebook}</button>
+            <button className="social-btn" onClick={oauthGoogle} disabled={busy} type="button"><GoogleMark />{c.google}</button>
+            <button className="social-btn" onClick={oauthFacebook} disabled={busy} type="button"><FacebookMark />{c.facebook}</button>
           </div>
 
-          {role === 'student' && (
+          {/* claimGuest means this signup is mandatory — GuestSavePrompt sent them
+              here specifically because it has no skip/later path of its own, so
+              offering another way to stay a guest here would undo that. */}
+          {role === 'student' && !claimGuest && (
             <div style={{ textAlign: 'center', marginTop: 20 }}>
               <button onClick={continueAsGuestClick} disabled={busy} type="button" style={{ fontWeight: 700, fontSize: 15, background: 'none', border: 'none', color: 'var(--c-primary)', cursor: busy ? 'default' : 'pointer' }}>{c.secondary}</button>
             </div>

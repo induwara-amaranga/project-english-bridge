@@ -42,6 +42,14 @@ interface AuthContextValue {
   isGuest: boolean;
   signIn: (email: string, password: string) => Promise<AuthUser>;
   signUp: (name: string, email: string, password: string, role: Role) => Promise<AuthUser>;
+  /**
+   * `token` is whatever lib/oauth.ts's signInWithGoogle()/signInWithFacebook()
+   * resolved with — an OAuth2 access token, not a password. `role` only
+   * matters the first time this Google/Facebook identity is seen; an existing
+   * account keeps its own role regardless of what is passed (AuthService.oauthSession).
+   */
+  signInWithGoogle: (token: string, role?: Role) => Promise<AuthUser>;
+  signInWithFacebook: (token: string, role?: Role) => Promise<AuthUser>;
   signOut: () => Promise<void>;
   enterGuestMode: () => void;
   exitGuestMode: () => void;
@@ -78,6 +86,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return session.user as AuthUser;
   }, [applySession]);
 
+  const signInWithGoogle = useCallback(async (token: string, role?: Role) => {
+    const session = await apiPost<AuthSession>('/api/auth/google', { token, role });
+    applySession(session);
+    return session.user as AuthUser;
+  }, [applySession]);
+
+  const signInWithFacebook = useCallback(async (token: string, role?: Role) => {
+    const session = await apiPost<AuthSession>('/api/auth/facebook', { token, role });
+    applySession(session);
+    return session.user as AuthUser;
+  }, [applySession]);
+
   const signOut = useCallback(async () => {
     try {
       await apiPost('/api/auth/signout');
@@ -98,8 +118,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ user, loading, isGuest, signIn, signUp, signOut, enterGuestMode, exitGuestMode }),
-    [user, loading, isGuest, signIn, signUp, signOut, enterGuestMode, exitGuestMode],
+    () => ({
+      user, loading, isGuest, signIn, signUp, signInWithGoogle, signInWithFacebook, signOut,
+      enterGuestMode, exitGuestMode,
+    }),
+    [user, loading, isGuest, signIn, signUp, signInWithGoogle, signInWithFacebook, signOut,
+      enterGuestMode, exitGuestMode],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

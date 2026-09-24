@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { LangToggle } from '../../components/Primitives';
 import { roleHome, useAuth } from '../../hooks/useAuth';
 import { errorMessage } from '../../lib/apiClient';
+import { preloadOAuthScripts, signInWithFacebook, signInWithGoogle } from '../../lib/oauth';
 
 const COPY = {
   en: {
@@ -12,7 +13,6 @@ const COPY = {
     forgot: 'Forgot password?', submit: 'Sign in', submitting: 'Signing in…',
     or: 'OR', google: 'Continue with Google', facebook: 'Continue with Facebook',
     noAccount: "Don't have an account?", signUp: 'Sign up',
-    oauthUnavailable: 'Social sign-in is not available yet — please use your email and password.',
   },
   si: {
     framing: 'නැවත සාදරයෙන් පිළිගනිමු! ඔබ නැවතුම් තැනින්ම ආරම්භ කරන්න.',
@@ -21,7 +21,6 @@ const COPY = {
     forgot: 'මුරපදය අමතකද?', submit: 'පිවිසෙන්න', submitting: 'පිවිසෙමින්…',
     or: 'හෝ', google: 'Google සමඟ ඉදිරියට යන්න', facebook: 'Facebook සමඟ ඉදිරියට යන්න',
     noAccount: 'ගිණුමක් නැද්ද?', signUp: 'ලියාපදිංචි වන්න',
-    oauthUnavailable: 'සමාජ මාධ්‍ය පිවිසුම තවම නොමැත — කරුණාකර විද්‍යුත් තැපෑල සහ මුරපදය භාවිත කරන්න.',
   },
 };
 
@@ -34,11 +33,13 @@ export function SignIn() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const { signIn } = useAuth();
+  const { signIn, signInWithGoogle: signInWithGoogleSession, signInWithFacebook: signInWithFacebookSession } = useAuth();
   const navigate = useNavigate();
   const c = COPY[lang];
   const isSi = lang === 'si';
   const headFont = isSi ? 'var(--font-si-display)' : 'var(--font-display)';
+
+  useEffect(() => { preloadOAuthScripts(); }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,7 +55,23 @@ export function SignIn() {
       setBusy(false);
     }
   };
-  const oauth = () => setError(c.oauthUnavailable);
+
+  const withOAuth = (getToken: () => Promise<string>, signInSession: (token: string) => ReturnType<typeof signIn>) => async () => {
+    if (busy) return;
+    setError('');
+    setBusy(true);
+    try {
+      const token = await getToken();
+      const user = await signInSession(token);
+      navigate(roleHome(user.role));
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const oauthGoogle = withOAuth(signInWithGoogle, signInWithGoogleSession);
+  const oauthFacebook = withOAuth(signInWithFacebook, signInWithFacebookSession);
 
   return (
     <div style={{ fontFamily: isSi ? 'var(--font-si-body)' : 'var(--font-body)', background: 'var(--c-bg)', color: 'var(--c-ink)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -80,8 +97,8 @@ export function SignIn() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 18 }}>
-            <button className="social-btn" onClick={oauth} type="button"><GoogleMark />{c.google}</button>
-            <button className="social-btn" onClick={oauth} type="button"><FacebookMark />{c.facebook}</button>
+            <button className="social-btn" onClick={oauthGoogle} disabled={busy} type="button"><GoogleMark />{c.google}</button>
+            <button className="social-btn" onClick={oauthFacebook} disabled={busy} type="button"><FacebookMark />{c.facebook}</button>
           </div>
 
           <div style={{ textAlign: 'center', marginTop: 20 }}>

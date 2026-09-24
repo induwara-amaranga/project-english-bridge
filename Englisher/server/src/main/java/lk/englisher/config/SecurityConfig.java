@@ -65,6 +65,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/auth/signup",
                                 "/api/auth/signin",
+                                "/api/auth/google",
+                                "/api/auth/facebook",
                                 "/api/auth/refresh",
                                 "/api/auth/signout",
                                 // The placement test runs before there is an

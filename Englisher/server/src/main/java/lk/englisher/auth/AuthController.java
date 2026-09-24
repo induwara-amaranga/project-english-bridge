@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import lk.englisher.auth.AuthDtos.AuthResponse;
 import lk.englisher.auth.AuthDtos.AuthUserDto;
 import lk.englisher.auth.AuthDtos.CreateAdminRequest;
+import lk.englisher.auth.AuthDtos.OAuthSignInRequest;
 import lk.englisher.auth.AuthDtos.SignInRequest;
 import lk.englisher.auth.AuthDtos.SignUpRequest;
 import lk.englisher.config.AuthProperties;
@@ -62,6 +63,16 @@ public class AuthController {
     @PostMapping("/auth/signin")
     public ResponseEntity<AuthResponse> signIn(@Valid @RequestBody SignInRequest request) {
         return withRefreshCookie(auth.signIn(request));
+    }
+
+    @PostMapping("/auth/google")
+    public ResponseEntity<AuthResponse> google(@Valid @RequestBody OAuthSignInRequest request) {
+        return withRefreshCookie(auth.signInWithGoogle(request.token(), request.role()));
+    }
+
+    @PostMapping("/auth/facebook")
+    public ResponseEntity<AuthResponse> facebook(@Valid @RequestBody OAuthSignInRequest request) {
+        return withRefreshCookie(auth.signInWithFacebook(request.token(), request.role()));
     }
 
     @PostMapping("/auth/refresh")

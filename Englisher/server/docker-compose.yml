@@ -36,6 +36,11 @@ services:
       ENGLISHER_DB_URL: jdbc:postgresql://db:5432/englisher
       ENGLISHER_DB_USER: englisher
       ENGLISHER_DB_PASSWORD: englisher
+      # Optional — Google/Facebook sign-in stays disabled (503) until these
+      # are set in your shell or a .env file next to this compose file.
+      ENGLISHER_GOOGLE_CLIENT_ID: ${ENGLISHER_GOOGLE_CLIENT_ID:-}
+      ENGLISHER_FACEBOOK_APP_ID: ${ENGLISHER_FACEBOOK_APP_ID:-}
+      ENGLISHER_FACEBOOK_APP_SECRET: ${ENGLISHER_FACEBOOK_APP_SECRET:-}
     ports:
       - "8080:8080"
     depends_on:

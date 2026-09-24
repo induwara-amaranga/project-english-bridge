@@ -34,7 +34,8 @@ public class UserEntity {
     @Column(name = "email", nullable = false)
     private String email;
 
-    @Column(name = "password_hash", nullable = false)
+    /** Null for an account that has only ever signed in with Google/Facebook. */
+    @Column(name = "password_hash")
     private String passwordHash;
 
     @Column(name = "name", nullable = false)
@@ -48,6 +49,14 @@ public class UserEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "preferences", nullable = false)
     private JsonNode preferences;
+
+    /** The Google account's {@code sub} claim, once linked. */
+    @Column(name = "google_id")
+    private String googleId;
+
+    /** The Facebook account's numeric id, once linked. */
+    @Column(name = "facebook_id")
+    private String facebookId;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt = Instant.now();
@@ -109,5 +118,21 @@ public class UserEntity {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public String getGoogleId() {
+        return googleId;
+    }
+
+    public void setGoogleId(String googleId) {
+        this.googleId = googleId;
+    }
+
+    public String getFacebookId() {
+        return facebookId;
+    }
+
+    public void setFacebookId(String facebookId) {
+        this.facebookId = facebookId;
     }
 }

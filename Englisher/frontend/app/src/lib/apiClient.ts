@@ -19,7 +19,12 @@ export class ApiRequestError extends Error {
 }
 
 export function errorMessage(err: unknown): string {
-  return err instanceof ApiRequestError ? err.message : 'Something went wrong. Please try again.';
+  if (err instanceof ApiRequestError) return err.message;
+  // Covers oauth.ts's plain Error throws (SDK not configured, popup
+  // cancelled) — those messages are already user-facing, unlike a raw
+  // network/parse failure, which still falls through to the generic copy.
+  if (err instanceof Error && err.message) return err.message;
+  return 'Something went wrong. Please try again.';
 }
 
 let accessToken: string | null = null;

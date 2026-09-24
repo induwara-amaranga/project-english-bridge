@@ -57,12 +57,38 @@ Every connection setting is an environment variable, so nothing is hardcoded:
 | `ENGLISHER_JWT_SECRET` | *(none — required outside `dev`)* |
 | `ENGLISHER_ADMIN_PASSWORD` | *(none — no admin is seeded without it)* |
 | `ENGLISHER_ALLOWED_ORIGINS` | `http://localhost:5173,http://localhost:4173` |
+| `ENGLISHER_GOOGLE_CLIENT_ID` | *(none — `/api/auth/google` answers 503 until set)* |
+| `ENGLISHER_FACEBOOK_APP_ID` | *(none — `/api/auth/facebook` answers 503 until set)* |
+| `ENGLISHER_FACEBOOK_APP_SECRET` | *(none)* |
 
 Two of those have no default on purpose. `ENGLISHER_JWT_SECRET` is the token
 signing key: a shipped default would let anyone holding the source mint an admin
 token, so the app refuses to start without one (32 bytes minimum). And no admin
 account is seeded unless you set a password, because a well-known admin login on
 a reachable server is worse than having no admin account at all.
+
+### Google / Facebook sign-in
+
+Both are the frontend obtaining an OAuth2 access token from the provider's own
+SDK, then handing it to `POST /api/auth/google` or `/api/auth/facebook`, which
+verifies it against Google's/Facebook's servers before creating or signing
+into an account (`GoogleTokenVerifier`, `FacebookTokenVerifier`,
+`AuthService.oauthSession`). To turn either on:
+
+- **Google**: create an OAuth 2.0 Client ID (Web application) in
+  [Google Cloud Console](https://console.cloud.google.com/apis/credentials),
+  add your frontend origin under "Authorized JavaScript origins", and set
+  `ENGLISHER_GOOGLE_CLIENT_ID` here and `VITE_GOOGLE_CLIENT_ID` in
+  `app/.env` to the same client id.
+- **Facebook**: create an app at
+  [Facebook for Developers](https://developers.facebook.com/apps/), add the
+  Facebook Login product, add your frontend origin under "Valid OAuth Redirect
+  URIs" / "App Domains", and set `ENGLISHER_FACEBOOK_APP_ID` +
+  `ENGLISHER_FACEBOOK_APP_SECRET` here and `VITE_FACEBOOK_APP_ID` in
+  `app/.env` to the same app id.
+
+Leaving a provider's variables unset does not break the build or the other
+provider — that button simply answers "not configured" until it is set.
 
 ## Test it
 
@@ -89,6 +115,8 @@ same inputs and expected outputs, so the two implementations of `gradeCard` and
 |---|---|---|
 | `POST /api/auth/signup` | public | `useAuth().signUp` — plus onboarding's answers |
 | `POST /api/auth/signin` | public | `useAuth().signIn` |
+| `POST /api/auth/google` | public | `useAuth().signInWithGoogle` |
+| `POST /api/auth/facebook` | public | `useAuth().signInWithFacebook` |
 | `POST /api/auth/refresh` | refresh cookie | new |
 | `POST /api/auth/signout` | any | `useAuth().signOut` |
 | `GET /api/auth/me` | authenticated | `AuthUser` |

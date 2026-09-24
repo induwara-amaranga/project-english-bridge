@@ -37,6 +37,19 @@ public final class AuthDtos {
     }
 
     /**
+     * Google's {@code token} is the OAuth2 access token from
+     * {@code initTokenClient}; Facebook's is the user access token from
+     * {@code FB.login}. {@code role} is only consulted the first time this
+     * provider id (or its email) is seen — see {@code AuthService.oauthSession}
+     * — and defaults to {@code student} when omitted, matching the sign-in
+     * page's buttons, which have no role toggle.
+     */
+    public record OAuthSignInRequest(
+            @NotBlank String token,
+            String role) {
+    }
+
+    /**
      * An existing admin provisioning a new one — see
      * {@code AuthService.createAdmin}. No {@code role} field: the caller
      * cannot choose it, unlike {@link SignUpRequest}.
