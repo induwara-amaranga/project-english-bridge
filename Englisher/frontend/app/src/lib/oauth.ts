@@ -55,12 +55,13 @@ let facebookReady: Promise<void> | null = null;
 function loadFacebook(): Promise<void> {
   if (window.FB) return Promise.resolve();
   if (!facebookReady) {
-    facebookReady = new Promise<void>((resolve) => {
+    facebookReady = new Promise<void>((resolve, reject) => {
       window.fbAsyncInit = () => {
         window.FB!.init({ appId: FACEBOOK_APP_ID || '', cookie: false, xfbml: false, version: 'v19.0' });
         resolve();
       };
-    }).then(() => loadScript('https://connect.facebook.net/en_US/sdk.js'));
+      loadScript('https://connect.facebook.net/en_US/sdk.js').catch(reject);
+    });
   }
   return facebookReady;
 }

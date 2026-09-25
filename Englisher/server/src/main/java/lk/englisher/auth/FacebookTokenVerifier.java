@@ -4,6 +4,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lk.englisher.common.ApiException;
 import lk.englisher.config.OAuthProperties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.MediaType;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -14,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.util.List;
 
 /**
  * Verifies a Facebook user access token the frontend obtained from the
@@ -27,13 +32,29 @@ import java.util.HexFormat;
 @Component
 public class FacebookTokenVerifier {
 
+    private static final Logger log = LoggerFactory.getLogger(FacebookTokenVerifier.class);
     private static final String GRAPH_VERSION = "v19.0";
 
     private final OAuthProperties properties;
-    private final RestClient client = RestClient.create();
+    private final RestClient client = RestClient.builder()
+            .messageConverters(converters -> converters.add(0, jsonConverter()))
+            .build();
 
     public FacebookTokenVerifier(OAuthProperties properties) {
         this.properties = properties;
+    }
+
+    /**
+     * Graph API answers {@code debug_token}/{@code me} with
+     * {@code Content-Type: text/javascript} rather than {@code application/json}
+     * (a JSONP-era holdover) — valid JSON that Spring's default converters
+     * refuse to parse on content type alone. Trusting that one extra media type
+     * fixes it without weakening what any other call accepts.
+     */
+    private static MappingJackson2HttpMessageConverter jsonConverter() {
+        MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
+        converter.setSupportedMediaTypes(List.of(MediaType.APPLICATION_JSON, MediaType.valueOf("text/javascript")));
+        return converter;
     }
 
     public record FacebookProfile(String id, String email, String name) {
@@ -68,12 +89,14 @@ public class FacebookTokenVerifier {
                     .retrieve()
                     .body(DebugTokenResponse.class);
         } catch (RestClientException ex) {
+            log.warn("Facebook debug_token call failed", ex);
             throw ApiException.unauthorized("auth.oauthInvalidToken", "That Facebook sign-in could not be verified.");
         }
         DebugTokenData data = debug == null ? null : debug.data();
         if (data == null || !Boolean.TRUE.equals(data.isValid())
                 || !properties.getFacebookAppId().equals(data.appId())
                 || data.userId() == null) {
+            log.warn("Facebook debug_token rejected: data={}", data);
             throw ApiException.unauthorized("auth.oauthInvalidToken", "That Facebook sign-in could not be verified.");
         }
 
@@ -85,9 +108,11 @@ public class FacebookTokenVerifier {
                     .retrieve()
                     .body(MeResponse.class);
         } catch (RestClientException ex) {
+            log.warn("Facebook /me call failed", ex);
             throw ApiException.unauthorized("auth.oauthInvalidToken", "That Facebook sign-in could not be verified.");
         }
         if (me == null || me.id() == null || !me.id().equals(data.userId())) {
+            log.warn("Facebook /me mismatch: me={} expectedUserId={}", me, data.userId());
             throw ApiException.unauthorized("auth.oauthInvalidToken", "That Facebook sign-in could not be verified.");
         }
         if (me.email() == null) {

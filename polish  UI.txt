@@ -1,0 +1,14 @@
+when bottons are pressed specially add bubble effect or some animation like that to buttons and mcq answer options.
+
+answer correct and wrong sounds should play when check button was pressed.
+
+there should be skip button below and to the left of questions to skip and go to the next exercise.
+
+create a folder to include few animations.it has answer correct animation, answer wrong animation and other animations.
+
+when the skip or check button of the last exercise of the lesson was pressed after the feedback screen of that last exercise there should come a screen to tell you have completed lesson and it should show a randomly selected animation from the animations folder(these are lottie animations) 
+and should show correct answers percentage and give option button to review answers. this must go to review answers page(you have to create this page) showing all wrong and correct answers.
+
+when skip or check button of last exercise of the last lesson was pressed after the lesson complete screen should show the course complete screen(you have to create this page) . this page  also have a randomly selected animation. it must show the correct answers percentage fpr whole course. and should have a button to review all wrongly answers questions.
+
+you can use transitions  animations between these pages freely.if you need you randomly selected animations form animations folder for tranitions animations. correcty there is no animations folder

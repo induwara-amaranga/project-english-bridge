@@ -1,0 +1,7 @@
+to do
+
+- social login done
+
+- get a proper deployment plan
+
+- fix guest sign up

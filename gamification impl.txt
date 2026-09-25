@@ -1,0 +1,18 @@
+Implement the suggestions in this document. 
+
+dont implement words lab.
+
+indroduce the coins and they are earned when completing lesons,exercises,streaks they are expended to streak freeze. add coins ui element next to xp.
+
+use UTC midnight for streak calculation.
+
+introduce a level  for user. level is displayed newt to xp progress bar.for level 1,2,3 only 50 xp needed to level up. level must increase rapidly when completing first 4 stages. and then slow down
+
+all questions of lesson being correct  should add +10 bonas xp and bonus coins. all questions of stage being correct should add another bonus xp and coin at stage complete. 
+
+completing stage 100% and 75% of qestions of stage should be correct to go to next stage.
+
+coins can be spent to retry wrong questions at the end of the stage.
+
+update UI elements and backend to match these requirements and the document.
+

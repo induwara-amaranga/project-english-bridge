@@ -1,0 +1,8 @@
+words lab
+
+add a circle button in UI for words lab. there should be an icon illustration on that.
+
+world lab is a place to play with words. 
+
+you can practice sentence creation there. you can add tiles to sentence pipe and in real time when you add or update a tile the Sinhala meaning  of the sentence changes.
+
