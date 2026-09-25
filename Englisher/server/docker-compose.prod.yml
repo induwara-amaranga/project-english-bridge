@@ -4,9 +4,16 @@
 # as-is on a real server, so this file overrides exactly what production
 # needs to differ rather than duplicating the whole stack.
 #
-# Run with (on the production host, alongside a real .env — see
-# .env.example):
-#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+# CI (.github/workflows/deploy.yml) builds and pushes the backend and
+# frontend images to GHCR on every push to main, then the deploy step on the
+# server runs (see ../infra/deploy.sh):
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans
+#
+# Neither service is built locally in prod — both come from `image:` below,
+# so the server never needs the Maven/npm toolchain, only Docker. Alongside
+# this file you need a real .env (see .env.example) with DOMAIN set to the
+# hostname Caddy should request a certificate for.
 #
 # Every secret below has no insecure fallback on purpose (see
 # AuthProperties/DataSeeder) — an unset one either fails loudly at boot
@@ -26,6 +33,7 @@ services:
     ports: !reset []
 
   backend:
+    image: ghcr.io/induwara-amaranga/project-english-bridge-backend:${ENGLISHER_IMAGE_TAG:-latest}
     environment:
       SPRING_PROFILES_ACTIVE: prod
       ENGLISHER_DB_PASSWORD: ${ENGLISHER_DB_PASSWORD}
@@ -43,9 +51,39 @@ services:
       ENGLISHER_SMTP_PASSWORD: ${ENGLISHER_SMTP_PASSWORD}
       ENGLISHER_SMTP_AUTH: ${ENGLISHER_SMTP_AUTH:-true}
       ENGLISHER_SMTP_STARTTLS: ${ENGLISHER_SMTP_STARTTLS:-true}
+    # Reached over the compose network by the `frontend` (Caddy) service
+    # below now that one exists — docker-compose.yml's "8080:8080" would
+    # otherwise publish the API directly to the internet, bypassing TLS,
+    # security headers and same-origin cookies entirely.
+    ports: !reset []
+
+  # Caddy: serves the built React app and reverse-proxies /api/* to the
+  # backend over the compose network, terminating TLS with an
+  # automatically-issued and auto-renewed Let's Encrypt certificate for
+  # $DOMAIN. This is the only service with ports published to the host.
+  frontend:
+    image: ghcr.io/induwara-amaranga/project-english-bridge-frontend:${ENGLISHER_IMAGE_TAG:-latest}
+    container_name: englisher-frontend
+    environment:
+      DOMAIN: ${DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Certificates and Caddy's own state, so a redeploy doesn't throw away
+      # a working cert and re-request one from Let's Encrypt (which is
+      # rate-limited).
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - backend
 
   # Still starts (docker-compose.yml's depends_on isn't overridden here) but
   # is never dialled once ENGLISHER_SMTP_HOST points elsewhere above — closing
   # its ports just means the unused local mail catcher isn't reachable either.
   mail:
     ports: !reset []
+
+volumes:
+  caddy-data:
+  caddy-config:

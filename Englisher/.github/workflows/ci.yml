@@ -1,0 +1,55 @@
+name: CI
+
+# Fast feedback on pull requests, and reused (via workflow_call) as the test
+# gate deploy.yml runs before it will build or deploy anything on main — so a
+# direct push (no PR) still can't reach production untested.
+on:
+  pull_request:
+    branches: [main]
+  workflow_call: {}
+
+permissions:
+  contents: read
+
+jobs:
+  backend-test:
+    name: Backend tests (JUnit + Flyway, embedded Postgres)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: server/pom.xml
+
+      # `verify` runs unit tests and the embedded-Postgres integration tests
+      # (real PostgreSQL binary, no Docker/Testcontainers needed — see
+      # server/README.md and pom.xml's embedded-postgres dependency).
+      - run: ./mvnw -B verify
+
+  frontend-build:
+    name: Frontend lint + typecheck + build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend/app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/app/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint
+      # `tsc -b && vite build` — a failing type error fails this step, so it
+      # doubles as a typecheck gate.
+      - run: npm run build

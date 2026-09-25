@@ -1,0 +1,34 @@
+# Caddy config baked into the frontend image (see Dockerfile) — changes to
+# this file ship through the normal CI/CD pipeline, not a manual server edit.
+#
+# {$DOMAIN} is supplied by docker-compose.prod.yml from the server's .env.
+# Caddy requests and auto-renews a Let's Encrypt certificate for it the first
+# time it starts, which requires DNS for that name to already point at this
+# server and ports 80/443 to be reachable from the internet.
+{$DOMAIN} {
+	encode gzip zstd
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "geolocation=(), microphone=(), camera=()"
+		-Server
+	}
+
+	# The Spring Boot API, reached over the compose network — never exposed
+	# to the host directly (see docker-compose.prod.yml).
+	handle /api/* {
+		reverse_proxy backend:8080
+	}
+
+	# The built React app. try_files falls back to index.html for any path
+	# React Router owns client-side, instead of Caddy 404ing on a refresh of
+	# a deep link like /stage/2/lesson/1.
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}
