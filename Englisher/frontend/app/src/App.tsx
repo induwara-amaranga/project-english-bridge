@@ -51,8 +51,8 @@ export default function App() {
             everything else here still requires a real account. */}
         <Route path="/learn" element={<RequireRole role="student" allowGuestPreview><Roadmap /></RequireRole>} />
         <Route path="/learn/:stageId" element={<RequireRole role="student" allowGuestPreview><StageLessons /></RequireRole>} />
-        <Route path="/learn/:stageId/:lessonId" element={<RequireRole role="student" allowGuestPreview><LessonPage /></RequireRole>} />
-        <Route path="/learn/:stageId/:lessonId/practice" element={<RequireRole role="student" allowGuestPreview><ExercisePage /></RequireRole>} />
+        <Route path="/learn/:stageId/:lessonId" element={<RequireRole role="student" allowGuestPreview guestOneLessonLimit><LessonPage /></RequireRole>} />
+        <Route path="/learn/:stageId/:lessonId/practice" element={<RequireRole role="student" allowGuestPreview guestOneLessonLimit><ExercisePage /></RequireRole>} />
         {/* A course is a stage here, so finishing a stage's last lesson ends a
             course: /complete is its celebration screen and /review-wrong is
             every question missed along the way. Both sit above :lessonId, which

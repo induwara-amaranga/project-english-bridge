@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { OnboardingHeader } from './OnboardingHeader';
+import { saveOnboardingAnswer } from '../../domain/onboardingAnswers';
 
 const COPY = {
   en: { title: 'Pick your language', subtitle: "We'll use this for explanations and instructions.", switch: 'You can switch language choice anytime.', continue: 'Continue' },
@@ -10,10 +11,9 @@ const COPY = {
 // Each course-language option is labelled in its own script regardless of the
 // UI language, so this is deliberately not part of the `COPY` deck above —
 // ported as-is from Onboarding Language.dc.html.
-const OPTIONS: { key: 'en' | 'si' | 'both'; label: string; sub: string; font: string }[] = [
+const OPTIONS: { key: 'en' | 'si'; label: string; sub: string; font: string }[] = [
   { key: 'en', label: 'English', sub: 'lessons + explanations in English', font: "'Inter', sans-serif" },
   { key: 'si', label: 'සිංහල', sub: 'පැහැදිලි කිරීම් සිංහලෙන්', font: "'Noto Sans Sinhala', sans-serif" },
-  { key: 'both', label: 'English+සිංහල', sub: 'සිංහල උපසිරැසි සමඟ ඉංග්‍රීසි', font: "'Inter', 'Noto Sans Sinhala', sans-serif" },
 ];
 
 export function OnboardingLanguage() {
@@ -22,12 +22,16 @@ export function OnboardingLanguage() {
   // choosing Sinhala doesn't retranslate the page mid-decision (see the
   // prototype's own comment on this).
   const [lang, setLang] = useState<'en' | 'si'>('en');
-  const [choice, setChoice] = useState<'en' | 'si' | 'both'>('en');
+  const [choice, setChoice] = useState<'en' | 'si'>('en');
   const navigate = useNavigate();
   const isSi = lang === 'si';
   const c = COPY[lang];
   const bodyFont = isSi ? 'var(--font-si-body)' : 'var(--font-body)';
   const headFont = isSi ? 'var(--font-si-display)' : 'var(--font-display)';
+
+  // Pre-selected like Streak's default, unlike Goal's empty start — record it
+  // even if the learner never taps an option and just clicks Continue.
+  useEffect(() => { saveOnboardingAnswer({ courseLanguage: choice }); }, [choice]);
 
   return (
     <div style={{ fontFamily: bodyFont, background: 'var(--c-bg)', color: 'var(--c-ink)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>

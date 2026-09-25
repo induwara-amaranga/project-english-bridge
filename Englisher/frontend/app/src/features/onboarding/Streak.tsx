@@ -1,6 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { OnboardingHeader } from './OnboardingHeader';
+import { saveOnboardingAnswer } from '../../domain/onboardingAnswers';
+
+// Parallel to COPY[lang].goals by index, in days — the displayed strings are
+// translated copy ("දින 7 - ..."), not something to parse back out.
+const STREAK_GOAL_DAYS = [7, 14, 30, 60];
 
 const COPY = {
   en: {
@@ -28,6 +33,8 @@ export function OnboardingStreak() {
   const c = COPY[lang];
   const bodyFont = isSi ? 'var(--font-si-body)' : 'var(--font-body)';
   const headFont = isSi ? 'var(--font-si-display)' : 'var(--font-display)';
+
+  useEffect(() => { saveOnboardingAnswer({ streakGoalDays: STREAK_GOAL_DAYS[selected] }); }, [selected]);
 
   return (
     <div style={{ fontFamily: bodyFont, background: 'var(--c-bg)', color: 'var(--c-ink)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>

@@ -26,6 +26,18 @@ import { EMPTY_PROGRESS, type CompleteLessonResult, type GradedCard, type Progre
 const PROGRESS_KEY = 'englisher.guestPreview.v1';
 const PENDING_KEY = 'englisher.guestPendingLesson.v1';
 
+/**
+ * True once a guest has completed their one allotted lesson. Checked (without
+ * consuming anything, unlike takePendingGuestLesson) wherever a guest tries
+ * to enter a lesson, so the "exactly one lesson before signup" rule holds
+ * even if they reach a second lesson via the back button, a direct URL, or
+ * another lesson bubble that a stage's unlocked-for-review status exposed —
+ * not just via GuestSavePrompt's own "no skip past this" screen.
+ */
+export function hasPlayedGuestLesson(): boolean {
+  return Object.values(loadGuestPreview().completedLessonIds).some((ids) => ids.length > 0);
+}
+
 export function loadGuestPreview(): Progress {
   try {
     const raw = localStorage.getItem(PROGRESS_KEY);

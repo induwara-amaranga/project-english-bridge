@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { OnboardingHeader } from './OnboardingHeader';
+import { saveOnboardingAnswer, type OnboardingAnswers } from '../../domain/onboardingAnswers';
+
+// Parallel to COPY[lang].goals by index — a stable slug survives the UI
+// language toggle and re-translation that the displayed label doesn't.
+const GOAL_KEYS: NonNullable<OnboardingAnswers['goal']>[] = ['exam', 'job', 'travel', 'self'];
 
 const COPY = {
   en: {
@@ -51,7 +56,7 @@ export function OnboardingGoal() {
               <button
                 key={goal.label}
                 type="button"
-                onClick={() => setSelected(i)}
+                onClick={() => { setSelected(i); saveOnboardingAnswer({ goal: GOAL_KEYS[i] }); }}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 14, textAlign: 'left',
                   background: selected === i ? 'var(--c-primary-tint)' : 'white',

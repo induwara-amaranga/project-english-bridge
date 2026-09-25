@@ -154,10 +154,17 @@ export function dismissBrokenStreak(): Promise<Progress> {
   return apiPost<Progress>('/api/progress/streak/dismiss-broken');
 }
 
-export function stageStatus(p: Progress, stage: Stage, curriculum: Curriculum): 'completed' | 'current' | 'locked' {
+/**
+ * A stage ahead of `currentStageId` with no recorded lesson completions was
+ * never actually done — the placement test (or a signup's `placementStage`)
+ * moved `currentStageId` straight past it. 'skipped' keeps it unlocked and
+ * reviewable without the 'completed' label falsely claiming lessons and XP
+ * that were never earned.
+ */
+export function stageStatus(p: Progress, stage: Stage, curriculum: Curriculum): 'completed' | 'skipped' | 'current' | 'locked' {
   const idx = curriculum.stages.findIndex((s) => s.id === stage.id);
   const curIdx = curriculum.stages.findIndex((s) => s.id === p.currentStageId);
-  if (idx < curIdx) return 'completed';
+  if (idx < curIdx) return (p.completedLessonIds[stage.id]?.length ?? 0) > 0 ? 'completed' : 'skipped';
   if (idx === curIdx) return 'current';
   return 'locked';
 }

@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { LangToggle, RoleToggle } from '../../components/Primitives';
 import { roleHome, useAuth, type AuthUser, type Role } from '../../hooks/useAuth';
-import { errorMessage } from '../../lib/apiClient';
+import { apiPut, errorMessage } from '../../lib/apiClient';
 import { completeLesson, submitPlacement } from '../../domain/progress';
 import { clearGuestSession, setGuestStage, takePendingGuestLesson } from '../../domain/guestProgress';
+import { clearOnboardingAnswers, loadOnboardingAnswers } from '../../domain/onboardingAnswers';
 import { preloadOAuthScripts, signInWithFacebook, signInWithGoogle } from '../../lib/oauth';
 
 const COPY = {
@@ -77,6 +78,14 @@ export function SignUp() {
     // it was reading.
     exitGuestMode();
     clearGuestSession();
+    // Onboarding (Goal/Language/Streak) ran before this account existed —
+    // see domain/onboardingAnswers.ts. Best-effort like the guest replay
+    // above: a signup that already succeeded shouldn't fail over this.
+    const onboardingAnswers = loadOnboardingAnswers();
+    if (Object.keys(onboardingAnswers).length > 0) {
+      try { await apiPut('/api/me/preferences', onboardingAnswers); } catch { /* best-effort */ }
+      clearOnboardingAnswers();
+    }
     await applyPlacement(user.role);
     navigate(roleHome(user.role));
   };

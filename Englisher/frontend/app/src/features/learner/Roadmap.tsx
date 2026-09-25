@@ -20,6 +20,8 @@ const SECTORS = [
 ];
 const PLANET_GRADIENTS = {
   completed: 'radial-gradient(circle at 35% 30%, #6EE7A8, #2FAE63 70%)',
+  // Amber/gold, not green — this stage was placed out of, not actually done.
+  skipped: 'radial-gradient(circle at 35% 30%, #F5D580, #D9A424 70%)',
   current: 'radial-gradient(circle at 35% 30%, #A78BFA, #6C4FF6 70%)',
   // Warmed up from a flat charcoal — a "not yet" should read as dormant, not bleak.
   locked: 'radial-gradient(circle at 35% 30%, #5B5570, #332F47 70%)',
@@ -47,6 +49,8 @@ const METEORS = [
 
 const LockIcon = () => <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="5" y="9" width="10" height="8" rx="2" fill="#9B94BE" /><path d="M7 9V6.5C7 4.5 8.3 3 10 3C11.7 3 13 4.5 13 6.5V9" stroke="#9B94BE" strokeWidth="1.8" fill="none" /></svg>;
 const CheckIcon = ({ size = 22 }: { size?: number }) => <svg width={size} height={size} viewBox="0 0 22 22" fill="none"><path d="M5 11.5L9.5 16L17 6" stroke="white" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+/** Placement skipped this stage — a "fast-forward" reads as "you tested out of it," not a completion checkmark. */
+const SkipIcon = ({ size = 22 }: { size?: number }) => <svg width={size} height={size} viewBox="0 0 20 20" fill="none"><path d="M3 4L9 10L3 16" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /><path d="M10 4L16 10L10 16" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 
 export function Roadmap() {
   const { curriculum, loading } = useCurriculum();
@@ -69,8 +73,10 @@ export function Roadmap() {
    * fully opaque — the route swap underneath is never actually seen. Used
    * everywhere a click lands directly on a course, in either view.
    */
-  const goToStage = (stageId: string, title: string) => {
-    if (travelTo) return;
+  const goToStage = (stageId: string, title: string, status: 'completed' | 'skipped' | 'current' | 'locked') => {
+    // Cosmetically dimmed locked stages are still in the DOM — this is the
+    // only thing stopping a click from jumping straight into one.
+    if (travelTo || status === 'locked') return;
     const label = isSi ? `${title} වෙත යනවා…` : `Entering ${title}…`;
     setTravelTo({ id: stageId, label });
     setTimeout(() => navigate(`/learn/${stageId}`), 620);
@@ -85,6 +91,9 @@ export function Roadmap() {
     if (status === 'completed') {
       statusLabel = isSi ? 'සම්පූර්ණයි · තට්ටු කර සමාලෝචනය කරන්න' : 'Completed · Tap to review';
       statusColor = '#3E8E5B'; bg = '#F1EFE3'; border = 'none'; badgeBg = '#3ECF6E'; titleColor = '#1E1B2E';
+    } else if (status === 'skipped') {
+      statusLabel = isSi ? 'ස්ථානගත කර ඇත · සමාලෝචනය කර නැත' : 'Placed out · not reviewed';
+      statusColor = '#B8860B'; bg = '#FBF3DD'; border = 'none'; badgeBg = '#F5C842'; titleColor = '#1E1B2E';
     } else if (status === 'current') {
       statusLabel = isSi ? `ක්‍රියාත්මකයි — ${progress.currentStagePct}% සම්පූර්ණයි` : `In progress — ${progress.currentStagePct}% complete`;
       statusColor = '#6C4FF6'; bg = 'white'; border = '2px solid #6C4FF6'; badgeBg = '#6C4FF6'; titleColor = '#1E1B2E';
@@ -101,6 +110,7 @@ export function Roadmap() {
     const sector = SECTORS.find((sec) => sec.from === n);
     let mapStatus: string, statusColor: string, planetGradient: string, glow: string;
     if (status === 'completed') { mapStatus = isSi ? 'සම්පූර්ණයි' : 'Completed'; statusColor = '#6EE7A8'; planetGradient = PLANET_GRADIENTS.completed; glow = '0 0 30px 4px rgba(62,207,110,0.35)'; }
+    else if (status === 'skipped') { mapStatus = isSi ? 'ස්ථානගත කර ඇත' : 'Placed out'; statusColor = '#F5C842'; planetGradient = PLANET_GRADIENTS.skipped; glow = '0 0 30px 4px rgba(217,164,36,0.35)'; }
     else if (status === 'current') { mapStatus = isSi ? `${progress.currentStagePct}%` : `${progress.currentStagePct}% complete`; statusColor = '#B7A6FF'; planetGradient = PLANET_GRADIENTS.current; glow = '0 0 40px 8px rgba(108,79,246,0.55)'; }
     else { mapStatus = isSi ? 'අගුළු දමා ඇත' : 'Locked'; statusColor = '#6B6580'; planetGradient = PLANET_GRADIENTS.locked; glow = 'none'; }
     return {
@@ -157,10 +167,11 @@ export function Roadmap() {
         {view === 'list' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {stages.map((s) => (
-              <div key={s.stage.id} className="bubble-host hover-shrink" onPointerDown={bubble} onClick={() => goToStage(s.stage.id, s.title)} style={{ cursor: 'pointer', background: s.bg, borderRadius: 20, padding: '20px 22px', display: 'flex', alignItems: 'center', gap: 16, border: s.border }}>
+              <div key={s.stage.id} className="bubble-host hover-shrink" onPointerDown={bubble} onClick={() => goToStage(s.stage.id, s.title, s.status)} style={{ cursor: s.status === 'locked' ? 'default' : 'pointer', background: s.bg, borderRadius: 20, padding: '20px 22px', display: 'flex', alignItems: 'center', gap: 16, border: s.border }}>
                 <div style={{ width: 48, height: 48, borderRadius: '50%', background: s.badgeBg, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {s.status === 'locked' && <LockIcon />}
                   {s.status === 'completed' && <CheckIcon />}
+                  {s.status === 'skipped' && <SkipIcon />}
                   {s.status === 'current' && <span style={{ color: 'white', fontFamily: headFont, fontWeight: 800, fontSize: 18 }}>{s.n}</span>}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -229,7 +240,7 @@ export function Roadmap() {
                       <div style={{ fontFamily: headFont, fontWeight: 700, fontSize: 12, color: 'white' }}>{s.sectorLabel}</div>
                     </div>
                   )}
-                  <div className="hover-target" onClick={() => goToStage(s.stage.id, s.title)} style={{ position: 'absolute', top: s.top, left: `${s.left}%`, transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, width: 140, cursor: 'pointer' }}>
+                  <div className="hover-target" onClick={() => goToStage(s.stage.id, s.title, s.status)} style={{ position: 'absolute', top: s.top, left: `${s.left}%`, transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, width: 140, cursor: s.status === 'locked' ? 'default' : 'pointer' }}>
                     <div className="hover-shrink" onPointerDown={bubble} style={{ width: 88, height: 88, borderRadius: '50%', background: s.planetGradient, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', boxShadow: s.glow }}>
                       {/* Clips the press bubble to the planet without hiding the orbit ring, which is drawn wider than the planet. */}
                       <span className="bubble-layer" />
@@ -239,6 +250,7 @@ export function Roadmap() {
                       <div style={{ position: 'absolute', bottom: 26, left: 14, width: 7, height: 7, borderRadius: '50%', background: 'rgba(0,0,0,0.2)' }} />
                       {s.status === 'locked' && <svg width="26" height="26" viewBox="0 0 20 20" fill="none"><rect x="5" y="9" width="10" height="8" rx="2" fill="white" opacity="0.85" /><path d="M7 9V6.5C7 4.5 8.3 3 10 3C11.7 3 13 4.5 13 6.5V9" stroke="white" strokeWidth="1.8" fill="none" opacity="0.85" /></svg>}
                       {s.status === 'completed' && <CheckIcon size={30} />}
+                      {s.status === 'skipped' && <SkipIcon size={30} />}
                       {s.status === 'current' && <span style={{ color: 'white', fontFamily: headFont, fontWeight: 800, fontSize: 24 }}>{s.n}</span>}
                     </div>
                     <div style={{ textAlign: 'center', marginTop: 4 }}>

@@ -34,6 +34,7 @@ export function ProgressPage() {
     const pct = stagePercent(progress, stage) || (status === 'completed' ? 100 : 0);
     let label: string, labelColor: string, barColor: string, badgeBg: string;
     if (status === 'completed') { label = '100% complete'; labelColor = '#3E8E5B'; barColor = 'var(--c-success)'; badgeBg = 'var(--c-success)'; }
+    else if (status === 'skipped') { label = 'Placed out — not reviewed'; labelColor = '#B8860B'; barColor = '#F5C842'; badgeBg = '#F5C842'; }
     else if (status === 'current') { label = `${pct}% complete`; labelColor = 'var(--c-primary)'; barColor = 'var(--c-primary)'; badgeBg = 'var(--c-primary)'; }
     else { label = 'Locked'; labelColor = 'var(--c-ink-disabled)'; barColor = 'var(--c-primary-tint)'; badgeBg = '#D8D2F0'; }
     return { stage, n: i + 1, pct, label, labelColor, barColor, badgeBg };

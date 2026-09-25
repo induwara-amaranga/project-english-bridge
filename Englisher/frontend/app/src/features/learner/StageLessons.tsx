@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useCurriculum } from '../../hooks/useCurriculum';
 import { useProgress } from '../../hooks/useProgress';
-import { isLessonComplete } from '../../domain/progress';
+import { isLessonComplete, stageStatus } from '../../domain/progress';
 import type { Progress } from '../../domain/progress';
 import { LangToggle } from '../../components/Primitives';
 import { CoinsBadge, LevelBadge, XpBadge } from '../../components/StatBadges';
@@ -41,14 +41,29 @@ export function StageLessons() {
   const [lang, setLang] = useState<'en' | 'si'>('en');
   const isSi = lang === 'si';
 
-  if (loading || curriculum.stages.length === 0) {
-    return <div className="app-shell" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B6580', fontWeight: 600 }}>{loading ? 'Loading…' : 'No courses yet.'}</div>;
-  }
-
   const idx = curriculum.stages.findIndex((s) => s.id === stageId);
   const stage = curriculum.stages[idx] ?? curriculum.stages[0];
+  const status = stage ? stageStatus(progress, stage, curriculum) : 'locked';
+
+  // A genuinely locked stage (ahead of currentStageId) is only cosmetically
+  // dimmed on the roadmap — nothing stops a direct URL from landing here, so
+  // it needs its own guard rather than trusting Roadmap's click handler.
+  useEffect(() => {
+    if (!loading && curriculum.stages.length > 0 && status === 'locked') {
+      navigate('/learn', { replace: true });
+    }
+  }, [loading, curriculum.stages.length, status, navigate]);
+
+  if (loading || curriculum.stages.length === 0 || status === 'locked') {
+    return <div className="app-shell" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B6580', fontWeight: 600 }}>{loading ? 'Loading…' : status === 'locked' ? null : 'No courses yet.'}</div>;
+  }
+
   const stageNo = idx + 1;
   const titleFont = isSi ? 'var(--font-si-display)' : 'var(--font-display)';
+  // Completed or placed-out (skipped) stages are behind the learner already —
+  // every lesson opens for review immediately rather than re-unlocking one at
+  // a time, matching the roadmap's own "Tap to review" promise.
+  const reviewable = status === 'completed' || status === 'skipped';
 
   if (stage.lessons.length === 0) {
     return (
@@ -65,14 +80,18 @@ export function StageLessons() {
   const lessons = stage.lessons.map((lesson, i) => {
     const isDone = isLessonComplete(progress, stage.id, lesson.id);
     const doneCount = stage.lessons.filter((l) => isLessonComplete(progress, stage.id, l.id)).length;
-    const isNext = !isDone && i === doneCount;
-    const isLocked = !isDone && !isNext;
+    // Sequential unlock only applies to the stage currently being worked
+    // through — a reviewable (completed/skipped) stage has no "next", every
+    // not-yet-done lesson is just as open as the done ones.
+    const isNext = !reviewable && !isDone && i === doneCount;
+    const isLocked = !reviewable && !isDone && !isNext;
+    const isOpenForReview = reviewable && !isDone;
     let bg: string, border: string, shadow: string, labelColor: string;
     if (isDone) { bg = 'radial-gradient(circle at 35% 30%, #6EE7A8, #2FAE63 70%)'; border = 'rgba(255,255,255,0.5)'; shadow = '0 6px 0 rgba(0,0,0,0.2), 0 0 20px rgba(62,207,110,0.4)'; labelColor = '#D8FFE8'; }
-    else if (isNext) { bg = 'radial-gradient(circle at 35% 30%, #A78BFA, #6C4FF6 70%)'; border = '#FFD976'; shadow = '0 6px 0 rgba(0,0,0,0.25), 0 0 26px rgba(108,79,246,0.6)'; labelColor = 'white'; }
+    else if (isNext || isOpenForReview) { bg = 'radial-gradient(circle at 35% 30%, #A78BFA, #6C4FF6 70%)'; border = '#FFD976'; shadow = '0 6px 0 rgba(0,0,0,0.25), 0 0 26px rgba(108,79,246,0.6)'; labelColor = 'white'; }
     else { bg = 'radial-gradient(circle at 35% 30%, #6B6480, #3A3550 70%)'; border = 'rgba(255,255,255,0.15)'; shadow = '0 4px 0 rgba(0,0,0,0.2)'; labelColor = 'rgba(255,255,255,0.5)'; }
     return {
-      lesson, offset: offsets[i], isDone, isNext, isLocked, bg, border, shadow, labelColor,
+      lesson, offset: offsets[i], isDone, isNext, isLocked, isPlayable: isNext || isOpenForReview, bg, border, shadow, labelColor,
       floatAnim: isNext ? `float-node ${2.6 + i * 0.3}s ease-in-out infinite` : 'none',
       label: isSi ? lesson.title.si || lesson.title.en : lesson.title.en,
     };
@@ -113,11 +132,11 @@ export function StageLessons() {
                   carries the pulse ring along, which used to stay behind. */}
               <div style={{ position: 'relative', animation: l.floatAnim }}>
                 {l.isNext && <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', animation: 'pulse-ring 1.8s ease-out infinite' }} />}
-                <button className="bubble-host hover-shrink" onPointerDown={bubble} onClick={() => navigate(`/learn/${stage.id}/${l.lesson.id}`)} style={{ width: 78, height: 78, borderRadius: '50%', background: l.bg, border: `4px solid ${l.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: l.shadow, position: 'relative' }}>
+                <button className="bubble-host hover-shrink" onPointerDown={bubble} onClick={() => { if (l.isLocked) return; navigate(`/learn/${stage.id}/${l.lesson.id}`); }} style={{ width: 78, height: 78, borderRadius: '50%', background: l.bg, border: `4px solid ${l.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: l.isLocked ? 'default' : 'pointer', boxShadow: l.shadow, position: 'relative' }}>
                   <div style={{ position: 'absolute', top: 10, left: 14, width: 20, height: 11, borderRadius: '50%', background: 'rgba(255,255,255,0.28)' }} />
                   {l.isLocked && <LockIcon />}
                   {l.isDone && <CheckIcon />}
-                  {l.isNext && <PlayIcon />}
+                  {l.isPlayable && <PlayIcon />}
                 </button>
               </div>
               <span style={{ height: 20, lineHeight: '20px', fontSize: 13, fontWeight: 700, textAlign: 'center', color: l.labelColor, textShadow: '0 1px 6px rgba(0,0,0,0.5)', maxWidth: 140 }}>{l.label || `Lesson ${i + 1}`}</span>
