@@ -5,6 +5,7 @@ import {
   STREAK_AT_RISK_WINDOW_MS, STREAK_FREEZE_COST_COINS, STREAK_REPAIR_COST_COINS,
 } from '../domain/progress';
 import { errorMessage } from '../lib/apiClient';
+import { LangToggle } from './Primitives';
 
 type DialogMode = 'broken' | 'at-risk';
 
@@ -26,6 +27,11 @@ export function StreakFreezeDialog() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const shownBrokenAt = useRef<string | null>(null);
+  // No shared language context exists yet (see BottomNav's lang prop note) —
+  // this dialog is mounted globally by RequireRole, outside any one page's
+  // own `lang` state, so it keeps a small toggle of its own.
+  const [lang, setLang] = useState<'en' | 'si'>('en');
+  const isSi = lang === 'si';
 
   useEffect(() => {
     if (loading || mode) return;
@@ -93,28 +99,37 @@ export function StreakFreezeDialog() {
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'rgba(20,16,40,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <div className="card screen-in" style={{ maxWidth: 360, width: '100%', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <LangToggle lang={lang} onToggle={() => setLang((l) => (l === 'en' ? 'si' : 'en'))} />
+        </div>
         {mode === 'broken' ? (
           <>
             <div style={{ fontSize: 40 }} aria-hidden>💔</div>
             <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, margin: 0 }}>
-              Your {progress.lastBrokenStreak}-day streak was lost
+              {isSi ? `ඔබේ දින ${progress.lastBrokenStreak} අඛණ්ඩතාව නැති විය` : `Your ${progress.lastBrokenStreak}-day streak was lost`}
             </h2>
             <p style={{ fontSize: 14, color: 'var(--c-ink-soft)', fontWeight: 600, margin: 0 }}>
-              Repair it for {STREAK_REPAIR_COST_COINS} coins and pick up right where you left off.
+              {isSi
+                ? `එය කාසි ${STREAK_REPAIR_COST_COINS}කට අලුත් කර, ඔබ නැවතුණු තැනින්ම ඉදිරියට යන්න.`
+                : `Repair it for ${STREAK_REPAIR_COST_COINS} coins and pick up right where you left off.`}
             </p>
           </>
         ) : (
           <>
             <div style={{ fontSize: 40 }} aria-hidden>⚠️</div>
             <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, margin: 0 }}>
-              Your {progress.streakDays}-day streak is about to expire!
+              {isSi ? `ඔබේ දින ${progress.streakDays} අඛණ්ඩතාව ඉක්මනින් අවසන් වේ!` : `Your ${progress.streakDays}-day streak is about to expire!`}
             </h2>
             <p style={{ fontSize: 14, color: 'var(--c-ink-soft)', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, flexWrap: 'wrap' }}>
               {progress.streakFreezes > 0 ? (
                 <>
                   <img src="/assets/icons/streak_freeze.svg" alt="" width={16} height={16} />
-                  You have {progress.streakFreezes} freeze{progress.streakFreezes === 1 ? '' : 's'} available — or buy another for {STREAK_FREEZE_COST_COINS} coins.
+                  {isSi
+                    ? `ඔබට ශීතකරණ ${progress.streakFreezes}ක් තිබේ — නැතහොත් කාසි ${STREAK_FREEZE_COST_COINS}කට තවත් එකක් මිලදී ගන්න.`
+                    : `You have ${progress.streakFreezes} freeze${progress.streakFreezes === 1 ? '' : 's'} available — or buy another for ${STREAK_FREEZE_COST_COINS} coins.`}
                 </>
+              ) : isSi ? (
+                `අද මග හැරුනොත් එය ආරක්ෂා කර ගැනීමට කාසි ${STREAK_FREEZE_COST_COINS}කට අඛණ්ඩතා ශීතකරණයක් මිලදී ගන්න.`
               ) : (
                 `Buy a streak freeze for ${STREAK_FREEZE_COST_COINS} coins to protect it if you miss today.`
               )}
@@ -124,18 +139,24 @@ export function StreakFreezeDialog() {
 
         {error && <div style={{ fontSize: 13, color: 'var(--c-danger)', fontWeight: 600 }}>{error}</div>}
         {!canAfford && !error && (
-          <div style={{ fontSize: 12, color: 'var(--c-ink-faint)', fontWeight: 600 }}>Not enough coins yet — {cost - progress.coins} more to go.</div>
+          <div style={{ fontSize: 12, color: 'var(--c-ink-faint)', fontWeight: 600 }}>
+            {isSi ? `තවම ප්‍රමාණවත් කාසි නැත — තව ${cost - progress.coins}ක් අවශ්‍යයි.` : `Not enough coins yet — ${cost - progress.coins} more to go.`}
+          </div>
         )}
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 4 }}>
-          <button onClick={dismiss} disabled={busy} className="btn btn--secondary" style={{ flex: 1 }}>Dismiss</button>
+          <button onClick={dismiss} disabled={busy} className="btn btn--secondary" style={{ flex: 1 }}>{isSi ? 'ඉවත් කරන්න' : 'Dismiss'}</button>
           <button
             onClick={buy}
             disabled={busy || !canAfford}
             className="btn btn--primary"
             style={{ flex: 1, opacity: busy || !canAfford ? 0.5 : 1 }}
           >
-            {busy ? 'Please wait…' : mode === 'broken' ? `Repair (${cost})` : `Buy (${cost})`}
+            {busy
+              ? (isSi ? 'කරුණාකර රැඳී සිටින්න…' : 'Please wait…')
+              : mode === 'broken'
+                ? (isSi ? `අලුත් කරන්න (${cost})` : `Repair (${cost})`)
+                : (isSi ? `මිලදී ගන්න (${cost})` : `Buy (${cost})`)}
           </button>
         </div>
       </div>

@@ -88,7 +88,7 @@ export function Profile() {
         </div>
       </div>
 
-      <BottomNav />
+      <BottomNav lang={lang} />
     </div>
   );
 }

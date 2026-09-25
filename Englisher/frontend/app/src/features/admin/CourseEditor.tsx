@@ -3,7 +3,7 @@ import { useCourseEditor, type CourseEditorApi } from './courseEditorState';
 import { CARD_COLUMNS, TYPE_META } from '../../domain/types';
 import type {
   Card, CardType, Column, DragOrderPayload, EssayPayload, Exercise, ExerciseType,
-  GapFillPayload, Lesson, MatchPayload, McqPayload, MultiSelectPayload, RubricPayload, Stage,
+  GapFillPayload, Lesson, MatchPayload, McqPayload, MultiSelectPayload, RubricPayload, Stage, TranslateSiEnPayload,
 } from '../../domain/types';
 import { cardGridColumn, emptyPayload, plainText } from '../../domain/curriculum';
 import { seededShuffle } from '../../domain/grading';
@@ -12,10 +12,10 @@ import { RichField } from '../../components/RichTextEditor';
 import { RichText } from '../../components/RichText';
 import './editor.css';
 
-const CARD_TYPES: CardType[] = ['text', 'mcq', 'gap_fill', 'drag_order', 'match', 'free_text', 'multi_select', 'essay', 'rubric'];
+const CARD_TYPES: CardType[] = ['text', 'mcq', 'gap_fill', 'drag_order', 'match', 'free_text', 'multi_select', 'essay', 'rubric', 'translate_si_en'];
 const TYPE_COLOR: Record<CardType, string> = {
   mcq: '#6C4FF6', gap_fill: '#0FA593', drag_order: '#B37E00', match: '#FF4D5E', free_text: '#2FAE63', text: '#4A4560',
-  multi_select: '#5539E0', essay: '#FF6B4A', rubric: '#8A84A8',
+  multi_select: '#5539E0', essay: '#FF6B4A', rubric: '#8A84A8', translate_si_en: '#0F8FA5',
 };
 const CARD_SHORT = (t: CardType) => (t === 'text' ? 'TEXT' : TYPE_META[t as ExerciseType].short);
 const UNLOCK_LABEL: Record<string, string> = { always: 'Open to everyone', afterStage: 'After the previous course', minXp: 'At an XP threshold' };
@@ -458,6 +458,23 @@ function PayloadEditor({ api, card }: { api: CourseEditorApi; card: Card }) {
     );
   }
 
+  if (card.type === 'translate_si_en') {
+    const p = card.payload as TranslateSiEnPayload;
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div>
+          <label className="lbl">Sinhala sentence to translate</label>
+          <input className="fld si" value={p.sentenceSi} onChange={(e) => { const v = e.target.value; api.editExercisePayload((pl) => { (pl as TranslateSiEnPayload).sentenceSi = v; }); }} placeholder="මම පාසලට යනවා" />
+        </div>
+        <div>
+          <label className="lbl">Accepted English translations — one per line, any number</label>
+          <textarea className="fld" rows={4} defaultValue={p.accept.join('\n')} onBlur={(e) => { const v = e.target.value.split('\n').map((x) => x.trim()).filter(Boolean); api.editExercisePayload((pl) => { (pl as TranslateSiEnPayload).accept = v; }); }} placeholder={'I go to school\nI am going to school'} />
+          <span style={{ fontSize: 11.5, color: '#9B94BE' }}>Matching ignores capitalisation, punctuation, and how many spaces are between words — only the words themselves have to match.</span>
+        </div>
+      </div>
+    );
+  }
+
   if (card.type === 'multi_select') {
     const p = card.payload as MultiSelectPayload;
     const toggleCorrect = (i: number) => api.editExercisePayload((pl) => {
@@ -741,6 +758,17 @@ function PreviewCard({ card, index, total, isSelected, showKey, pendingDelete, o
           return (
             <>
               <div style={{ background: 'white', border: '2px solid #D8D3EE', borderRadius: 11, padding: 12, minHeight: 70, fontSize: 13, color: '#B5AFD4', marginTop: 10 }}>Type your answer…</div>
+              {showKey && <div style={{ marginTop: 9, fontSize: 11.5, color: '#3E8E5B', fontWeight: 700, lineHeight: 1.6 }}>Accepts: {p.accept.join(' · ')}</div>}
+            </>
+          );
+        })()}
+
+        {card.type === 'translate_si_en' && (() => {
+          const p = card.payload as TranslateSiEnPayload;
+          return (
+            <>
+              <div className="si" style={{ background: 'white', border: '2px solid #D8D3EE', borderRadius: 11, padding: 12, fontSize: 15, fontWeight: 600, marginTop: 10 }}>{p.sentenceSi || '(no sentence yet)'}</div>
+              <div style={{ background: 'white', border: '2px solid #D8D3EE', borderRadius: 11, padding: 12, minHeight: 48, fontSize: 13, color: '#B5AFD4', marginTop: 8 }}>Type the English translation…</div>
               {showKey && <div style={{ marginTop: 9, fontSize: 11.5, color: '#3E8E5B', fontWeight: 700, lineHeight: 1.6 }}>Accepts: {p.accept.join(' · ')}</div>}
             </>
           );

@@ -36,7 +36,11 @@ export function LangToggle({ lang, onToggle }: { lang: 'en' | 'si'; onToggle: ()
   );
 }
 
-const ROLE_LABEL: Record<Role, string> = { student: 'Student', parent: 'Parent', admin: 'Admin' };
+const ROLE_LABEL: Record<Role, { en: string; si: string }> = {
+  student: { en: 'Student', si: 'ශිෂ්‍යයා' },
+  parent: { en: 'Parent', si: 'මාපියා' },
+  admin: { en: 'Admin', si: 'පරිපාලක' },
+};
 
 /**
  * Student or parent only — there is no signup path to an admin account
@@ -44,16 +48,17 @@ const ROLE_LABEL: Record<Role, string> = { student: 'Student', parent: 'Parent',
  * role=admin outright). Admins are provisioned by another admin via
  * POST /api/admin/users, not through this public form.
  */
-export function RoleToggle({ role, onChange }: { role: Role; onChange: (r: Role) => void }) {
+export function RoleToggle({ role, onChange, lang = 'en' }: { role: Role; onChange: (r: Role) => void; lang?: 'en' | 'si' }) {
+  const isSi = lang === 'si';
   return (
-    <div className="role-toggle" role="radiogroup" aria-label="Account type">
+    <div className="role-toggle" role="radiogroup" aria-label={isSi ? 'ගිණුම් වර්ගය' : 'Account type'}>
       {(['student', 'parent'] as Role[]).map((r) => (
         <button
           key={r} type="button" role="radio" aria-checked={role === r}
           className={`role-toggle__opt ${role === r ? 'role-toggle__opt--active' : ''}`}
           onClick={() => onChange(r)}
         >
-          {ROLE_LABEL[r]}
+          {isSi ? ROLE_LABEL[r].si : ROLE_LABEL[r].en}
         </button>
       ))}
     </div>

@@ -23,15 +23,15 @@ const COPY = {
     value: 'ඉංග්‍රීසි ඉගෙන ගන්න, පියවරෙන් පියවර — සිංහල කතා කරන අයට විශේෂයෙන්.',
     cta: 'ඔබේ මට්ටම බලන්න', signIn: 'පිවිසෙන්න', alreadyKnow: 'ඔබේ මට්ටම දැනටමත් දන්නවාද? ලියාපදිංචි වන්න',
     steps: [
-      'Take a 2-minute check to see where you stand',
-      'Follow 8 steps, from tenses to formal letters',
-      'Practice and get instant feedback',
-      'Build a daily streak and watch your progress',
+      'ඔබ සිටින තැන බැලීමට විනාඩි 2ක පරීක්ෂණයක් කරන්න',
+      'ක්‍රියා කාල සිට විධිමත් ලිපි දක්වා පියවර 8ක් අනුගමනය කරන්න',
+      'පුහුණු වී ක්ෂණික ප්‍රතිපෝෂණ ලබා ගන්න',
+      'දෛනික අඛණ්ඩතාවක් ගොඩනඟා ඔබේ ප්‍රගතිය බලන්න',
     ],
-    why: 'Most English resources for Sinhala speakers are scattered or unstructured\nThis gives you one clear path, with guidance in your own language, from start to finish.',
-    textbookHeadline: 'Not a textbook - a guided path.',
-    textbookDifferentiator: 'No random chapters to skim. Every lesson builds on the one before it, starting with the mistakes Sinhala speakers make first.',
-    textbookOutcome: 'All the way to writing a real formal letter with confidence.',
+    why: 'සිංහල කතා කරන අයට ඇති බොහෝ ඉංග්‍රීසි සම්පත් විසිරී ඇත හෝ ව්‍යුහගත නැත\nමෙය ඔබට ආරම්භයේ සිට අවසානය දක්වා, ඔබේම භාෂාවෙන් මගපෙන්වීම සමඟ පැහැදිලි එක් මාර්ගයක් ලබා දෙයි.',
+    textbookHeadline: 'පෙළපොතක් නොවේ - මගපෙන්වන ලද මාර්ගයකි.',
+    textbookDifferentiator: 'කියවීමට අහඹු පරිච්ඡේද නැත. සිංහල කතා කරන්නන් මුලින්ම කරන වැරදිවලින් ආරම්භ වී, සෑම පාඩමක්ම ඊට පෙර පාඩම මත ගොඩනැගේ.',
+    textbookOutcome: 'විශ්වාසයෙන් සැබෑ විධිමත් ලිපියක් ලිවීම දක්වාම.',
   },
 };
 
@@ -49,8 +49,8 @@ export function Home() {
           <span className="site-nav__wordmark">Englisher</span>
         </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: 28, height: 50 }}>
-          <a href="#how" style={{ fontWeight: 600, fontSize: 15, color: 'var(--c-ink)' }}>How it works</a>
-          <a href="#why" style={{ fontWeight: 600, fontSize: 15, color: 'var(--c-ink)' }}>Why us</a>
+          <a href="#how" style={{ fontWeight: 600, fontSize: 15, color: 'var(--c-ink)' }}>{isSi ? 'මෙය ක්‍රියා කරන ආකාරය' : 'How it works'}</a>
+          <a href="#why" style={{ fontWeight: 600, fontSize: 15, color: 'var(--c-ink)' }}>{isSi ? 'අප තෝරාගත යුත්තේ ඇයි' : 'Why us'}</a>
           <LangToggle lang={lang} onToggle={() => setLang((l) => (l === 'en' ? 'si' : 'en'))} />
           <Link to="/signin" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: 38, background: 'var(--c-primary)', color: 'white', borderRadius: 12, padding: '10px 20px', fontWeight: 700, fontSize: 15, fontFamily: headFont, boxShadow: '0 6px 0 var(--c-primary-hover)' }}>{c.signIn}</Link>
         </div>
@@ -60,7 +60,7 @@ export function Home() {
         <div style={{ flex: '1 0 0', minWidth: 0 }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'var(--c-warning-bg)', color: 'var(--c-warning-ink)', padding: '8px 16px', borderRadius: 999, fontWeight: 700, fontSize: 13, marginBottom: 20 }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--c-warning)' }} />
-            Built for Sinhala speakers
+            {isSi ? 'සිංහල කතා කරන අය සඳහාම සාදන ලදී' : 'Built for Sinhala speakers'}
           </div>
           <h1 style={{ fontFamily: headFont, fontWeight: 800, fontSize: 44, lineHeight: 1.2, margin: '0 0 28px', maxWidth: 560 }}>{c.value}</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, height: 69 }}>
@@ -75,14 +75,14 @@ export function Home() {
       </section>
 
       <section id="how" style={{ maxWidth: 1280, margin: '0 auto', padding: '40px 48px 88px' }}>
-        <h2 style={{ fontFamily: headFont, fontWeight: 800, fontSize: 30, margin: '0 0 40px', textAlign: 'center' }}>How it works</h2>
+        <h2 style={{ fontFamily: headFont, fontWeight: 800, fontSize: 30, margin: '0 0 40px', textAlign: 'center' }}>{isSi ? 'මෙය ක්‍රියා කරන ආකාරය' : 'How it works'}</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24 }}>
           {c.steps.map((text, i) => (
             <div key={i} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div style={{ width: 56, height: 56, borderRadius: 14, background: 'var(--c-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <img src={STEP_ICONS[i]} alt="" style={{ width: 40, height: 40, objectFit: 'contain' }} />
               </div>
-              <div style={{ fontFamily: headFont, fontWeight: 700, fontSize: 13, color: 'var(--c-ink-soft)' }}>Step {i + 1}</div>
+              <div style={{ fontFamily: headFont, fontWeight: 700, fontSize: 13, color: 'var(--c-ink-soft)' }}>{isSi ? `පියවර ${i + 1}` : `Step ${i + 1}`}</div>
               <p style={{ margin: 0, fontSize: 16, fontWeight: 600, lineHeight: 1.4 }}>{text}</p>
             </div>
           ))}
@@ -113,9 +113,9 @@ export function Home() {
           <span className="site-nav__wordmark">Englisher</span>
         </div>
         <div style={{ display: 'flex', gap: 28 }}>
-          <a href="#how" style={{ fontSize: 14, fontWeight: 600, color: 'var(--c-ink-soft)' }}>How it works</a>
-          <a href="#why" style={{ fontSize: 14, fontWeight: 600, color: 'var(--c-ink-soft)' }}>Why us</a>
-          <a href="#" style={{ fontSize: 14, fontWeight: 600, color: 'var(--c-ink-soft)' }}>Contact</a>
+          <a href="#how" style={{ fontSize: 14, fontWeight: 600, color: 'var(--c-ink-soft)' }}>{isSi ? 'මෙය ක්‍රියා කරන ආකාරය' : 'How it works'}</a>
+          <a href="#why" style={{ fontSize: 14, fontWeight: 600, color: 'var(--c-ink-soft)' }}>{isSi ? 'අප තෝරාගත යුත්තේ ඇයි' : 'Why us'}</a>
+          <a href="#" style={{ fontSize: 14, fontWeight: 600, color: 'var(--c-ink-soft)' }}>{isSi ? 'සම්බන්ධ වන්න' : 'Contact'}</a>
         </div>
         <span style={{ fontSize: 13, color: 'var(--c-ink-soft)' }}>© 2026 Englisher</span>
       </footer>

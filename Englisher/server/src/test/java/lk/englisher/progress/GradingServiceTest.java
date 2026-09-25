@@ -106,6 +106,16 @@ class GradingServiceTest {
         }
 
         @Test
+        void gradesTranslateSiEnAgainstAnyAcceptedTranslationWhitespaceInsensitive() {
+            CardDto c = card("translate_si_en", "{\"sentenceSi\":\"මම පාසලට යනවා\",\"accept\":[\"I go to school\",\"I am going to school\"]}");
+            assertThat(grading.gradeCard(c, parse("\"I go to school\""))).isTrue();
+            assertThat(grading.gradeCard(c, parse("\"  I   go to school.  \""))).isTrue();
+            assertThat(grading.gradeCard(c, parse("\"I GO TO SCHOOL\""))).isTrue();
+            assertThat(grading.gradeCard(c, parse("\"I am going to school\""))).isTrue();
+            assertThat(grading.gradeCard(c, parse("\"I go school\""))).isFalse();
+        }
+
+        @Test
         void essayAndRubricAreNeverAutoGraded() {
             assertThat(grading.gradeCard(card("essay", "{}"), parse("\"anything at all\""))).isTrue();
             assertThat(grading.gradeCard(card("rubric", "{}"), parse("{}"))).isTrue();
@@ -145,6 +155,13 @@ class GradingServiceTest {
             CardDto c = card("free_text", "{\"accept\":[]}");
             assertThat(grading.isAnswered(c, parse("\"   \""))).isFalse();
             assertThat(grading.isAnswered(c, parse("\"hi\""))).isTrue();
+        }
+
+        @Test
+        void translateSiEnNeedsNonWhitespaceContentSameAsFreeText() {
+            CardDto c = card("translate_si_en", "{\"sentenceSi\":\"\",\"accept\":[]}");
+            assertThat(grading.isAnswered(c, parse("\"   \""))).isFalse();
+            assertThat(grading.isAnswered(c, parse("\"I go to school\""))).isTrue();
         }
 
         @Test

@@ -13,10 +13,10 @@ import { ROCKET } from '../../lib/animations';
 import { bubble } from '../../lib/bubble';
 
 const SECTORS = [
-  { from: 1, to: 2, label: 'SECTOR I · FOUNDATIONS' },
-  { from: 3, to: 4, label: 'SECTOR II · STRUCTURE' },
-  { from: 5, to: 6, label: 'SECTOR III · TRANSLATION & WRITING' },
-  { from: 7, to: 8, label: 'SECTOR IV · MASTERY' },
+  { from: 1, to: 2, en: 'SECTOR I · FOUNDATIONS', si: 'අංශය I · පදනම' },
+  { from: 3, to: 4, en: 'SECTOR II · STRUCTURE', si: 'අංශය II · ව්‍යුහය' },
+  { from: 5, to: 6, en: 'SECTOR III · TRANSLATION & WRITING', si: 'අංශය III · පරිවර්තනය සහ ලේඛනය' },
+  { from: 7, to: 8, en: 'SECTOR IV · MASTERY', si: 'අංශය IV · ප්‍රගුණතාව' },
 ];
 const PLANET_GRADIENTS = {
   completed: 'radial-gradient(circle at 35% 30%, #6EE7A8, #2FAE63 70%)',
@@ -59,12 +59,15 @@ export function Roadmap() {
   const [lang, setLang] = useState<'en' | 'si'>('en');
   const [view, setView] = useState<'list' | 'map'>('list');
   const [travelTo, setTravelTo] = useState<{ id: string; label: string } | null>(null);
+  const isSi = lang === 'si';
 
   if (loading || curriculum.stages.length === 0) {
-    return <div className="app-shell" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B6580', fontWeight: 600 }}>{loading ? 'Loading your roadmap…' : 'No courses yet.'}</div>;
+    return (
+      <div className="app-shell" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B6580', fontWeight: 600 }}>
+        {loading ? (isSi ? 'ඔබේ මාවත පූරණය වෙමින්…' : 'Loading your roadmap…') : (isSi ? 'තවම පාඨමාලා නැත.' : 'No courses yet.')}
+      </div>
+    );
   }
-
-  const isSi = lang === 'si';
   const bodyFont = isSi ? 'var(--font-si-body)' : 'var(--font-body)';
   const headFont = isSi ? 'var(--font-si-display)' : 'var(--font-display)';
 
@@ -116,7 +119,7 @@ export function Roadmap() {
     return {
       n, stage, status, title: isSi ? stage.title.si : stage.title.en,
       mapStatus, statusColor, planetGradient, glow,
-      sectorLabel: sector ? sector.label : null,
+      sectorLabel: sector ? (isSi ? sector.si : sector.en) : null,
       top: i * V_GAP + (sector ? 56 : 0), left: X_OFFSETS[i],
     };
   });
@@ -157,8 +160,8 @@ export function Roadmap() {
           <h1 style={{ fontFamily: headFont, fontWeight: 800, fontSize: 24, margin: 0 }}>{isSi ? 'ඔබේ මාවත' : 'Your roadmap'}</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <button onClick={() => setView((v) => (v === 'list' ? 'map' : 'list'))} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#ECE8FB', border: 'none', borderRadius: 999, padding: 6, cursor: 'pointer' }}>
-              <span style={{ padding: '5px 12px', borderRadius: 999, fontWeight: 700, fontSize: 12, background: view === 'list' ? 'white' : 'transparent', color: view === 'list' ? '#1E1B2E' : '#6B6580' }}>List</span>
-              <span style={{ padding: '5px 12px', borderRadius: 999, fontWeight: 700, fontSize: 12, background: view === 'map' ? 'white' : 'transparent', color: view === 'map' ? '#1E1B2E' : '#6B6580' }}>Map</span>
+              <span style={{ padding: '5px 12px', borderRadius: 999, fontWeight: 700, fontSize: 12, background: view === 'list' ? 'white' : 'transparent', color: view === 'list' ? '#1E1B2E' : '#6B6580' }}>{isSi ? 'ලැයිස්තුව' : 'List'}</span>
+              <span style={{ padding: '5px 12px', borderRadius: 999, fontWeight: 700, fontSize: 12, background: view === 'map' ? 'white' : 'transparent', color: view === 'map' ? '#1E1B2E' : '#6B6580' }}>{isSi ? 'සිතියම' : 'Map'}</span>
             </button>
             <LangToggle lang={lang} onToggle={() => setLang((l) => (l === 'en' ? 'si' : 'en'))} />
           </div>
@@ -214,7 +217,7 @@ export function Roadmap() {
             ))}
 
             <div style={{ position: 'relative', padding: '44px 24px 20px', textAlign: 'center' }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(108,79,246,0.18)', border: '1px solid rgba(108,79,246,0.4)', color: '#B7A6FF', padding: '7px 16px', borderRadius: 999, fontWeight: 700, fontSize: 11, letterSpacing: '0.06em', marginBottom: 20 }}>YOUR LEARNING GALAXY</div>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(108,79,246,0.18)', border: '1px solid rgba(108,79,246,0.4)', color: '#B7A6FF', padding: '7px 16px', borderRadius: 999, fontWeight: 700, fontSize: 11, letterSpacing: '0.06em', marginBottom: 20 }}>{isSi ? 'ඔබේ ඉගෙනුම් අභ්‍යවකාශය' : 'YOUR LEARNING GALAXY'}</div>
               <h1 style={{ fontFamily: headFont, fontWeight: 800, fontSize: 30, color: 'white', margin: '0 0 8px' }}>{isSi ? 'ඔබේ මාවත' : 'Your roadmap'}</h1>
               <p style={{ fontSize: 14, color: '#9B94BE', margin: '0 0 20px' }}>
                 {isSi
@@ -265,7 +268,7 @@ export function Roadmap() {
         )}
       </div>
 
-      <BottomNav />
+      <BottomNav lang={lang} />
       {travelTo && <TravelTransition label={travelTo.label} />}
     </div>
   );

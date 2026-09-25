@@ -1,0 +1,49 @@
+Here's every source file containing hardcoded Sinhala text (found by scanning for Sinhala-script characters across the frontend). Grouped by area:
+
+Global / shared components
+
+components/BottomNav.tsx — bottom nav tab labels
+components/StreakFreezeDialog.tsx — streak-repair/at-risk popup
+components/Primitives.tsx — RoleToggle labels (Student/Parent)
+Learner-facing pages
+
+features/learner/Home.tsx — landing page
+features/learner/SignIn.tsx
+features/learner/SignUp.tsx
+features/learner/Profile.tsx
+features/learner/Roadmap.tsx
+features/learner/StageLessons.tsx
+features/learner/Lesson.tsx
+features/learner/Exercise.tsx
+features/learner/ExerciseCardView.tsx — instructional labels/placeholders only (MCQ options etc. intentionally stay English)
+features/learner/ReviewAnswers.tsx
+features/learner/Progress.tsx
+features/learner/GuestSavePrompt.tsx
+features/learner/PlacementTest.tsx
+features/learner/CourseComplete.tsx
+features/learner/Congratulations.tsx — includes the 5 quotes
+Onboarding
+
+features/onboarding/Goal.tsx
+features/onboarding/Language.tsx
+features/onboarding/Streak.tsx
+features/onboarding/Walkthrough.tsx
+Parent-facing
+
+features/parent/ParentAccess.tsx
+features/parent/ParentDashboard.tsx
+Writing tasks — shell chrome is bilingual, but each of these three also hardcodes its own promptSi (and rubric/idea-bank Sinhala where present) as actual lesson content, not UI chrome:
+
+features/learner/WritingTask.tsx — shared shell labels
+features/learner/FormalLetter.tsx
+features/learner/GuidedEssay.tsx
+features/learner/SoloEssay.tsx
+Shared data/type files
+
+domain/types.ts — TYPE_META's labelSi (the exercise-type badge text)
+domain/curriculum.ts — a hardcoded fallback curriculum (CURRICULUM_DEFAULT) with its own Sinhala lesson titles/prompts, separate from the backend's seed data
+domain/grading.test.ts — test fixture data only, not shown to any user, skip unless you're editing the test itself
+Admin editor — only one spot:
+
+features/admin/CourseEditor.tsx:467 — a Sinhala placeholder hint on the new translation field
+Not in source code at all — actual lesson/exercise content (the real Sinhala sentences, MCQ options, feedback text, etc. that learners see) lives in the database, authored through the admin editor UI at /admin/editor while the app is running, not hardcoded in any file. If you want to fix Sinhala in a specific lesson, that's the place — editing the .tsx files above only changes app UI chrome (buttons, labels, screens), not lesson content.

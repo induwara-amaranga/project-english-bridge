@@ -16,8 +16,8 @@ function LessonCard({ card, lang }: { card: Card; lang: 'en' | 'si' }) {
   return (
     <div className={COL_CLASS[card.column] || COL_CLASS.full}>
       <div className="card" style={card.border === false ? { background: 'var(--c-bg)' } : undefined}>
-        {!isText && <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, color: 'var(--c-primary)', letterSpacing: '0.05em', marginBottom: 10 }}>{TYPE_META[card.type].label.toUpperCase()}</div>}
-        {src ? <RichText src={src} /> : <div style={{ fontSize: 15, color: 'var(--c-ink-faint)', fontWeight: 600 }}>{isText ? '(empty card)' : '(no prompt yet)'}</div>}
+        {!isText && <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, color: 'var(--c-primary)', letterSpacing: '0.05em', marginBottom: 10 }}>{(si ? TYPE_META[card.type].labelSi : TYPE_META[card.type].label).toUpperCase()}</div>}
+        {src ? <RichText src={src} /> : <div style={{ fontSize: 15, color: 'var(--c-ink-faint)', fontWeight: 600 }}>{isText ? (si ? '(හිස් කාඩ්පතක්)' : '(empty card)') : (si ? '(තවම ප්‍රශ්නයක් නැත)' : '(no prompt yet)')}</div>}
 
         {card.type === 'mcq' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 9, marginTop: 12 }}>
@@ -57,7 +57,7 @@ function LessonCard({ card, lang }: { card: Card; lang: 'en' | 'si' }) {
           </div>
         )}
         {card.type === 'free_text' && (
-          <div style={{ background: 'var(--c-primary-tint-2)', border: '2px solid var(--c-primary-line)', borderRadius: 12, padding: 14, minHeight: 64, fontSize: 14, color: 'var(--c-ink-disabled)', marginTop: 12 }}>Answered on the exercise screen</div>
+          <div style={{ background: 'var(--c-primary-tint-2)', border: '2px solid var(--c-primary-line)', borderRadius: 12, padding: 14, minHeight: 64, fontSize: 14, color: 'var(--c-ink-disabled)', marginTop: 12 }}>{si ? 'අභ්‍යාස තිරයේ පිළිතුරු දෙනු ලැබේ' : 'Answered on the exercise screen'}</div>
         )}
         {card.type === 'multi_select' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 9, marginTop: 12 }}>
@@ -65,7 +65,14 @@ function LessonCard({ card, lang }: { card: Card; lang: 'en' | 'si' }) {
           </div>
         )}
         {(card.type === 'essay' || card.type === 'rubric') && (
-          <div style={{ background: 'var(--c-primary-tint-2)', border: '2px solid var(--c-primary-line)', borderRadius: 12, padding: 14, minHeight: 64, fontSize: 14, color: 'var(--c-ink-disabled)', marginTop: 12 }}>Answered on the exercise screen</div>
+          <div style={{ background: 'var(--c-primary-tint-2)', border: '2px solid var(--c-primary-line)', borderRadius: 12, padding: 14, minHeight: 64, fontSize: 14, color: 'var(--c-ink-disabled)', marginTop: 12 }}>{si ? 'අභ්‍යාස තිරයේ පිළිතුරු දෙනු ලැබේ' : 'Answered on the exercise screen'}</div>
+        )}
+        {card.type === 'translate_si_en' && (
+          <>
+            {/* Always Sinhala — the sentence itself, not chrome. */}
+            <div className="si" style={{ fontSize: 16, fontWeight: 600, background: 'var(--c-primary-tint-2)', borderRadius: 12, padding: 12, marginTop: 12 }}>{(card.payload as { sentenceSi: string }).sentenceSi || '…'}</div>
+            <div style={{ background: 'var(--c-primary-tint-2)', border: '2px solid var(--c-primary-line)', borderRadius: 12, padding: 14, minHeight: 48, fontSize: 14, color: 'var(--c-ink-disabled)', marginTop: 8 }}>{si ? 'අභ්‍යාස තිරයේ පිළිතුරු දෙනු ලැබේ' : 'Answered on the exercise screen'}</div>
+          </>
         )}
       </div>
     </div>
@@ -76,6 +83,7 @@ export function LessonPage() {
   const { stageId, lessonId } = useParams();
   const { curriculum } = useCurriculum();
   const [lang, setLang] = useState<'en' | 'si'>('en');
+  const isSi = lang === 'si';
   const stage = curriculum.stages.find((s) => s.id === stageId);
   const lesson = stage?.lessons.find((l) => l.id === lessonId);
   const stageIndex = stage ? curriculum.stages.indexOf(stage) + 1 : 1;
@@ -84,8 +92,8 @@ export function LessonPage() {
     return (
       <div className="app-shell" style={{ background: 'var(--c-bg)' }}>
         <div style={{ maxWidth: 940, margin: '0 auto', padding: '48px 24px', textAlign: 'center' }}>
-          <div className="card">Nothing here yet.</div>
-          <LinkButton to="/learn" variant="primary" size="lg" style={{ marginTop: 20 }}>Back to the roadmap</LinkButton>
+          <div className="card">{isSi ? 'මෙහි තවම කිසිවක් නැත.' : 'Nothing here yet.'}</div>
+          <LinkButton to="/learn" variant="primary" size="lg" style={{ marginTop: 20 }}>{isSi ? 'මාවතට ආපසු' : 'Back to the roadmap'}</LinkButton>
         </div>
       </div>
     );
@@ -121,7 +129,7 @@ export function LessonPage() {
 
         {cards.length === 0 && (
           <div className="card" style={{ textAlign: 'center', color: 'var(--c-ink-faint)', fontSize: 15, fontWeight: 600, lineHeight: 1.7 }}>
-            This lesson has no content cards yet.
+            {isSi ? 'මෙම පාඩමට තවම අන්තර්ගත කාඩ්පත් නැත.' : 'This lesson has no content cards yet.'}
           </div>
         )}
 
@@ -130,7 +138,7 @@ export function LessonPage() {
           variant="primary" size="lg"
           style={{ alignSelf: 'center', marginTop: 8, ...(hasExercises ? {} : { background: 'var(--c-disabled)', boxShadow: '0 6px 0 var(--c-disabled-shadow)' }) }}
         >
-          {hasExercises ? 'Go to exercise' : 'Nothing to practise yet'}
+          {hasExercises ? (isSi ? 'අභ්‍යාසයට යන්න' : 'Go to exercise') : (isSi ? 'තවම පුහුණු වීමට කිසිවක් නැත' : 'Nothing to practise yet')}
         </LinkButton>
       </div>
     </div>

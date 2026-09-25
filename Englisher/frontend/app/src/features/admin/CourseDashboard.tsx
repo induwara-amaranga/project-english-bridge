@@ -10,9 +10,9 @@ import { InviteAdminDialog } from './InviteAdminDialog';
 
 const TYPE_COLOR: Record<ExerciseType, string> = {
   mcq: '#6C4FF6', gap_fill: '#0FA593', drag_order: '#B37E00', match: '#FF4D5E', free_text: '#2FAE63',
-  multi_select: '#5539E0', essay: '#FF6B4A', rubric: '#4A4560',
+  multi_select: '#5539E0', essay: '#FF6B4A', rubric: '#4A4560', translate_si_en: '#0F8FA5',
 };
-const TYPE_ORDER: ExerciseType[] = ['mcq', 'gap_fill', 'drag_order', 'match', 'free_text', 'multi_select', 'essay', 'rubric'];
+const TYPE_ORDER: ExerciseType[] = ['mcq', 'gap_fill', 'drag_order', 'match', 'free_text', 'multi_select', 'essay', 'rubric', 'translate_si_en'];
 
 export function CourseDashboard() {
   const { curriculum, mutate } = useCurriculum();
@@ -48,7 +48,7 @@ export function CourseDashboard() {
   const allExercises = allLessons.flatMap((l) => l.exercises);
   const totalExercises = allExercises.length;
 
-  const counts: Record<ExerciseType, number> = { mcq: 0, gap_fill: 0, drag_order: 0, match: 0, free_text: 0, multi_select: 0, essay: 0, rubric: 0 };
+  const counts: Record<ExerciseType, number> = { mcq: 0, gap_fill: 0, drag_order: 0, match: 0, free_text: 0, multi_select: 0, essay: 0, rubric: 0, translate_si_en: 0 };
   allExercises.forEach((e) => { counts[e.type]++; });
   const maxCount = Math.max(1, ...TYPE_ORDER.map((t) => counts[t]));
 

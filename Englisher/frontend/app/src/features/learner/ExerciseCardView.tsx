@@ -1,7 +1,7 @@
 import { RichText } from '../../components/RichText';
 import { CheckboxRow } from '../../components/Primitives';
 import { gradeCard, seededShuffle, type Answer, type DragOrderAnswer, type MatchAnswer, type MultiSelectAnswer, type RubricAnswer } from '../../domain/grading';
-import type { Card, DragOrderPayload, EssayPayload, GapFillPayload, MatchPayload, McqPayload, MultiSelectPayload, RubricPayload } from '../../domain/types';
+import type { Card, DragOrderPayload, EssayPayload, GapFillPayload, MatchPayload, McqPayload, MultiSelectPayload, RubricPayload, TranslateSiEnPayload } from '../../domain/types';
 import { bubble } from '../../lib/bubble';
 
 // One card, rendered for answering *and* for review. The review screens pass
@@ -36,7 +36,7 @@ export function ExerciseCardView({ card, answer, setAnswer, checked, lang, readO
   return (
     <div className={COL_CLASS[card.column] || COL_CLASS.full}>
       <div className="card" style={card.border === false ? { background: 'var(--c-bg)' } : undefined}>
-        {src ? <RichText src={src} /> : <div style={{ fontSize: 15, color: 'var(--c-ink-faint)', fontWeight: 600 }}>{isText ? '(empty card)' : '(no prompt yet)'}</div>}
+        {src ? <RichText src={src} /> : <div style={{ fontSize: 15, color: 'var(--c-ink-faint)', fontWeight: 600 }}>{isText ? (si ? '(හිස් කාඩ්පතක්)' : '(empty card)') : (si ? '(තවම ප්‍රශ්නයක් නැත)' : '(no prompt yet)')}</div>}
 
         {card.type === 'mcq' && (() => {
           const p = card.payload as McqPayload;
@@ -79,7 +79,7 @@ export function ExerciseCardView({ card, answer, setAnswer, checked, lang, readO
                   })}
                 </div>
               ) : (
-                <input value={(answer as string) || ''} readOnly={readOnly} onChange={(e) => set(e.target.value)} placeholder="Type the missing word" style={{ width: '100%', border: '2px solid var(--c-primary-line)', borderRadius: 12, padding: 12, fontSize: 15, marginTop: 12, outline: 'none' }} />
+                <input value={(answer as string) || ''} readOnly={readOnly} onChange={(e) => set(e.target.value)} placeholder={si ? 'නැති වචනය ටයිප් කරන්න' : 'Type the missing word'} style={{ width: '100%', border: '2px solid var(--c-primary-line)', borderRadius: 12, padding: 12, fontSize: 15, marginTop: 12, outline: 'none' }} />
               )}
             </>
           );
@@ -102,7 +102,7 @@ export function ExerciseCardView({ card, answer, setAnswer, checked, lang, readO
                   }
                   return <button key={i} className={optionClass} onPointerDown={press} onClick={() => set(picked.filter((x) => x !== i))} style={{ borderRadius: 12, padding: '9px 14px', fontSize: 14, fontWeight: 700, cursor, background: bg, border: `2px solid ${border}` }}>{p.tokens[i].en || '…'}</button>;
                 })}
-                {picked.length === 0 && <span style={{ fontSize: 12, color: 'var(--c-ink-disabled)', fontWeight: 600, padding: '0 6px' }}>{readOnly ? 'Not answered' : 'Tap the words in the right order'}</span>}
+                {picked.length === 0 && <span style={{ fontSize: 12, color: 'var(--c-ink-disabled)', fontWeight: 600, padding: '0 6px' }}>{readOnly ? (si ? 'පිළිතුරු දී නැත' : 'Not answered') : (si ? 'නිවැරදි අනුපිළිවෙලට වචන ස්පර්ශ කරන්න' : 'Tap the words in the right order')}</span>}
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {order.filter((i) => !picked.includes(i)).map((i) => (
@@ -158,8 +158,24 @@ export function ExerciseCardView({ card, answer, setAnswer, checked, lang, readO
         })()}
 
         {card.type === 'free_text' && (
-          <textarea value={(answer as string) || ''} readOnly={readOnly} onChange={(e) => set(e.target.value)} placeholder={readOnly ? 'Not answered' : 'Type your answer…'} style={{ width: '100%', border: `2px solid ${checked ? (gradeCard(card, answer) ? 'var(--c-success)' : 'var(--c-danger)') : 'var(--c-primary-line)'}`, borderRadius: 12, padding: 12, fontSize: 15, minHeight: 84, marginTop: 14, outline: 'none', fontFamily: 'var(--font-body)' }} />
+          <textarea value={(answer as string) || ''} readOnly={readOnly} onChange={(e) => set(e.target.value)} placeholder={readOnly ? (si ? 'පිළිතුරු දී නැත' : 'Not answered') : (si ? 'ඔබේ පිළිතුර ටයිප් කරන්න…' : 'Type your answer…')} style={{ width: '100%', border: `2px solid ${checked ? (gradeCard(card, answer) ? 'var(--c-success)' : 'var(--c-danger)') : 'var(--c-primary-line)'}`, borderRadius: 12, padding: 12, fontSize: 15, minHeight: 84, marginTop: 14, outline: 'none', fontFamily: 'var(--font-body)' }} />
         )}
+
+        {card.type === 'translate_si_en' && (() => {
+          const p = card.payload as TranslateSiEnPayload;
+          return (
+            <>
+              {/* Always Sinhala, regardless of the `lang` toggle — this is the
+                  sentence being translated, not chrome that switches with it. */}
+              <div className="si" style={{ fontSize: 20, fontWeight: 600, background: '#F7F5FF', borderRadius: 12, padding: '14px 16px', marginTop: 14 }}>{p.sentenceSi}</div>
+              <input
+                value={(answer as string) || ''} readOnly={readOnly} onChange={(e) => set(e.target.value)}
+                placeholder={readOnly ? (si ? 'පිළිතුරු දී නැත' : 'Not answered') : (si ? 'ඉංග්‍රීසි පරිවර්තනය ටයිප් කරන්න…' : 'Type the English translation…')}
+                style={{ width: '100%', border: `2px solid ${checked ? (gradeCard(card, answer) ? 'var(--c-success)' : 'var(--c-danger)') : 'var(--c-primary-line)'}`, borderRadius: 999, padding: '14px 18px', fontSize: 16, marginTop: 10, outline: 'none', fontFamily: 'var(--font-body)' }}
+              />
+            </>
+          );
+        })()}
 
         {card.type === 'multi_select' && (() => {
           const p = card.payload as MultiSelectPayload;
@@ -184,7 +200,7 @@ export function ExerciseCardView({ card, answer, setAnswer, checked, lang, readO
                   </button>
                 );
               })}
-              <span style={{ fontSize: 12, color: 'var(--c-ink-faint)', fontWeight: 600 }}>Select all that apply.</span>
+              <span style={{ fontSize: 12, color: 'var(--c-ink-faint)', fontWeight: 600 }}>{si ? 'අදාළ සියල්ල තෝරන්න.' : 'Select all that apply.'}</span>
             </div>
           );
         })()}
@@ -195,7 +211,7 @@ export function ExerciseCardView({ card, answer, setAnswer, checked, lang, readO
             <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
               {p.outline.length > 0 && (
                 <div style={{ background: '#F7F5FF', borderRadius: 12, padding: 14 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--c-primary)', letterSpacing: '0.05em', marginBottom: 8 }}>OUTLINE</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--c-primary)', letterSpacing: '0.05em', marginBottom: 8 }}>{si ? 'රූපරේඛාව' : 'OUTLINE'}</div>
                   <ol style={{ margin: 0, paddingLeft: 18, fontSize: 14, lineHeight: 1.7 }}>
                     {p.outline.map((o, i) => <li key={i}>{(si ? o.si || o.en : o.en) || '…'}</li>)}
                   </ol>
@@ -203,7 +219,7 @@ export function ExerciseCardView({ card, answer, setAnswer, checked, lang, readO
               )}
               {p.ideaBank.length > 0 && (
                 <div style={{ background: '#F7F5FF', borderRadius: 12, padding: 14 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--c-primary)', letterSpacing: '0.05em', marginBottom: 8 }}>IDEA BANK</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--c-primary)', letterSpacing: '0.05em', marginBottom: 8 }}>{si ? 'අදහස් බැංකුව' : 'IDEA BANK'}</div>
                   <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14, lineHeight: 1.7 }}>
                     {p.ideaBank.map((o, i) => <li key={i}>{(si ? o.si || o.en : o.en) || '…'}</li>)}
                   </ul>
@@ -211,12 +227,14 @@ export function ExerciseCardView({ card, answer, setAnswer, checked, lang, readO
               )}
               <textarea
                 value={(answer as string) || ''} readOnly={readOnly} onChange={(e) => set(e.target.value)}
-                placeholder={readOnly ? 'Not answered' : si ? 'ඔබේ රචනය මෙහි ලියන්න…' : 'Write your response here…'}
+                placeholder={readOnly ? (si ? 'පිළිතුරු දී නැත' : 'Not answered') : si ? 'ඔබේ රචනය මෙහි ලියන්න…' : 'Write your response here…'}
                 style={{ width: '100%', border: '2px solid var(--c-primary-line)', borderRadius: 12, padding: 14, fontSize: 15, lineHeight: 1.7, minHeight: readOnly ? 120 : 220, outline: 'none', fontFamily: 'var(--font-body)' }}
               />
               {!!p.minWords && (
                 <span style={{ fontSize: 12, color: 'var(--c-ink-faint)', fontWeight: 600 }}>
-                  {((answer as string) || '').trim().split(/\s+/).filter(Boolean).length} / {p.minWords} words
+                  {si
+                    ? `වචන ${((answer as string) || '').trim().split(/\s+/).filter(Boolean).length} / ${p.minWords}`
+                    : `${((answer as string) || '').trim().split(/\s+/).filter(Boolean).length} / ${p.minWords} words`}
                 </span>
               )}
             </div>

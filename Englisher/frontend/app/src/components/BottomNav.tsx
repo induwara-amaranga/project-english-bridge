@@ -11,18 +11,22 @@ const ProfileIcon = ({ active }: { active: boolean }) => (
 );
 
 const TABS = [
-  { to: '/learn', label: 'Home', Icon: HomeIcon },
-  { to: '/progress', label: 'Progress', Icon: ProgressIcon },
-  { to: '/profile', label: 'Profile', Icon: ProfileIcon },
+  { to: '/learn', en: 'Home', si: 'මුල් පිටුව', Icon: HomeIcon },
+  { to: '/progress', en: 'Progress', si: 'ප්‍රගතිය', Icon: ProgressIcon },
+  { to: '/profile', en: 'Profile', si: 'පැතිකඩ', Icon: ProfileIcon },
 ];
 
-export function BottomNav() {
+// Not read from a shared context — every page that renders this nav keeps
+// its own `lang` state (no global language store exists yet), so each
+// caller passes its own current toggle value down.
+export function BottomNav({ lang = 'en' }: { lang?: 'en' | 'si' }) {
   const { pathname } = useLocation();
   return (
     <div className="bottom-nav">
       <div className="bottom-nav__row">
-        {TABS.map(({ to, label, Icon }) => {
+        {TABS.map(({ to, en, si, Icon }) => {
           const active = pathname === to || (to === '/learn' && pathname.startsWith('/learn'));
+          const label = lang === 'si' ? si : en;
           return (
             <Link key={to} to={to} className={`bottom-nav__item${active ? ' bottom-nav__item--active' : ''}`}>
               <Icon active={active} />

@@ -55,7 +55,7 @@ export function StageLessons() {
   }, [loading, curriculum.stages.length, status, navigate]);
 
   if (loading || curriculum.stages.length === 0 || status === 'locked') {
-    return <div className="app-shell" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B6580', fontWeight: 600 }}>{loading ? 'Loading…' : status === 'locked' ? null : 'No courses yet.'}</div>;
+    return <div className="app-shell" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B6580', fontWeight: 600 }}>{loading ? (isSi ? 'පූරණය වෙමින්…' : 'Loading…') : status === 'locked' ? null : (isSi ? 'තවම පාඨමාලා නැත.' : 'No courses yet.')}</div>;
   }
 
   const stageNo = idx + 1;
@@ -139,7 +139,7 @@ export function StageLessons() {
                   {l.isPlayable && <PlayIcon />}
                 </button>
               </div>
-              <span style={{ height: 20, lineHeight: '20px', fontSize: 13, fontWeight: 700, textAlign: 'center', color: l.labelColor, textShadow: '0 1px 6px rgba(0,0,0,0.5)', maxWidth: 140 }}>{l.label || `Lesson ${i + 1}`}</span>
+              <span style={{ height: 20, lineHeight: '20px', fontSize: 13, fontWeight: 700, textAlign: 'center', color: l.labelColor, textShadow: '0 1px 6px rgba(0,0,0,0.5)', maxWidth: 140 }}>{l.label || (isSi ? `පාඩම ${i + 1}` : `Lesson ${i + 1}`)}</span>
             </div>
           ))}
         </div>
@@ -172,7 +172,7 @@ function StageHeader({ stage, stageNo, lang, onToggleLang, titleFont, idx, progr
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 3L5 9L11 15" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </Link>
         <div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.06em' }}>STAGE {stageNo} · WORLD</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.06em' }}>{isSi ? `අදියර ${stageNo} · ලෝකය` : `STAGE ${stageNo} · WORLD`}</div>
           <h1 style={{ fontFamily: titleFont, fontWeight: 800, fontSize: 24, lineHeight: 1.3, margin: '2px 0 0', textShadow: '0 2px 12px rgba(0,0,0,0.4)' }}>{isSi ? stage.title.si || stage.title.en : stage.title.en}</h1>
         </div>
         <div style={{ width: 60, height: 60, borderRadius: '50%', background: PLANET_GRADIENTS[idx % PLANET_GRADIENTS.length], marginLeft: 'auto', flexShrink: 0, position: 'relative', boxShadow: `0 0 24px 4px ${GLOW_COLORS[idx % GLOW_COLORS.length]}66` }}>

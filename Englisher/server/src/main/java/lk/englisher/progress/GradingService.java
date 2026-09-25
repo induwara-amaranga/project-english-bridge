@@ -71,6 +71,9 @@ public class GradingService {
             case "drag_order" -> isIdentityOrder(answer, payload.path("tokens").size());
             case "match" -> isCompleteMatch(answer, payload.path("pairs").size());
             case "free_text" -> anyAccepted(payload.path("accept"), answer, payload.path("normalize"));
+            // Always default normalization, unlike free_text — not author-configurable,
+            // since the whole point of this type is word-based, whitespace-insensitive matching.
+            case "translate_si_en" -> anyAccepted(payload.path("accept"), answer, null);
             case "multi_select" -> isExactSet(answer, payload.path("correctIndexes"));
             // Self-assessed, never auto-graded.
             case "essay", "rubric" -> true;
@@ -92,7 +95,7 @@ public class GradingService {
         return switch (type) {
             case "drag_order" -> answer != null && answer.isArray() && !answer.isEmpty();
             case "match" -> answer != null && answer.path("pairs").size() > 0;
-            case "free_text", "gap_fill", "essay" -> answer != null && !answer.asText("").trim().isEmpty();
+            case "free_text", "gap_fill", "essay", "translate_si_en" -> answer != null && !answer.asText("").trim().isEmpty();
             case "mcq" -> answer != null && !answer.isNull();
             case "multi_select" -> answer != null && answer.isArray() && !answer.isEmpty();
             // A rubric is a self-check, not a gate — it never blocks moving on.

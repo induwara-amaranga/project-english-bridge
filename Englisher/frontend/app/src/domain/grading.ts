@@ -1,4 +1,4 @@
-import type { Card, DragOrderPayload, FreeTextPayload, GapFillPayload, MatchPayload, McqPayload, MultiSelectPayload } from './types';
+import type { Card, DragOrderPayload, FreeTextPayload, GapFillPayload, MatchPayload, McqPayload, MultiSelectPayload, TranslateSiEnPayload } from './types';
 
 // Extracted from Exercise.dc.html's inline grader so it is unit-testable and
 // shared by the exercise player.
@@ -45,6 +45,12 @@ export function gradeCard(card: Card, answer: Answer): boolean {
     const p = q as FreeTextPayload;
     return (p.accept || []).some((x) => norm(x, p.normalize) === norm(answer as string, p.normalize));
   }
+  // Word-based, whitespace-insensitive by design (see TranslateSiEnPayload) —
+  // always the same default normalization as gap_fill, not author-configurable.
+  if (card.type === 'translate_si_en') {
+    const p = q as TranslateSiEnPayload;
+    return (p.accept || []).some((x) => norm(x, null) === norm(answer as string, null));
+  }
   if (card.type === 'multi_select') {
     const p = q as MultiSelectPayload;
     const a = (answer as MultiSelectAnswer) || [];
@@ -69,7 +75,7 @@ export function defaultAnswerFor(card: Card): Answer {
 export function isAnswered(card: Card, a: Answer): boolean {
   if (card.type === 'drag_order') return (a as DragOrderAnswer).length > 0;
   if (card.type === 'match') return Object.keys((a as MatchAnswer).pairs).length > 0;
-  if (card.type === 'free_text' || card.type === 'gap_fill' || card.type === 'essay') return !!(a && String(a).trim());
+  if (card.type === 'free_text' || card.type === 'gap_fill' || card.type === 'essay' || card.type === 'translate_si_en') return !!(a && String(a).trim());
   if (card.type === 'mcq') return a !== null && a !== undefined;
   if (card.type === 'multi_select') return ((a as MultiSelectAnswer) || []).length > 0;
   // A rubric is a self-check, not a gate — it never blocks moving on.

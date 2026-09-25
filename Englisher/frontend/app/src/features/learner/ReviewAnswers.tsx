@@ -51,6 +51,7 @@ export function ReviewAnswers({ scope = 'lesson' }: { scope?: Scope }) {
   const { results: allResults, loading: resultsLoading } = useLessonResults();
   const { progress, setProgress } = useProgress();
   const [lang, setLang] = useState<'en' | 'si'>('en');
+  const isSi = lang === 'si';
   const [wrongOnly, setWrongOnly] = useState(scope === 'stage-wrong');
   const loading = curriculumLoading || resultsLoading;
   const isCourse = scope === 'stage-wrong';
@@ -78,10 +79,11 @@ export function ReviewAnswers({ scope = 'lesson' }: { scope?: Scope }) {
   };
 
   const backHref = isCourse ? `/learn/${stageId}/complete` : `/learn/${stageId}`;
-  const stageTitle = curriculum.stages.find((s) => s.id === stageId)?.title.en;
+  const stage = curriculum.stages.find((s) => s.id === stageId);
+  const stageTitle = isSi ? (stage?.title.si || stage?.title.en) : stage?.title.en;
   const title = isCourse
-    ? stageTitle || 'Every question you missed'
-    : questions[0]?.lesson.title.en || 'Lesson review';
+    ? stageTitle || (isSi ? 'ඔබ මඟහැරුණු සෑම ප්‍රශ්නයක්ම' : 'Every question you missed')
+    : (isSi ? (questions[0]?.lesson.title.si || questions[0]?.lesson.title.en) : questions[0]?.lesson.title.en) || (isSi ? 'පාඩම් සමාලෝචනය' : 'Lesson review');
 
   return (
     <div className="app-shell" style={{ fontFamily: 'var(--font-body)', background: 'var(--c-bg)', color: 'var(--c-ink)' }}>
@@ -91,7 +93,7 @@ export function ReviewAnswers({ scope = 'lesson' }: { scope?: Scope }) {
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 3L5 9L11 15" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </Link>
           <div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.75)', letterSpacing: '0.04em' }}>{isCourse ? 'COURSE REVIEW · WHAT YOU MISSED' : 'LESSON REVIEW'}</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.75)', letterSpacing: '0.04em' }}>{isCourse ? (isSi ? 'පාඨමාලා සමාලෝචනය · ඔබ මඟහැරුණු දේ' : 'COURSE REVIEW · WHAT YOU MISSED') : (isSi ? 'පාඩම් සමාලෝචනය' : 'LESSON REVIEW')}</div>
             <div style={{ fontWeight: 700, fontSize: 16, color: 'white' }}>{title}</div>
           </div>
           <div style={{ marginLeft: 'auto' }}><LangToggle lang={lang} onToggle={() => setLang((l) => (l === 'en' ? 'si' : 'en'))} /></div>
@@ -99,15 +101,17 @@ export function ReviewAnswers({ scope = 'lesson' }: { scope?: Scope }) {
       </div>
 
       <div style={{ maxWidth: 940, margin: '0 auto', padding: '28px 24px 72px', display: 'flex', flexDirection: 'column', gap: 22 }}>
-        {loading && <div className="card" style={{ textAlign: 'center', color: 'var(--c-ink-soft)', fontWeight: 600 }}>Loading…</div>}
+        {loading && <div className="card" style={{ textAlign: 'center', color: 'var(--c-ink-soft)', fontWeight: 600 }}>{isSi ? 'පූරණය වෙමින්…' : 'Loading…'}</div>}
 
         {!loading && questions.length === 0 && (
           <div className="card screen-in" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, padding: 36 }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20 }}>Nothing to review yet</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20 }}>{isSi ? 'තවම සමාලෝචනයට කිසිවක් නැත' : 'Nothing to review yet'}</div>
             <p style={{ margin: 0, maxWidth: 420, fontSize: 15, lineHeight: 1.7, color: 'var(--c-ink-soft)', fontWeight: 600 }}>
-              Finish a lesson and every question from it shows up here, right and wrong, with the answer you gave.
+              {isSi
+                ? 'පාඩමක් අවසන් කරන්න, එහි සෑම ප්‍රශ්නයක්ම — නිවැරදි සහ වැරදි — ඔබ දුන් පිළිතුර සමඟ මෙහි පෙන්වයි.'
+                : 'Finish a lesson and every question from it shows up here, right and wrong, with the answer you gave.'}
             </p>
-            <LinkButton to="/learn" variant="primary" size="lg">Back to the roadmap</LinkButton>
+            <LinkButton to="/learn" variant="primary" size="lg">{isSi ? 'මාවතට ආපසු' : 'Back to the roadmap'}</LinkButton>
           </div>
         )}
 
@@ -117,33 +121,36 @@ export function ReviewAnswers({ scope = 'lesson' }: { scope?: Scope }) {
               <div className="card screen-in" style={{ background: 'var(--c-success-bg)', border: '1px solid var(--c-success)', display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
                   <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, color: 'var(--c-success-ink)' }}>
-                    Stage unlocked! The next one is ready.{clearedOutcome.perfect ? ' A perfect run!' : ''}
+                    {isSi
+                      ? `අදියර අගුළු හැරුණි! ඊළඟ එක සූදානම්.${clearedOutcome.perfect ? ' නිර්දෝෂී ධාවනයක්!' : ''}`
+                      : `Stage unlocked! The next one is ready.${clearedOutcome.perfect ? ' A perfect run!' : ''}`}
                   </div>
-                  <LinkButton to="/learn" variant="primary" size="md">Back to the roadmap</LinkButton>
+                  <LinkButton to="/learn" variant="primary" size="md">{isSi ? 'මාවතට ආපසු' : 'Back to the roadmap'}</LinkButton>
                 </div>
                 {clearedOutcome.perfect && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                    <span style={{ background: 'white', color: 'var(--c-success-ink)', borderRadius: 999, padding: '5px 12px', fontSize: 13, fontWeight: 700 }}>+{clearedOutcome.bonusXp} XP stage-perfect bonus!</span>
-                    <span style={{ background: 'white', color: 'var(--c-success-ink)', borderRadius: 999, padding: '5px 12px', fontSize: 13, fontWeight: 700 }}>+{clearedOutcome.bonusCoins} bonus coins</span>
+                    <span style={{ background: 'white', color: 'var(--c-success-ink)', borderRadius: 999, padding: '5px 12px', fontSize: 13, fontWeight: 700 }}>{isSi ? `+${clearedOutcome.bonusXp} XP අදියර-නිර්දෝෂී අමතරයක්!` : `+${clearedOutcome.bonusXp} XP stage-perfect bonus!`}</span>
+                    <span style={{ background: 'white', color: 'var(--c-success-ink)', borderRadius: 999, padding: '5px 12px', fontSize: 13, fontWeight: 700 }}>{isSi ? `+${clearedOutcome.bonusCoins} අමතර කාසි` : `+${clearedOutcome.bonusCoins} bonus coins`}</span>
                   </div>
                 )}
               </div>
             )}
 
             <div className="card screen-in" style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
-              <ScoreDial pct={score.pct} size={112} label="CORRECT" />
+              <ScoreDial pct={score.pct} size={112} label={isSi ? 'නිවැරදියි' : 'CORRECT'} />
               <div style={{ flex: 1, minWidth: 200 }}>
                 <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20 }}>
-                  {score.correct} of {score.total} correct
+                  {isSi ? `${score.total}න් ${score.correct} නිවැරදියි` : `${score.correct} of ${score.total} correct`}
                 </div>
                 <div style={{ fontSize: 14, color: 'var(--c-ink-soft)', fontWeight: 600, marginTop: 4 }}>
-                  {score.total - score.correct} to look at{score.skipped > 0 ? `, ${score.skipped} of them skipped` : ''}
-                  {isCourse ? ` · across ${results.length} lesson${results.length === 1 ? '' : 's'}` : ''}
+                  {isSi
+                    ? `බැලීමට ${score.total - score.correct}ක්${score.skipped > 0 ? `, ${score.skipped}ක් මඟහැරී ඇත` : ''}${isCourse ? ` · පාඩම් ${results.length} හරහා` : ''}`
+                    : `${score.total - score.correct} to look at${score.skipped > 0 ? `, ${score.skipped} of them skipped` : ''}${isCourse ? ` · across ${results.length} lesson${results.length === 1 ? '' : 's'}` : ''}`}
                 </div>
                 {!isCourse && (
                   <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-                    <FilterTab active={!wrongOnly} onClick={() => setWrongOnly(false)}>All {questions.length}</FilterTab>
-                    <FilterTab active={wrongOnly} onClick={() => setWrongOnly(true)}>Wrong {questions.filter((q) => !q.outcome.correct).length}</FilterTab>
+                    <FilterTab active={!wrongOnly} onClick={() => setWrongOnly(false)}>{isSi ? `සියල්ල ${questions.length}` : `All ${questions.length}`}</FilterTab>
+                    <FilterTab active={wrongOnly} onClick={() => setWrongOnly(true)}>{isSi ? `වැරදි ${questions.filter((q) => !q.outcome.correct).length}` : `Wrong ${questions.filter((q) => !q.outcome.correct).length}`}</FilterTab>
                   </div>
                 )}
               </div>
@@ -154,8 +161,8 @@ export function ReviewAnswers({ scope = 'lesson' }: { scope?: Scope }) {
                 <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--c-success-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <svg width="26" height="26" viewBox="0 0 22 22" fill="none"><path d="M5 11.5L9.5 16L17 6" stroke="var(--c-success-ink)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /></svg>
                 </div>
-                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 19 }}>Not a single one wrong</div>
-                <p style={{ margin: 0, fontSize: 15, color: 'var(--c-ink-soft)', fontWeight: 600 }}>There is nothing to review here.</p>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 19 }}>{isSi ? 'එකක්වත් වැරදි නැත' : 'Not a single one wrong'}</div>
+                <p style={{ margin: 0, fontSize: 15, color: 'var(--c-ink-soft)', fontWeight: 600 }}>{isSi ? 'මෙහි සමාලෝචනයට කිසිවක් නැත.' : 'There is nothing to review here.'}</p>
               </div>
             )}
 
@@ -197,7 +204,8 @@ function QuestionBlock({ q, number, lang, showLesson, retry }: {
   q: ResolvedQuestion; number: number; lang: 'en' | 'si'; showLesson: boolean; retry?: RetryProps;
 }) {
   const { outcome, exercise } = q;
-  const status = outcome.skipped ? 'Skipped' : outcome.correct ? 'Correct' : 'Wrong';
+  const isSi = lang === 'si';
+  const status = outcome.skipped ? (isSi ? 'මඟහැරිණි' : 'Skipped') : outcome.correct ? (isSi ? 'නිවැරදියි' : 'Correct') : (isSi ? 'වැරදියි' : 'Wrong');
   const tone = outcome.correct
     ? { bg: 'var(--c-success-bg)', ink: 'var(--c-success-ink)', line: 'var(--c-success)' }
     : outcome.skipped
@@ -213,12 +221,12 @@ function QuestionBlock({ q, number, lang, showLesson, retry }: {
   return (
     <section style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <header style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16 }}>Question {number}</span>
+        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16 }}>{isSi ? `ප්‍රශ්නය ${number}` : `Question ${number}`}</span>
         <span style={{ background: tone.bg, color: tone.ink, border: `1px solid ${tone.line}`, borderRadius: 999, padding: '3px 12px', fontSize: 12, fontWeight: 700 }}>{status}</span>
         {/* Which lesson it came from — the stage is already in the header, so it
             is not repeated on every question. */}
         {showLesson && (
-          <span style={{ fontSize: 13, color: 'var(--c-ink-faint)', fontWeight: 600 }}>{q.lesson.title.en}</span>
+          <span style={{ fontSize: 13, color: 'var(--c-ink-faint)', fontWeight: 600 }}>{isSi ? (q.lesson.title.si || q.lesson.title.en) : q.lesson.title.en}</span>
         )}
       </header>
 
@@ -254,6 +262,7 @@ function RetryPanel({ q, lang, coins, onRetried }: {
   const [result, setResult] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const isSi = lang === 'si';
   const cards = q.exercise.cards || [];
   const answerFor = (card: Card): Answer => (card.id in answers ? answers[card.id] : defaultAnswerFor(card));
   const canAfford = coins >= RETRY_QUESTION_COST_COINS;
@@ -286,14 +295,16 @@ function RetryPanel({ q, lang, coins, onRetried }: {
           opacity: canAfford ? 1 : 0.5,
         }}
       >
-        {canAfford ? `Retry for ${RETRY_QUESTION_COST_COINS} coins` : `Need ${RETRY_QUESTION_COST_COINS} coins to retry`}
+        {canAfford
+          ? (isSi ? `කාසි ${RETRY_QUESTION_COST_COINS}කට නැවත උත්සාහ කරන්න` : `Retry for ${RETRY_QUESTION_COST_COINS} coins`)
+          : (isSi ? `නැවත උත්සාහ කිරීමට කාසි ${RETRY_QUESTION_COST_COINS} අවශ්‍යයි` : `Need ${RETRY_QUESTION_COST_COINS} coins to retry`)}
       </button>
     );
   }
 
   return (
     <div style={{ border: '2px dashed var(--c-primary-line)', borderRadius: 14, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--c-primary)', letterSpacing: '0.05em' }}>RETRY ATTEMPT</div>
+      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--c-primary)', letterSpacing: '0.05em' }}>{isSi ? 'නැවත උත්සාහය' : 'RETRY ATTEMPT'}</div>
       <div className="cardgrid">
         {cards.map((card) => (
           <ExerciseCardView key={card.id} card={card} answer={answerFor(card)} setAnswer={(v) => setAnswers((a) => ({ ...a, [card.id]: v }))} checked={checked} lang={lang} readOnly={checked || busy} />
@@ -305,18 +316,18 @@ function RetryPanel({ q, lang, coins, onRetried }: {
           onClick={submit} onPointerDown={bubble} disabled={busy} className="bubble-host press"
           style={{ alignSelf: 'flex-start', background: 'var(--c-primary)', color: 'white', border: 'none', borderRadius: 12, padding: '10px 20px', fontWeight: 700, fontSize: 14, cursor: busy ? 'default' : 'pointer' }}
         >
-          {busy ? 'Checking…' : `Submit (${RETRY_QUESTION_COST_COINS} coins)`}
+          {busy ? (isSi ? 'පරීක්ෂා කරමින්…' : 'Checking…') : (isSi ? `ඉදිරිපත් කරන්න (කාසි ${RETRY_QUESTION_COST_COINS})` : `Submit (${RETRY_QUESTION_COST_COINS} coins)`)}
         </button>
       ) : result ? (
-        <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--c-success-ink)' }}>Correct — fixed!</p>
+        <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--c-success-ink)' }}>{isSi ? 'නිවැරදියි — විසඳුණි!' : 'Correct — fixed!'}</p>
       ) : (
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--c-danger-ink)' }}>Still not quite.</p>
+          <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--c-danger-ink)' }}>{isSi ? 'තවම නිවැරදි නැත.' : 'Still not quite.'}</p>
           <button
             onClick={start} onPointerDown={coins >= RETRY_QUESTION_COST_COINS ? bubble : undefined} disabled={coins < RETRY_QUESTION_COST_COINS} className="bubble-host press"
             style={{ border: '2px solid var(--c-primary)', background: 'white', color: 'var(--c-primary)', borderRadius: 999, padding: '7px 14px', fontSize: 13, fontWeight: 700, cursor: coins >= RETRY_QUESTION_COST_COINS ? 'pointer' : 'not-allowed', opacity: coins >= RETRY_QUESTION_COST_COINS ? 1 : 0.5 }}
           >
-            Try again for {RETRY_QUESTION_COST_COINS} coins
+            {isSi ? `කාසි ${RETRY_QUESTION_COST_COINS}කට නැවත උත්සාහ කරන්න` : `Try again for ${RETRY_QUESTION_COST_COINS} coins`}
           </button>
         </div>
       )}

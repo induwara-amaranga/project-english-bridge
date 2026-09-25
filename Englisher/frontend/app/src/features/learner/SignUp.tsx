@@ -144,7 +144,7 @@ export function SignUp() {
           <h1 style={{ fontFamily: headFont, fontWeight: 800, fontSize: 26, margin: '0 0 12px', lineHeight: 1.35, textAlign: 'center' }}>{c.framing}</h1>
 
           <form onSubmit={submit} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 18, marginTop: 28 }}>
-            <div className="field"><label className="field__label">{c.accountType}</label><RoleToggle role={role} onChange={setRole} /></div>
+            <div className="field"><label className="field__label">{c.accountType}</label><RoleToggle role={role} onChange={setRole} lang={lang} /></div>
             <div className="field"><label className="field__label">{c.nameLabel}</label><input className="field__input" value={name} onChange={(e) => setName(e.target.value)} placeholder={c.namePlaceholder} /></div>
             {role === 'student' && (
               <div className="field"><label className="field__label">{c.ageLabel}</label><input type="number" min={1} className="field__input" value={age} onChange={(e) => setAge(e.target.value)} placeholder={c.agePlaceholder} /></div>

@@ -186,6 +186,7 @@ export const emptyPayload: Record<CardTypeKey, () => Payload> = {
   multi_select: () => ({ options: [{ en: '', si: '' }, { en: '', si: '' }], correctIndexes: [0], shuffle: true }),
   essay: () => ({ ideaBank: [], outline: [] }),
   rubric: () => ({ sections: [{ title: { en: '', si: '' }, items: [{ en: '', si: '' }] }] }),
+  translate_si_en: () => ({ sentenceSi: '', accept: [] }),
   text: () => ({}),
 };
 type CardTypeKey = ExerciseType | 'text';

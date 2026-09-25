@@ -20,7 +20,7 @@ import java.util.List;
  * serialized as null — hence {@link JsonInclude.Include#NON_NULL}.
  *
  * <p>{@code payload} is a raw {@link JsonNode}: it is a discriminated union of
- * eight shapes keyed on the card type, and the server has no reason to reify
+ * nine shapes keyed on the card type, and the server has no reason to reify
  * it except when grading, where {@code GradingService} reads the fields it
  * needs. See SPRINGBOOT-MIGRATION.md section 2.
  */

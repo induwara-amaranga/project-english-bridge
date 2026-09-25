@@ -192,7 +192,7 @@ public class CurriculumNormaliser {
     public static boolean isKnownCardType(String type) {
         return switch (type == null ? "" : type) {
             case "text", "mcq", "gap_fill", "drag_order", "match",
-                 "free_text", "multi_select", "essay", "rubric" -> true;
+                 "free_text", "multi_select", "essay", "rubric", "translate_si_en" -> true;
             default -> false;
         };
     }

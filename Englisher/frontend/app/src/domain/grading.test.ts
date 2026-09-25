@@ -60,6 +60,16 @@ describe('gradeCard', () => {
     expect(gradeCard(card, [])).toBe(false);
   });
 
+  it('grades translate_si_en against any accepted translation, whitespace-insensitive', () => {
+    const card = makeCard('c', 'translate_si_en') as Card;
+    (card as unknown as { payload: { sentenceSi: string; accept: string[] } }).payload = { sentenceSi: 'මම පාසලට යනවා', accept: ['I go to school', 'I am going to school'] };
+    expect(gradeCard(card, 'I go to school')).toBe(true);
+    expect(gradeCard(card, '  I   go to school.  ')).toBe(true);
+    expect(gradeCard(card, 'I GO TO SCHOOL')).toBe(true);
+    expect(gradeCard(card, 'I am going to school')).toBe(true);
+    expect(gradeCard(card, 'I go school')).toBe(false);
+  });
+
   it('essay and rubric cards are never auto-graded — always pass once answered', () => {
     const essay = makeCard('c', 'essay') as Card;
     expect(gradeCard(essay, 'anything at all')).toBe(true);
@@ -83,6 +93,11 @@ describe('isAnswered', () => {
     const card = makeCard('c', 'free_text') as Card;
     expect(isAnswered(card, '   ')).toBe(false);
     expect(isAnswered(card, 'hi')).toBe(true);
+  });
+  it('translate_si_en needs non-whitespace content, same as free_text', () => {
+    const card = makeCard('c', 'translate_si_en') as Card;
+    expect(isAnswered(card, '   ')).toBe(false);
+    expect(isAnswered(card, 'I go to school')).toBe(true);
   });
   it('essay needs non-whitespace content, same as free_text', () => {
     const card = makeCard('c', 'essay') as Card;

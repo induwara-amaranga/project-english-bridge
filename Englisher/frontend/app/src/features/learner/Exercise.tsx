@@ -20,7 +20,7 @@ import { playSound } from '../../lib/sounds';
 import { bubble } from '../../lib/bubble';
 import { CORRECT, WRONG, randomCelebration } from '../../lib/animations';
 
-type InteractiveCard = Extract<Card, { type: 'mcq' | 'gap_fill' | 'drag_order' | 'match' | 'free_text' | 'multi_select' | 'essay' | 'rubric' }>;
+type InteractiveCard = Extract<Card, { type: 'mcq' | 'gap_fill' | 'drag_order' | 'match' | 'free_text' | 'multi_select' | 'essay' | 'rubric' | 'translate_si_en' }>;
 const isInteractive = (c: Card): c is InteractiveCard => c.type !== 'text';
 
 /** Skip and Check are the same control at opposite ends of the row, so they share their metrics. */
@@ -56,6 +56,7 @@ export function ExercisePage() {
    *  completion card is a cross-fade instead of a mid-request pop. */
   const [revealing, setRevealing] = useState(false);
   const [lang, setLang] = useState<'en' | 'si'>('en');
+  const isSi = lang === 'si';
   /** One record per question, kept for the review screen — see domain/lessonResults.ts. */
   const [outcomes, setOutcomes] = useState<ExerciseOutcome[]>([]);
   /** The server's award breakdown for the completion screen — null while still answering. */
@@ -68,8 +69,8 @@ export function ExercisePage() {
       <div className="app-shell" style={{ background: 'var(--c-bg)' }}>
         <div style={{ maxWidth: 940, margin: '0 auto', padding: '48px 24px', textAlign: 'center' }}>
           <div className="card" style={{ color: 'var(--c-ink-faint)', fontSize: 15, fontWeight: 600, lineHeight: 1.7 }}>
-            This lesson has no exercises yet.
-            <div style={{ marginTop: 14 }}><Link to={backHref}>Back to lessons</Link></div>
+            {isSi ? 'මෙම පාඩමට තවම අභ්‍යාස නැත.' : 'This lesson has no exercises yet.'}
+            <div style={{ marginTop: 14 }}><Link to={backHref}>{isSi ? 'පාඩම් වෙත' : 'Back to lessons'}</Link></div>
           </div>
         </div>
       </div>
@@ -188,14 +189,16 @@ export function ExercisePage() {
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 3L5 9L11 15" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </Link>
           <div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.75)', letterSpacing: '0.04em' }}>STAGE {stageIndex} · EXERCISE</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.75)', letterSpacing: '0.04em' }}>{isSi ? `අදියර ${stageIndex} · අභ්‍යාසය` : `STAGE ${stageIndex} · EXERCISE`}</div>
             <div style={{ fontWeight: 700, fontSize: 16, color: 'white' }}>
-              {complete ? lesson.title.en || 'Lesson' : `Question ${qIndex + 1} of ${exercises.length}`}
+              {complete
+                ? (isSi ? (lesson.title.si || lesson.title.en || 'පාඩම') : (lesson.title.en || 'Lesson'))
+                : (isSi ? `ප්‍රශ්නය ${qIndex + 1} න් ${exercises.length}` : `Question ${qIndex + 1} of ${exercises.length}`)}
             </div>
           </div>
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
             <LangToggle lang={lang} onToggle={() => setLang((l) => (l === 'en' ? 'si' : 'en'))} />
-            <Link to={backHref} style={{ background: 'rgba(255,255,255,0.18)', color: 'white', borderRadius: 10, padding: '9px 16px', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>Go to lessons</Link>
+            <Link to={backHref} style={{ background: 'rgba(255,255,255,0.18)', color: 'white', borderRadius: 10, padding: '9px 16px', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>{isSi ? 'පාඩම් වෙත' : 'Go to lessons'}</Link>
           </div>
         </div>
         <div style={{ maxWidth: 940, margin: '14px auto 0', height: 8, borderRadius: 999, background: 'rgba(255,255,255,0.25)', overflow: 'hidden' }}>
@@ -222,13 +225,13 @@ export function ExercisePage() {
                 <LottieBox name={allRight ? CORRECT : WRONG} size={56} fallback={<OutcomeBadge ok={allRight} />} />
                 <p className={lang === 'si' ? 'si' : undefined} style={{ margin: 0, flex: 1, minWidth: 0, fontSize: 15, lineHeight: 1.6, fontWeight: 700, color: allRight ? 'var(--c-success-ink)' : 'var(--c-danger-ink)' }}>
                   {!fb
-                    ? (allRight ? 'Correct.' : 'Not quite.')
+                    ? (allRight ? (isSi ? 'නිවැරදියි.' : 'Correct.') : (isSi ? 'නිවැරදි නැත.' : 'Not quite.'))
                     : allRight
-                      ? (lang === 'si' ? fb.correct.si || fb.correct.en : fb.correct.en) || 'Correct.'
-                      : (lang === 'si' ? fb.incorrect.si || fb.incorrect.en : fb.incorrect.en) || 'Not quite — have another look.'}
+                      ? (lang === 'si' ? fb.correct.si || fb.correct.en : fb.correct.en) || (isSi ? 'නිවැරදියි.' : 'Correct.')
+                      : (lang === 'si' ? fb.incorrect.si || fb.incorrect.en : fb.incorrect.en) || (isSi ? 'නිවැරදි නැත — නැවත බලන්න.' : 'Not quite — have another look.')}
                 </p>
                 <button onClick={next} onPointerDown={bubble} disabled={finishing} className="bubble-host press" style={{ alignSelf: 'flex-end', background: 'var(--c-primary)', color: 'white', border: 'none', borderRadius: 12, padding: '12px 28px', fontWeight: 700, fontSize: 15, fontFamily: 'var(--font-display)', cursor: finishing ? 'default' : 'pointer', opacity: finishing ? 0.7 : 1, flexShrink: 0 }}>
-                  {finishing ? 'Saving…' : qIndex + 1 >= exercises.length ? 'Finish' : 'Next question'}
+                  {finishing ? (isSi ? 'සුරකිමින්…' : 'Saving…') : qIndex + 1 >= exercises.length ? (isSi ? 'අවසන් කරන්න' : 'Finish') : (isSi ? 'ඊළඟ ප්‍රශ්නය' : 'Next question')}
                 </button>
               </div>
             )}
@@ -241,14 +244,14 @@ export function ExercisePage() {
                   onClick={skip} onPointerDown={bubble} disabled={finishing} className="bubble-host press"
                   style={{ ...ACTION_BUTTON, background: 'transparent', color: 'var(--c-ink-soft)', border: '2px solid var(--c-primary-line)', cursor: 'pointer' }}
                 >
-                  Skip
+                  {isSi ? 'මඟහරින්න' : 'Skip'}
                 </button>
                 <button onClick={check} onPointerDown={answered ? bubble : undefined} disabled={!answered} className="bubble-host press" style={{
                   ...ACTION_BUTTON,
                   background: answered ? 'var(--c-primary)' : 'var(--c-disabled)', color: 'white', border: '2px solid transparent',
                   cursor: answered ? 'pointer' : 'not-allowed',
                   boxShadow: `0 6px 0 ${answered ? 'var(--c-primary-hover)' : 'var(--c-disabled-shadow)'}`,
-                }}>Check</button>
+                }}>{isSi ? 'පරීක්ෂා කරන්න' : 'Check'}</button>
               </div>
             )}
           </>
@@ -258,23 +261,27 @@ export function ExercisePage() {
           <div className="card screen-in" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, padding: '36px 32px 32px' }}>
             <LottieBox name={celebration} size={200} loop fallback={<CelebrationBadge />} />
             <div>
-              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 26, margin: 0 }}>Lesson complete!</h2>
-              <div style={{ fontSize: 15, color: 'var(--c-ink-soft)', fontWeight: 600, marginTop: 6 }}>{lesson.title.en || 'Lesson'}</div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 26, margin: 0 }}>{isSi ? 'පාඩම සම්පූර්ණයි!' : 'Lesson complete!'}</h2>
+              <div style={{ fontSize: 15, color: 'var(--c-ink-soft)', fontWeight: 600, marginTop: 6 }}>{isSi ? (lesson.title.si || lesson.title.en || 'පාඩම') : (lesson.title.en || 'Lesson')}</div>
             </div>
 
-            <ScoreDial pct={score.pct} label="CORRECT" />
+            <ScoreDial pct={score.pct} label={isSi ? 'නිවැරදියි' : 'CORRECT'} />
 
             <div style={{ fontSize: 15, color: 'var(--c-ink-soft)', fontWeight: 600 }}>
-              {score.correct} of {score.total} right{score.skipped > 0 ? ` · ${score.skipped} skipped` : ''}
+              {isSi
+                ? `${score.total}න් ${score.correct} නිවැරදියි${score.skipped > 0 ? ` · ${score.skipped}ක් මඟහැරිණි` : ''}`
+                : `${score.correct} of ${score.total} right${score.skipped > 0 ? ` · ${score.skipped} skipped` : ''}`}
             </div>
 
             {award && award.streakMilestoneDays > 0 && (
               <div style={{ background: 'var(--c-warning-bg)', border: '1px solid var(--c-warning-ink)', borderRadius: 16, padding: '14px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
                 <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: 'var(--c-warning-ink)' }}>
-                  🔥 {award.streakMilestoneDays}-day streak!
+                  🔥 {isSi ? `දින ${award.streakMilestoneDays} අඛණ්ඩතාවක්!` : `${award.streakMilestoneDays}-day streak!`}
                 </div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--c-warning-ink)' }}>
-                  +{award.streakMilestoneBonusXp} bonus XP · +{award.streakMilestoneBonusCoins} bonus coins
+                  {isSi
+                    ? `+${award.streakMilestoneBonusXp} අමතර XP · +${award.streakMilestoneBonusCoins} අමතර කාසි`
+                    : `+${award.streakMilestoneBonusXp} bonus XP · +${award.streakMilestoneBonusCoins} bonus coins`}
                 </div>
               </div>
             )}
@@ -282,9 +289,9 @@ export function ExercisePage() {
             {award && (award.xpAwarded > 0 || award.coinsAwarded > 0) && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
                 <AwardChip label={`+${award.xpAwarded} XP`} bg="var(--c-warning-bg)" fg="var(--c-warning-ink)" />
-                <AwardChip label={`+${award.coinsAwarded} coins`} bg="#FFF3D6" fg="#8C5A08" />
-                {award.bonusXp > 0 && <AwardChip label={`+${award.bonusXp} XP flawless bonus!`} bg="var(--c-success-bg)" fg="var(--c-success-ink)" />}
-                {award.bonusCoins > 0 && <AwardChip label={`+${award.bonusCoins} bonus coins`} bg="var(--c-success-bg)" fg="var(--c-success-ink)" />}
+                <AwardChip label={isSi ? `+${award.coinsAwarded} කාසි` : `+${award.coinsAwarded} coins`} bg="#FFF3D6" fg="#8C5A08" />
+                {award.bonusXp > 0 && <AwardChip label={isSi ? `+${award.bonusXp} XP නිර්දෝෂී අමතරයක්!` : `+${award.bonusXp} XP flawless bonus!`} bg="var(--c-success-bg)" fg="var(--c-success-ink)" />}
+                {award.bonusCoins > 0 && <AwardChip label={isSi ? `+${award.bonusCoins} අමතර කාසි` : `+${award.bonusCoins} bonus coins`} bg="var(--c-success-bg)" fg="var(--c-success-ink)" />}
               </div>
             )}
 
@@ -292,36 +299,40 @@ export function ExercisePage() {
               award.stageOutcome.cleared ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--c-success-ink)' }}>
-                    Stage cleared — {award.stageOutcome.accuracyPct}% accuracy{award.stageOutcome.perfect ? ', a perfect run!' : ''}
+                    {isSi
+                      ? `අදියර නිමයි — නිරවද්‍යතාව ${award.stageOutcome.accuracyPct}%${award.stageOutcome.perfect ? ', නිර්දෝෂී ධාවනයක්!' : ''}`
+                      : `Stage cleared — ${award.stageOutcome.accuracyPct}% accuracy${award.stageOutcome.perfect ? ', a perfect run!' : ''}`}
                   </div>
                   {award.stageOutcome.perfect && (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
-                      <AwardChip label={`+${award.stageOutcome.bonusXp} XP stage-perfect bonus!`} bg="var(--c-success-bg)" fg="var(--c-success-ink)" />
-                      <AwardChip label={`+${award.stageOutcome.bonusCoins} bonus coins`} bg="var(--c-success-bg)" fg="var(--c-success-ink)" />
+                      <AwardChip label={isSi ? `+${award.stageOutcome.bonusXp} XP අදියර-නිර්දෝෂී අමතරයක්!` : `+${award.stageOutcome.bonusXp} XP stage-perfect bonus!`} bg="var(--c-success-bg)" fg="var(--c-success-ink)" />
+                      <AwardChip label={isSi ? `+${award.stageOutcome.bonusCoins} අමතර කාසි` : `+${award.stageOutcome.bonusCoins} bonus coins`} bg="var(--c-success-bg)" fg="var(--c-success-ink)" />
                     </div>
                   )}
                 </div>
               ) : (
                 <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--c-warning-ink)', maxWidth: 380 }}>
-                  {award.stageOutcome.accuracyPct}% accuracy — get to 75% to unlock the next stage. Review your wrong answers to retry them.
+                  {isSi
+                    ? `නිරවද්‍යතාව ${award.stageOutcome.accuracyPct}% — ඊළඟ අදියර අගුළු හැරීමට 75%ට එළඹෙන්න. නැවත උත්සාහ කිරීමට ඔබේ වැරදි පිළිතුරු සමාලෝචනය කරන්න.`
+                    : `${award.stageOutcome.accuracyPct}% accuracy — get to 75% to unlock the next stage. Review your wrong answers to retry them.`}
                 </div>
               )
             )}
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center', marginTop: 4 }}>
-              <LinkButton to={`/learn/${stage.id}/${lesson.id}/review`} variant="secondary" size="lg">Review answers</LinkButton>
+              <LinkButton to={`/learn/${stage.id}/${lesson.id}/review`} variant="secondary" size="lg">{isSi ? 'පිළිතුරු සමාලෝචනය' : 'Review answers'}</LinkButton>
               {showGuestPrompt ? (
-                <button onClick={() => navigate('/guest-save')} onPointerDown={bubble} className="btn btn--lg btn--primary bubble-host">Continue</button>
+                <button onClick={() => navigate('/guest-save')} onPointerDown={bubble} className="btn btn--lg btn--primary bubble-host">{isSi ? 'ඉදිරියට' : 'Continue'}</button>
               ) : isCourseComplete ? (
-                <button onClick={() => navigate(`/learn/${stage.id}/complete`)} onPointerDown={bubble} className="btn btn--lg btn--primary bubble-host">Continue</button>
+                <button onClick={() => navigate(`/learn/${stage.id}/complete`)} onPointerDown={bubble} className="btn btn--lg btn--primary bubble-host">{isSi ? 'ඉදිරියට' : 'Continue'}</button>
               ) : (
-                <LinkButton to={backHref} variant="primary" size="lg">Back to lessons</LinkButton>
+                <LinkButton to={backHref} variant="primary" size="lg">{isSi ? 'පාඩම් වෙත' : 'Back to lessons'}</LinkButton>
               )}
             </div>
           </div>
         )}
       </div>
-      <CheckingTransition visible={revealing} label="Checking your answers…" />
+      <CheckingTransition visible={revealing} label={isSi ? 'ඔබේ පිළිතුරු පරීක්ෂා කරමින්…' : 'Checking your answers…'} />
     </div>
   );
 }
