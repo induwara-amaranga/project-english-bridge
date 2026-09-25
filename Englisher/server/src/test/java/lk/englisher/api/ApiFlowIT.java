@@ -554,6 +554,12 @@ class ApiFlowIT extends AbstractPostgresIT {
      * <p>Deliberately not done through the API: there is no admin signup route,
      * which is the property {@link #signingUpAsAdminIsRefused} pins down.
      */
+    /**
+     * Signs in an admin account through the real two-step flow — password,
+     * then the OTP {@link #lastOtpCode()} reads back out of the mocked mail
+     * sender — rather than assuming the old one-step {@code accessToken}
+     * response {@link AuthOtpIT} pins down as no longer how admin signin works.
+     */
     private String signInAsSeededAdmin(String email) {
         users.save(new UserEntity(email, passwords.encode("supersecret1"), "Admin",
                 Role.ADMIN, json.createObjectNode()));
@@ -566,7 +572,16 @@ class ApiFlowIT extends AbstractPostgresIT {
         ResponseEntity<JsonNode> response = rest.exchange("/api/auth/signin", HttpMethod.POST,
                 new HttpEntity<>(body, headers), JsonNode.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        return response.getBody().get("accessToken").asText();
+        assertThat(response.getBody().get("otpRequired").asBoolean()).isTrue();
+        String challengeId = response.getBody().get("challengeId").asText();
+
+        var otpBody = json.createObjectNode();
+        otpBody.put("challengeId", challengeId);
+        otpBody.put("code", lastOtpCode());
+        ResponseEntity<JsonNode> otpResponse = rest.exchange("/api/auth/verify-otp", HttpMethod.POST,
+                new HttpEntity<>(otpBody, headers), JsonNode.class);
+        assertThat(otpResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        return otpResponse.getBody().get("accessToken").asText();
     }
 
     /**

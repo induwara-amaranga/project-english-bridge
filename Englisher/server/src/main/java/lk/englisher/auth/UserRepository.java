@@ -18,4 +18,6 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
     Optional<UserEntity> findByGoogleId(String googleId);
 
     Optional<UserEntity> findByFacebookId(String facebookId);
+
+    Optional<UserEntity> findByOtpChallengeId(String otpChallengeId);
 }

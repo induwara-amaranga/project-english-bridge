@@ -5,6 +5,7 @@ import lk.englisher.curriculum.dto.CurriculumDtos.CardDto;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 
 /**
@@ -67,7 +68,7 @@ public class GradingService {
         return switch (type) {
             case "mcq" -> answer != null && answer.isInt()
                     && answer.asInt() == payload.path("correctIndex").asInt(-1);
-            case "gap_fill" -> anyAccepted(payload.path("accept"), answer, null);
+            case "gap_fill" -> isGapFillCorrect(payload.path("blanks"), answer);
             case "drag_order" -> isIdentityOrder(answer, payload.path("tokens").size());
             case "match" -> isCompleteMatch(answer, payload.path("pairs").size());
             case "free_text" -> anyAccepted(payload.path("accept"), answer, payload.path("normalize"));
@@ -95,7 +96,11 @@ public class GradingService {
         return switch (type) {
             case "drag_order" -> answer != null && answer.isArray() && !answer.isEmpty();
             case "match" -> answer != null && answer.path("pairs").size() > 0;
-            case "free_text", "gap_fill", "essay", "translate_si_en" -> answer != null && !answer.asText("").trim().isEmpty();
+            case "free_text", "essay", "translate_si_en" -> answer != null && !answer.asText("").trim().isEmpty();
+            // At least one blank filled is enough to enable Check — same
+            // lenient gate as `match`'s "at least one pair" — gradeCard is
+            // what actually requires every blank to be correct.
+            case "gap_fill" -> isAnyBlankFilled(answer);
             case "mcq" -> answer != null && !answer.isNull();
             case "multi_select" -> answer != null && answer.isArray() && !answer.isEmpty();
             // A rubric is a self-check, not a gate — it never blocks moving on.
@@ -110,12 +115,49 @@ public class GradingService {
     }
 
     private boolean anyAccepted(JsonNode accept, JsonNode answer, JsonNode rules) {
+        return anyAcceptedText(accept, answer == null ? "" : answer.asText(""), rules);
+    }
+
+    private boolean anyAcceptedText(JsonNode accept, String given, JsonNode rules) {
         if (accept == null || !accept.isArray()) {
             return false;
         }
-        String given = norm(answer == null ? "" : answer.asText(""), rules);
+        String normGiven = norm(given, rules);
         for (JsonNode candidate : accept) {
-            if (norm(candidate.asText(""), rules).equals(given)) {
+            if (norm(candidate.asText(""), rules).equals(normGiven)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Every blank (the payload's {@code blanks} array) must have its own
+     * accepted answer, matched with the same default normalization
+     * {@code gap_fill} has always used — not per-blank configurable.
+     */
+    private boolean isGapFillCorrect(JsonNode blanksSpec, JsonNode answer) {
+        if (!blanksSpec.isArray() || blanksSpec.isEmpty()) {
+            return false;
+        }
+        JsonNode blanksAnswer = answer == null ? null : answer.path("blanks");
+        for (int i = 0; i < blanksSpec.size(); i++) {
+            String given = blanksAnswer == null ? "" : blanksAnswer.path(String.valueOf(i)).asText("");
+            if (!anyAcceptedText(blanksSpec.get(i).path("accept"), given, null)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean isAnyBlankFilled(JsonNode answer) {
+        if (answer == null) {
+            return false;
+        }
+        JsonNode blanks = answer.path("blanks");
+        Iterator<String> names = blanks.fieldNames();
+        while (names.hasNext()) {
+            if (!blanks.path(names.next()).asText("").trim().isEmpty()) {
                 return true;
             }
         }

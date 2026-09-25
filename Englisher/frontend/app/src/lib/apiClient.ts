@@ -40,6 +40,19 @@ export interface AuthSession {
   home: string;
 }
 
+/**
+ * What signin/google/facebook actually return (auth/AuthDtos.java's
+ * SignInResponse) — either a completed session, or a pending admin 2FA
+ * challenge that POST /api/auth/verify-otp resolves into one. Every sign-in
+ * path funnels through this envelope now, not just password sign-in, since
+ * an admin account can be reached via any of the three.
+ */
+export interface SignInEnvelope {
+  otpRequired: boolean;
+  challengeId: string | null;
+  session: AuthSession | null;
+}
+
 type AuthListener = (session: AuthSession | null) => void;
 let authListener: AuthListener | null = null;
 /** useAuth calls this once, on mount, to hear about every session change — including a background refresh. */
@@ -107,7 +120,7 @@ export function refreshSession(): Promise<AuthSession | null> {
 }
 
 /** Endpoints where a 401 is a credentials error, not an expired-token one — retrying via refresh would be wasted work. */
-const NO_REFRESH_RETRY = new Set(['/api/auth/signin', '/api/auth/signup', '/api/auth/refresh']);
+const NO_REFRESH_RETRY = new Set(['/api/auth/signin', '/api/auth/signup', '/api/auth/refresh', '/api/auth/verify-otp']);
 
 export async function apiRequest<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   let res = await doFetch(path, opts);

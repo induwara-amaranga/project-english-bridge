@@ -10,7 +10,14 @@ export type TextAnswer = string;
 export type MultiSelectAnswer = number[];
 /** Rubric checklist state, keyed `${sectionIndex}-${itemIndex}`. */
 export type RubricAnswer = Record<string, boolean>;
-export type Answer = McqAnswer | DragOrderAnswer | MatchAnswer | TextAnswer | MultiSelectAnswer | RubricAnswer;
+/** One entry per blank, keyed by its position in the template. `pending` is which blank the next chip tap fills — same shape convention as `MatchAnswer`. */
+export type GapFillAnswer = { pending: number | null; blanks: Record<number, string> };
+export type Answer = McqAnswer | DragOrderAnswer | MatchAnswer | TextAnswer | MultiSelectAnswer | RubricAnswer | GapFillAnswer;
+
+/** Splits a gap_fill template on every `___` marker — `segments.length === blank count + 1`, one blank slot between each pair of segments. Shared by the exercise player, the lesson preview and the admin editor so all three agree on where the blanks land. */
+export function splitGapFillTemplate(template: string): string[] {
+  return (template || '').split('___');
+}
 
 /** Free-text and typed gap answers are compared under author-chosen normalisation. */
 export function norm(s: string | null | undefined, rules?: { lowercase?: boolean; stripPunctuation?: boolean } | null): string {
@@ -29,7 +36,9 @@ export function gradeCard(card: Card, answer: Answer): boolean {
   }
   if (card.type === 'gap_fill') {
     const p = q as GapFillPayload;
-    return (p.accept || []).some((x) => norm(x, null) === norm(answer as string, null));
+    const a = answer as GapFillAnswer;
+    return p.blanks.length > 0 && p.blanks.every((blank, i) =>
+      (blank.accept || []).some((x) => norm(x, null) === norm(a.blanks[i] || '', null)));
   }
   if (card.type === 'drag_order') {
     const p = q as DragOrderPayload;
@@ -66,6 +75,7 @@ export function gradeCard(card: Card, answer: Answer): boolean {
 export function defaultAnswerFor(card: Card): Answer {
   if (card.type === 'drag_order') return [];
   if (card.type === 'match') return { pending: null, pairs: {} };
+  if (card.type === 'gap_fill') return { pending: 0, blanks: {} };
   if (card.type === 'mcq') return null;
   if (card.type === 'multi_select') return [];
   if (card.type === 'rubric') return {};
@@ -75,7 +85,11 @@ export function defaultAnswerFor(card: Card): Answer {
 export function isAnswered(card: Card, a: Answer): boolean {
   if (card.type === 'drag_order') return (a as DragOrderAnswer).length > 0;
   if (card.type === 'match') return Object.keys((a as MatchAnswer).pairs).length > 0;
-  if (card.type === 'free_text' || card.type === 'gap_fill' || card.type === 'essay' || card.type === 'translate_si_en') return !!(a && String(a).trim());
+  // At least one blank filled is enough to enable Check — same lenient gate
+  // as `match`'s "at least one pair" — gradeCard is what actually requires
+  // every blank to be correct.
+  if (card.type === 'gap_fill') return Object.values((a as GapFillAnswer).blanks).some((v) => !!v && v.trim());
+  if (card.type === 'free_text' || card.type === 'essay' || card.type === 'translate_si_en') return !!(a && String(a).trim());
   if (card.type === 'mcq') return a !== null && a !== undefined;
   if (card.type === 'multi_select') return ((a as MultiSelectAnswer) || []).length > 0;
   // A rubric is a self-check, not a gate — it never blocks moving on.

@@ -93,12 +93,20 @@ public class DataSeeder implements ApplicationRunner {
         if (users.existsByEmailIgnoringCase(properties.getAdminEmail())) {
             return;
         }
-        users.save(new UserEntity(
+        UserEntity admin = new UserEntity(
                 properties.getAdminEmail(),
                 passwords.encode(password),
                 properties.getAdminName(),
                 Role.ADMIN,
-                json.createObjectNode()));
-        log.info("Seeded admin account {}.", properties.getAdminEmail());
+                json.createObjectNode());
+        // The login email above is commonly a placeholder domain
+        // (admin@englisher.test) that cannot receive mail — sign-in OTPs need
+        // a real inbox. Blank falls back to the login email itself (fine in
+        // dev with Mailpit, which catches anything regardless of address).
+        if (!properties.getAdminOtpEmail().isBlank()) {
+            admin.setOtpEmail(properties.getAdminOtpEmail());
+        }
+        users.save(admin);
+        log.info("Seeded admin account {} (OTP delivery: {}).", properties.getAdminEmail(), admin.getOtpDeliveryEmail());
     }
 }

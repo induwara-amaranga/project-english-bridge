@@ -60,7 +60,7 @@ export const CURRICULUM_DEFAULT: Curriculum = {
               id: 'ps-1', type: 'gap_fill',
               prompt: { en: 'Complete the sentence.', si: 'වාක්‍යය සම්පූර්ණ කරන්න.' },
               feedback: { correct: { en: "Correct! 'We' takes the base form of the verb.", si: '' }, incorrect: { en: "Almost — with 'we', use the base verb form.", si: '' } },
-              payload: { template: { en: 'We ___ English every day.', si: '' }, accept: ['watch'], choices: ['watch', 'watches', 'watching'] },
+              payload: { template: { en: 'We ___ English every day.', si: '' }, blanks: [{ accept: ['watch'] }], choices: ['watch', 'watches', 'watching'] },
               cards: [],
             },
           ],
@@ -179,7 +179,7 @@ export function plainText(src: string): string {
 // ---------------------------------------------------------------------------
 export const emptyPayload: Record<CardTypeKey, () => Payload> = {
   mcq: () => ({ options: [{ en: '', si: '' }, { en: '', si: '' }], correctIndex: 0, shuffle: true }),
-  gap_fill: () => ({ template: { en: '', si: '' }, accept: [], choices: [] }),
+  gap_fill: () => ({ template: { en: '', si: '' }, blanks: [{ accept: [] }], choices: [] }),
   drag_order: () => ({ tokens: [{ en: '', si: '' }, { en: '', si: '' }] }),
   match: () => ({ pairs: [{ left: '', right: '' }, { left: '', right: '' }] }),
   free_text: () => ({ accept: [], normalize: { lowercase: true, stripPunctuation: true } }),

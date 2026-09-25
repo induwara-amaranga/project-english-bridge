@@ -13,6 +13,19 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+  # Never actually dialled: AbstractPostgresIT mocks JavaMailSender so no test
+  # opens a real SMTP connection. This host just has to be present for the
+  # bean to exist before the mock replaces it.
+  mail:
+    host: localhost
+
+management:
+  health:
+    # Actuator's mail health check looks for a concrete JavaMailSenderImpl
+    # bean specifically; the mocked JavaMailSender interface doesn't satisfy
+    # it ("Beans must not be empty") and the context fails to start without this.
+    mail:
+      enabled: false
 
 logging:
   level:

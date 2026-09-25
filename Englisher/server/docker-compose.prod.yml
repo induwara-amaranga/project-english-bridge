@@ -1,0 +1,51 @@
+# Production override. docker-compose.yml alone is the local dev stack —
+# hardcoded `dev` Spring profile, a throwaway "englisher" DB password, and
+# every port published for local debugging. None of that is safe to run
+# as-is on a real server, so this file overrides exactly what production
+# needs to differ rather than duplicating the whole stack.
+#
+# Run with (on the production host, alongside a real .env — see
+# .env.example):
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Every secret below has no insecure fallback on purpose (see
+# AuthProperties/DataSeeder) — an unset one either fails loudly at boot
+# (ENGLISHER_JWT_SECRET) or is skipped rather than defaulted
+# (ENGLISHER_ADMIN_PASSWORD). Compose merges environment maps key by key, so
+# this only needs to list what actually changes from docker-compose.yml.
+services:
+  db:
+    environment:
+      POSTGRES_PASSWORD: ${ENGLISHER_DB_PASSWORD}
+    # Only the backend container needs this, over the compose network — not
+    # the public internet. docker-compose.yml's "5432:5432" would otherwise
+    # publish Postgres, with the real password below, straight onto whatever
+    # interface the host doesn't firewall off. `!reset` (not a plain `[]`,
+    # which Compose merges as "nothing to add" rather than "clear this") is
+    # what actually removes the base file's port list here.
+    ports: !reset []
+
+  backend:
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      ENGLISHER_DB_PASSWORD: ${ENGLISHER_DB_PASSWORD}
+      ENGLISHER_JWT_SECRET: ${ENGLISHER_JWT_SECRET}
+      ENGLISHER_ADMIN_EMAIL: ${ENGLISHER_ADMIN_EMAIL}
+      ENGLISHER_ADMIN_PASSWORD: ${ENGLISHER_ADMIN_PASSWORD}
+      ENGLISHER_ADMIN_OTP_EMAIL: ${ENGLISHER_ADMIN_OTP_EMAIL}
+      ENGLISHER_ALLOWED_ORIGINS: ${ENGLISHER_ALLOWED_ORIGINS}
+      ENGLISHER_MAIL_FROM: ${ENGLISHER_MAIL_FROM}
+      # Overrides docker-compose.yml's ENGLISHER_SMTP_HOST: mail (the local
+      # Mailpit catcher) with a real relay.
+      ENGLISHER_SMTP_HOST: ${ENGLISHER_SMTP_HOST}
+      ENGLISHER_SMTP_PORT: ${ENGLISHER_SMTP_PORT:-587}
+      ENGLISHER_SMTP_USER: ${ENGLISHER_SMTP_USER}
+      ENGLISHER_SMTP_PASSWORD: ${ENGLISHER_SMTP_PASSWORD}
+      ENGLISHER_SMTP_AUTH: ${ENGLISHER_SMTP_AUTH:-true}
+      ENGLISHER_SMTP_STARTTLS: ${ENGLISHER_SMTP_STARTTLS:-true}
+
+  # Still starts (docker-compose.yml's depends_on isn't overridden here) but
+  # is never dialled once ENGLISHER_SMTP_HOST points elsewhere above — closing
+  # its ports just means the unused local mail catcher isn't reachable either.
+  mail:
+    ports: !reset []

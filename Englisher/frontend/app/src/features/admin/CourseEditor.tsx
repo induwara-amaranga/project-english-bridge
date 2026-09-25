@@ -6,7 +6,7 @@ import type {
   GapFillPayload, Lesson, MatchPayload, McqPayload, MultiSelectPayload, RubricPayload, Stage, TranslateSiEnPayload,
 } from '../../domain/types';
 import { cardGridColumn, emptyPayload, plainText } from '../../domain/curriculum';
-import { seededShuffle } from '../../domain/grading';
+import { seededShuffle, splitGapFillTemplate } from '../../domain/grading';
 import { useAuth } from '../../hooks/useAuth';
 import { RichField } from '../../components/RichTextEditor';
 import { RichText } from '../../components/RichText';
@@ -377,18 +377,31 @@ function PayloadEditor({ api, card }: { api: CourseEditorApi; card: Card }) {
 
   if (card.type === 'gap_fill') {
     const p = card.payload as GapFillPayload;
+    const blankCount = splitGapFillTemplate(p.template.en).length - 1;
+    // Blanks are derived from the template's ___ count, not an independently
+    // editable list — resynced on blur so a row isn't inserted/removed mid-keystroke.
+    const syncBlanks = () => api.editExercisePayload((pl) => {
+      const gp = pl as GapFillPayload;
+      const count = splitGapFillTemplate(gp.template.en).length - 1;
+      const next = gp.blanks.slice(0, count);
+      while (next.length < count) next.push({ accept: [] });
+      gp.blanks = next;
+    });
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div>
-          <label className="lbl">Sentence — type ___ (three underscores) where the blank goes</label>
-          <input className="fld" value={p.template.en} onChange={(e) => { const v = e.target.value; api.editExercisePayload((pl) => { (pl as GapFillPayload).template.en = v; }); }} placeholder="We ___ English every day." />
+          <label className="lbl">Sentence — type ___ (three underscores) for each blank, in order</label>
+          <input className="fld" value={p.template.en} onChange={(e) => { const v = e.target.value; api.editExercisePayload((pl) => { (pl as GapFillPayload).template.en = v; }); }} onBlur={syncBlanks} placeholder="We ___ English every ___." />
+          <span style={{ fontSize: 11.5, color: '#9B94BE' }}>{blankCount} blank{blankCount === 1 ? '' : 's'} found — the list below updates once you click away from this field.</span>
         </div>
+        {p.blanks.map((blank, i) => (
+          <div key={i}>
+            <label className="lbl">Accepted answers for blank {i + 1} — comma separated</label>
+            <input className="fld" defaultValue={blank.accept.join(', ')} onBlur={(e) => { const v = csvIn(e.target.value); api.editExercisePayload((pl) => { (pl as GapFillPayload).blanks[i].accept = v; }); }} placeholder="watch, watches" />
+          </div>
+        ))}
         <div>
-          <label className="lbl">Accepted answers — comma separated</label>
-          <input className="fld" defaultValue={p.accept.join(', ')} onBlur={(e) => { const v = csvIn(e.target.value); api.editExercisePayload((pl) => { (pl as GapFillPayload).accept = v; }); }} placeholder="watch, watches" />
-        </div>
-        <div>
-          <label className="lbl">Choice chips shown to the learner — comma separated, leave blank for free typing</label>
+          <label className="lbl">Choice chips shown to the learner — comma separated, shared across every blank, leave blank for free typing per blank instead</label>
           <input className="fld" defaultValue={p.choices.join(', ')} onBlur={(e) => { const v = csvIn(e.target.value); api.editExercisePayload((pl) => { (pl as GapFillPayload).choices = v; }); }} placeholder="watch, watches, watching" />
         </div>
       </div>
@@ -707,18 +720,24 @@ function PreviewCard({ card, index, total, isSelected, showKey, pendingDelete, o
 
         {card.type === 'gap_fill' && (() => {
           const p = card.payload as GapFillPayload;
-          const t = p.template.en || '';
-          const at = t.indexOf('___');
-          const before = at >= 0 ? t.slice(0, at) : t;
-          const after = at >= 0 ? t.slice(at + 3) : '';
-          const shown = showKey ? (p.accept[0] || '') : '';
+          const segments = splitGapFillTemplate(p.template.en);
+          const acceptedAnywhere = new Set(p.blanks.flatMap((b) => b.accept || []));
           return (
             <>
               <div style={{ background: 'white', borderRadius: 11, padding: 12, fontSize: 14, lineHeight: 1.9, marginTop: 10 }}>
-                {before}<span style={{ display: 'inline-block', minWidth: 62, borderBottom: `2.5px solid ${showKey ? '#3ECF6E' : '#B5AFD4'}`, textAlign: 'center', color: '#6C4FF6', fontWeight: 700 }}>{shown}</span>{after}
+                {segments.map((seg, i) => (
+                  <span key={i}>
+                    {seg}
+                    {i < p.blanks.length && (
+                      <span style={{ display: 'inline-block', minWidth: 62, borderBottom: `2.5px solid ${showKey ? '#3ECF6E' : '#B5AFD4'}`, textAlign: 'center', color: '#6C4FF6', fontWeight: 700 }}>
+                        {showKey ? (p.blanks[i].accept[0] || '') : ''}
+                      </span>
+                    )}
+                  </span>
+                ))}
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: 10 }}>
-                {p.choices.map((c, i) => <div key={i} style={{ background: 'white', border: `2px solid ${showKey && p.accept.includes(c) ? '#3ECF6E' : '#D8D3EE'}`, borderRadius: 999, padding: '6px 12px', fontSize: 12.5, fontWeight: 600 }}>{c}</div>)}
+                {p.choices.map((c, i) => <div key={i} style={{ background: 'white', border: `2px solid ${showKey && acceptedAnywhere.has(c) ? '#3ECF6E' : '#D8D3EE'}`, borderRadius: 999, padding: '6px 12px', fontSize: 12.5, fontWeight: 600 }}>{c}</div>)}
               </div>
             </>
           );

@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { apiPost, refreshSession, setAuthListener, type AuthSession } from '../lib/apiClient';
+import { apiPost, refreshSession, setAuthListener, type AuthSession, type SignInEnvelope } from '../lib/apiClient';
 import { isGuestActive, setGuestActive } from '../lib/guestSession';
 
 // Real auth, against the Spring Boot API (SPRINGBOOT-MIGRATION.md section 4).
@@ -29,6 +29,15 @@ export function roleHome(role: Role): string {
   return '/learn';
 }
 
+/**
+ * What every sign-in path can resolve to now — a completed sign-in, or an
+ * admin account's pending 2FA challenge that {@code verifyOtp} must resolve
+ * before there is a user at all. Password, Google and Facebook can each land
+ * on either outcome; the caller (SignIn.tsx) branches on `otpRequired` rather
+ * than getting an `AuthUser` back directly.
+ */
+export type SignInOutcome = { otpRequired: true; challengeId: string } | { otpRequired: false; user: AuthUser };
+
 interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
@@ -40,7 +49,7 @@ interface AuthContextValue {
    * SignUp.tsx.
    */
   isGuest: boolean;
-  signIn: (email: string, password: string) => Promise<AuthUser>;
+  signIn: (email: string, password: string) => Promise<SignInOutcome>;
   signUp: (name: string, email: string, password: string, role: Role) => Promise<AuthUser>;
   /**
    * `token` is whatever lib/oauth.ts's signInWithGoogle()/signInWithFacebook()
@@ -48,8 +57,10 @@ interface AuthContextValue {
    * matters the first time this Google/Facebook identity is seen; an existing
    * account keeps its own role regardless of what is passed (AuthService.oauthSession).
    */
-  signInWithGoogle: (token: string, role?: Role) => Promise<AuthUser>;
-  signInWithFacebook: (token: string, role?: Role) => Promise<AuthUser>;
+  signInWithGoogle: (token: string, role?: Role) => Promise<SignInOutcome>;
+  signInWithFacebook: (token: string, role?: Role) => Promise<SignInOutcome>;
+  /** Resolves the challenge a `SignInOutcome`'s `otpRequired: true` handed back. */
+  verifyOtp: (challengeId: string, code: string) => Promise<AuthUser>;
   signOut: () => Promise<void>;
   enterGuestMode: () => void;
   exitGuestMode: () => void;
@@ -74,11 +85,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => setAuthListener(null);
   }, [applySession]);
 
-  const signIn = useCallback(async (email: string, password: string) => {
-    const session = await apiPost<AuthSession>('/api/auth/signin', { email, password });
-    applySession(session);
-    return session.user as AuthUser;
+  /** Shared by all three sign-in paths — sets the session only when there is one, so an OTP challenge never signs anybody in early. */
+  const resolveSignIn = useCallback((envelope: SignInEnvelope): SignInOutcome => {
+    if (envelope.otpRequired) {
+      return { otpRequired: true, challengeId: envelope.challengeId as string };
+    }
+    applySession(envelope.session);
+    return { otpRequired: false, user: (envelope.session as AuthSession).user as AuthUser };
   }, [applySession]);
+
+  const signIn = useCallback(async (email: string, password: string) => {
+    const envelope = await apiPost<SignInEnvelope>('/api/auth/signin', { email, password });
+    return resolveSignIn(envelope);
+  }, [resolveSignIn]);
 
   const signUp = useCallback(async (name: string, email: string, password: string, role: Role) => {
     const session = await apiPost<AuthSession>('/api/auth/signup', { name, email, password, role });
@@ -87,13 +106,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [applySession]);
 
   const signInWithGoogle = useCallback(async (token: string, role?: Role) => {
-    const session = await apiPost<AuthSession>('/api/auth/google', { token, role });
-    applySession(session);
-    return session.user as AuthUser;
-  }, [applySession]);
+    const envelope = await apiPost<SignInEnvelope>('/api/auth/google', { token, role });
+    return resolveSignIn(envelope);
+  }, [resolveSignIn]);
 
   const signInWithFacebook = useCallback(async (token: string, role?: Role) => {
-    const session = await apiPost<AuthSession>('/api/auth/facebook', { token, role });
+    const envelope = await apiPost<SignInEnvelope>('/api/auth/facebook', { token, role });
+    return resolveSignIn(envelope);
+  }, [resolveSignIn]);
+
+  const verifyOtp = useCallback(async (challengeId: string, code: string) => {
+    const session = await apiPost<AuthSession>('/api/auth/verify-otp', { challengeId, code });
     applySession(session);
     return session.user as AuthUser;
   }, [applySession]);
@@ -119,10 +142,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(
     () => ({
-      user, loading, isGuest, signIn, signUp, signInWithGoogle, signInWithFacebook, signOut,
+      user, loading, isGuest, signIn, signUp, signInWithGoogle, signInWithFacebook, verifyOtp, signOut,
       enterGuestMode, exitGuestMode,
     }),
-    [user, loading, isGuest, signIn, signUp, signInWithGoogle, signInWithFacebook, signOut,
+    [user, loading, isGuest, signIn, signUp, signInWithGoogle, signInWithFacebook, verifyOtp, signOut,
       enterGuestMode, exitGuestMode],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

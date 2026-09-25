@@ -69,10 +69,13 @@ class GradingServiceTest {
         }
 
         @Test
-        void gradesGapFillAgainstAnyAcceptedAnswerNormalised() {
-            CardDto c = card("gap_fill", "{\"accept\":[\"watch\"],\"choices\":[]}");
-            assertThat(grading.gradeCard(c, parse("\"Watch\""))).isTrue();
-            assertThat(grading.gradeCard(c, parse("\"watches\""))).isFalse();
+        void gradesGapFillAgainstEachBlanksOwnAcceptedAnswersNormalised() {
+            CardDto c = card("gap_fill", "{\"template\":{\"en\":\"I ___ to ___ every day.\"},"
+                    + "\"blanks\":[{\"accept\":[\"go\"]},{\"accept\":[\"school\",\"work\"]}],\"choices\":[]}");
+            assertThat(grading.gradeCard(c, parse("{\"pending\":null,\"blanks\":{\"0\":\"Go\",\"1\":\"School\"}}"))).isTrue();
+            assertThat(grading.gradeCard(c, parse("{\"pending\":null,\"blanks\":{\"0\":\"go\",\"1\":\"work\"}}"))).isTrue();
+            assertThat(grading.gradeCard(c, parse("{\"pending\":null,\"blanks\":{\"0\":\"go\"}}"))).isFalse();
+            assertThat(grading.gradeCard(c, parse("{\"pending\":null,\"blanks\":{\"0\":\"goes\",\"1\":\"school\"}}"))).isFalse();
         }
 
         @Test
@@ -148,6 +151,14 @@ class GradingServiceTest {
             CardDto c = card("match", "{\"pairs\":[]}");
             assertThat(grading.isAnswered(c, parse("{\"pending\":null,\"pairs\":{}}"))).isFalse();
             assertThat(grading.isAnswered(c, parse("{\"pending\":null,\"pairs\":{\"0\":0}}"))).isTrue();
+        }
+
+        @Test
+        void gapFillNeedsAtLeastOneBlankFilledNotAllOfThem() {
+            CardDto c = card("gap_fill", "{\"blanks\":[{\"accept\":[\"go\"]},{\"accept\":[\"school\"]}]}");
+            assertThat(grading.isAnswered(c, parse("{\"pending\":0,\"blanks\":{}}"))).isFalse();
+            assertThat(grading.isAnswered(c, parse("{\"pending\":0,\"blanks\":{\"0\":\"  \"}}"))).isFalse();
+            assertThat(grading.isAnswered(c, parse("{\"pending\":1,\"blanks\":{\"0\":\"go\"}}"))).isTrue();
         }
 
         @Test

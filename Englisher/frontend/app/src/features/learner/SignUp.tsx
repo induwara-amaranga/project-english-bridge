@@ -18,6 +18,7 @@ const COPY = {
     passwordLabel: 'Create a password', passwordPlaceholder: 'At least 8 characters',
     submit: 'Save and continue', submitting: 'Creating your account…', secondary: 'Continue without an account',
     or: 'OR', google: 'Continue with Google', facebook: 'Continue with Facebook', signIn: 'Sign In',
+    otpOnSignUp: 'That account needs a verification code to sign in — use the Sign In page instead.',
   },
   si: {
     framing: 'ඔබේ ප්‍රගතිය සුරකින්න, ඊළඟ වතාවේ ආපහු එනකොට තියෙන්න.',
@@ -28,6 +29,7 @@ const COPY = {
     passwordLabel: 'මුරපදයක් සාදන්න', passwordPlaceholder: 'අවම වශයෙන් අකුරු 8ක්',
     submit: 'සුරකින්න, ඉදිරියට යන්න', submitting: 'ගිණුම සාදමින්…', secondary: 'ගිණුමකින් තොරව ඉදිරියට යන්න',
     or: 'හෝ', google: 'Google සමඟ ඉදිරියට යන්න', facebook: 'Facebook සමඟ ඉදිරියට යන්න', signIn: 'පිවිසෙන්න',
+    otpOnSignUp: 'එම ගිණුමට පිවිසීමට තහවුරු කිරීමේ කේතයක් අවශ්‍යයි — ඒ වෙනුවට Sign In පිටුව භාවිත කරන්න.',
   },
 };
 
@@ -107,14 +109,22 @@ export function SignUp() {
 
   useEffect(() => { preloadOAuthScripts(); }, []);
 
-  const withOAuth = (getToken: () => Promise<string>, signInSession: (token: string, role: Role) => ReturnType<typeof signUp>) => async () => {
+  const withOAuth = (getToken: () => Promise<string>, signInSession: (token: string, role: Role) => ReturnType<typeof signInWithGoogleSession>) => async () => {
     if (busy) return;
     setError('');
     setBusy(true);
     try {
       const token = await getToken();
-      const user = await signInSession(token, role);
-      await finishSignUp(user);
+      const outcome = await signInSession(token, role);
+      // An admin account's email already linked to this provider — signup's
+      // "create a new account" framing doesn't fit a 2FA prompt, so this
+      // sends them to the page that actually has that screen instead of
+      // trying to build a second copy of it here.
+      if (outcome.otpRequired) {
+        setError(c.otpOnSignUp);
+        return;
+      }
+      await finishSignUp(outcome.user);
     } catch (err) {
       setError(errorMessage(err));
     } finally {

@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useCurriculum } from '../../hooks/useCurriculum';
 import { TYPE_META } from '../../domain/types';
 import type { Card, DragOrderPayload, GapFillPayload, MatchPayload, McqPayload, MultiSelectPayload } from '../../domain/types';
+import { splitGapFillTemplate } from '../../domain/grading';
 import { RichText } from '../../components/RichText';
 import { Tile, Chip, LangToggle } from '../../components/Primitives';
 import { LinkButton } from '../../components/Button';
@@ -26,14 +27,16 @@ function LessonCard({ card, lang }: { card: Card; lang: 'en' | 'si' }) {
         )}
         {card.type === 'gap_fill' && (() => {
           const p = card.payload as GapFillPayload;
-          const t = (si ? p.template.si || p.template.en : p.template.en) || '';
-          const at = t.indexOf('___');
-          const before = at >= 0 ? t.slice(0, at) : t;
-          const after = at >= 0 ? t.slice(at + 3) : '';
+          const segments = splitGapFillTemplate(si ? (p.template.si || p.template.en) : p.template.en);
           return (
             <>
               <div style={{ background: 'var(--c-primary-tint-2)', borderRadius: 12, padding: 14, fontSize: 15, lineHeight: 1.9, marginTop: 12 }}>
-                {before}<span style={{ display: 'inline-block', minWidth: 70, borderBottom: '2.5px solid #B5AFD4' }}>&nbsp;</span>{after}
+                {segments.map((seg, i) => (
+                  <span key={i}>
+                    {seg}
+                    {i < p.blanks.length && <span style={{ display: 'inline-block', minWidth: 70, borderBottom: '2.5px solid #B5AFD4' }}>&nbsp;</span>}
+                  </span>
+                ))}
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
                 {p.choices.map((c, i) => <Chip key={i}>{c}</Chip>)}

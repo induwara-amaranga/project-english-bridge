@@ -13,9 +13,19 @@ export interface McqPayload {
   correctIndex: number;
   shuffle?: boolean;
 }
+/** One `___` in the template, with its own accepted answer(s). */
+export interface GapFillBlank {
+  accept: string[];
+}
+/**
+ * `template` may contain any number of `___` markers, filled in order by
+ * `blanks` (one entry per marker). `choices` is a chip pool shared across all
+ * blanks — the learner taps a blank, then taps a chip to fill it — or, when
+ * empty, each blank gets its own free-text input instead.
+ */
 export interface GapFillPayload {
   template: Bilingual;
-  accept: string[];
+  blanks: GapFillBlank[];
   choices: string[];
 }
 export interface DragOrderPayload {

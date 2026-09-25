@@ -58,6 +58,29 @@ public class UserEntity {
     @Column(name = "facebook_id")
     private String facebookId;
 
+    /**
+     * Where this account's sign-in OTP is delivered — null means "use {@link
+     * #email}". Only ever set for {@code Role.ADMIN}; see
+     * {@code AuthService.finishSignIn}.
+     */
+    @Column(name = "otp_email")
+    private String otpEmail;
+
+    /** Bcrypt hash of the current OTP, cleared once it is used or expires. */
+    @Column(name = "otp_code_hash")
+    private String otpCodeHash;
+
+    /** Opaque id verify-otp looks the pending challenge up by; null when none is pending. */
+    @Column(name = "otp_challenge_id")
+    private String otpChallengeId;
+
+    @Column(name = "otp_expires_at")
+    private Instant otpExpiresAt;
+
+    /** Failed verify-otp attempts against the current challenge — locks it out past a threshold. */
+    @Column(name = "otp_attempts", nullable = false)
+    private int otpAttempts;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt = Instant.now();
 
@@ -134,5 +157,50 @@ public class UserEntity {
 
     public void setFacebookId(String facebookId) {
         this.facebookId = facebookId;
+    }
+
+    public String getOtpEmail() {
+        return otpEmail;
+    }
+
+    public void setOtpEmail(String otpEmail) {
+        this.otpEmail = otpEmail;
+    }
+
+    /** Never null — the address an OTP actually gets sent to. */
+    public String getOtpDeliveryEmail() {
+        return otpEmail == null || otpEmail.isBlank() ? email : otpEmail;
+    }
+
+    public String getOtpCodeHash() {
+        return otpCodeHash;
+    }
+
+    public void setOtpCodeHash(String otpCodeHash) {
+        this.otpCodeHash = otpCodeHash;
+    }
+
+    public String getOtpChallengeId() {
+        return otpChallengeId;
+    }
+
+    public void setOtpChallengeId(String otpChallengeId) {
+        this.otpChallengeId = otpChallengeId;
+    }
+
+    public Instant getOtpExpiresAt() {
+        return otpExpiresAt;
+    }
+
+    public void setOtpExpiresAt(Instant otpExpiresAt) {
+        this.otpExpiresAt = otpExpiresAt;
+    }
+
+    public int getOtpAttempts() {
+        return otpAttempts;
+    }
+
+    public void setOtpAttempts(int otpAttempts) {
+        this.otpAttempts = otpAttempts;
     }
 }

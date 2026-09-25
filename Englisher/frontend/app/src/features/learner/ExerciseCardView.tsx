@@ -1,6 +1,6 @@
 import { RichText } from '../../components/RichText';
 import { CheckboxRow } from '../../components/Primitives';
-import { gradeCard, seededShuffle, type Answer, type DragOrderAnswer, type MatchAnswer, type MultiSelectAnswer, type RubricAnswer } from '../../domain/grading';
+import { gradeCard, norm, seededShuffle, splitGapFillTemplate, type Answer, type DragOrderAnswer, type GapFillAnswer, type MatchAnswer, type MultiSelectAnswer, type RubricAnswer } from '../../domain/grading';
 import type { Card, DragOrderPayload, EssayPayload, GapFillPayload, MatchPayload, McqPayload, MultiSelectPayload, RubricPayload, TranslateSiEnPayload } from '../../domain/types';
 import { bubble } from '../../lib/bubble';
 
@@ -58,28 +58,77 @@ export function ExerciseCardView({ card, answer, setAnswer, checked, lang, readO
 
         {card.type === 'gap_fill' && (() => {
           const p = card.payload as GapFillPayload;
-          const t = p.template.en || '';
-          const at = t.indexOf('___');
-          const before = at >= 0 ? t.slice(0, at) : t;
-          const after = at >= 0 ? t.slice(at + 3) : '';
-          const gradeOk = checked && gradeCard(card, answer);
+          const a = (answer as GapFillAnswer) || { pending: null, blanks: {} };
+          const segments = splitGapFillTemplate(si ? (p.template.si || p.template.en) : p.template.en);
+          const blankCount = p.blanks.length;
           const hasChips = p.choices.length > 0;
+          const blankOk = (i: number, text: string) => (p.blanks[i]?.accept || []).some((x) => norm(x, null) === norm(text, null));
+
+          /** Tapping a blank makes it the target of the next chip tap. */
+          const selectBlank = (i: number) => set({ ...a, pending: i });
+
+          const firstEmpty = (blanks: Record<number, string>) => {
+            for (let i = 0; i < blankCount; i++) if (!blanks[i] || !blanks[i].trim()) return i;
+            return null;
+          };
+
+          /** Fills whichever blank is selected (or the first empty one, if none is) and auto-advances to the next empty blank. */
+          const fillPending = (text: string) => {
+            const target = a.pending ?? firstEmpty(a.blanks);
+            if (target === null) return;
+            const blanks = { ...a.blanks, [target]: text };
+            set({ pending: firstEmpty(blanks), blanks });
+          };
+
           return (
             <>
               <div style={{ background: '#F7F5FF', borderRadius: 12, padding: 14, fontSize: 15, lineHeight: 1.9, marginTop: 14 }}>
-                {before}<span style={{ display: 'inline-block', minWidth: 74, textAlign: 'center', borderBottom: `2.5px solid ${!checked ? '#B5AFD4' : gradeOk ? 'var(--c-success)' : 'var(--c-danger)'}`, color: 'var(--c-primary)', fontWeight: 700 }}>{(answer as string) || ''}</span>{after}
+                {segments.map((seg, i) => (
+                  <span key={i}>
+                    {seg}
+                    {i < blankCount && (() => {
+                      const filled = a.blanks[i] || '';
+                      const ok = checked && blankOk(i, filled);
+                      const borderColor = checked ? (ok ? 'var(--c-success)' : 'var(--c-danger)') : a.pending === i ? 'var(--c-primary)' : '#B5AFD4';
+                      return (
+                        <button
+                          onClick={() => selectBlank(i)} className={optionClass} onPointerDown={press}
+                          style={{ display: 'inline-block', minWidth: 74, textAlign: 'center', background: 'none', border: 'none', borderBottom: `2.5px solid ${borderColor}`, color: 'var(--c-primary)', fontWeight: 700, fontSize: 15, fontFamily: 'inherit', cursor, padding: '0 4px' }}
+                        >
+                          {filled || ' '}
+                        </button>
+                      );
+                    })()}
+                  </span>
+                ))}
               </div>
               {hasChips ? (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
                   {p.choices.map((text, i) => {
+                    const placedAt = Object.entries(a.blanks).filter(([, v]) => v === text).map(([k]) => Number(k));
                     let bg = 'white', border = 'var(--c-primary-line)';
-                    if (checked && p.accept.includes(text)) { bg = 'var(--c-success-bg)'; border = 'var(--c-success)'; }
-                    else if (text === answer) { bg = 'var(--c-primary-tint)'; border = 'var(--c-primary)'; }
-                    return <button key={i} className={optionClass} onPointerDown={press} onClick={() => set(text)} style={{ borderRadius: 999, padding: '8px 15px', fontSize: 13, fontWeight: 600, cursor, background: bg, border: `2px solid ${border}` }}>{text}</button>;
+                    if (checked && placedAt.length > 0) {
+                      const allCorrect = placedAt.every((bi) => blankOk(bi, text));
+                      bg = allCorrect ? 'var(--c-success-bg)' : 'var(--c-danger-bg)'; border = allCorrect ? 'var(--c-success)' : 'var(--c-danger)';
+                    } else if (placedAt.length > 0) { bg = 'var(--c-primary-tint)'; border = 'var(--c-primary)'; }
+                    return <button key={i} className={optionClass} onPointerDown={press} onClick={() => fillPending(text)} style={{ borderRadius: 999, padding: '8px 15px', fontSize: 13, fontWeight: 600, cursor, background: bg, border: `2px solid ${border}` }}>{text}</button>;
                   })}
                 </div>
               ) : (
-                <input value={(answer as string) || ''} readOnly={readOnly} onChange={(e) => set(e.target.value)} placeholder={si ? 'නැති වචනය ටයිප් කරන්න' : 'Type the missing word'} style={{ width: '100%', border: '2px solid var(--c-primary-line)', borderRadius: 12, padding: 12, fontSize: 15, marginTop: 12, outline: 'none' }} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
+                  {p.blanks.map((_, i) => {
+                    const filled = a.blanks[i] || '';
+                    const ok = checked && blankOk(i, filled);
+                    return (
+                      <input
+                        key={i} value={filled} readOnly={readOnly}
+                        onChange={(e) => set({ ...a, blanks: { ...a.blanks, [i]: e.target.value } })}
+                        placeholder={si ? `හිස්තැන ${i + 1}` : `Blank ${i + 1}`}
+                        style={{ width: '100%', border: `2px solid ${checked ? (ok ? 'var(--c-success)' : 'var(--c-danger)') : 'var(--c-primary-line)'}`, borderRadius: 12, padding: 12, fontSize: 15, outline: 'none' }}
+                      />
+                    );
+                  })}
+                </div>
               )}
             </>
           );

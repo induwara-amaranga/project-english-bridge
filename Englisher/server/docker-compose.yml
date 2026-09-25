@@ -1,6 +1,7 @@
 # Local development / all-in-one stack: PostgreSQL, the API itself, and a
-# mail catcher for the parent invitations once ParentLinkService.deliver() is
-# wired to real email.
+# mail catcher — actually wired up for admin sign-in OTPs (OtpMailService),
+# and standing by for the parent invitations once ParentLinkService.deliver()
+# is wired to real email too.
 #
 # Prefer running the API from the IDE or `./mvnw spring-boot:run` while
 # actively developing it — faster feedback than a rebuild — but `docker
@@ -36,6 +37,14 @@ services:
       ENGLISHER_DB_URL: jdbc:postgresql://db:5432/englisher
       ENGLISHER_DB_USER: englisher
       ENGLISHER_DB_PASSWORD: englisher
+      # `mail`, not `localhost` — from inside this container, that's the
+      # Mailpit service below, reachable by its compose service name.
+      ENGLISHER_SMTP_HOST: mail
+      ENGLISHER_SMTP_PORT: 1025
+      # Where the seeded admin's sign-in OTP goes — see DataSeeder and
+      # AuthProperties.adminOtpEmail. Falls back to ENGLISHER_ADMIN_EMAIL
+      # itself if unset, which is fine here since Mailpit catches anything.
+      ENGLISHER_ADMIN_OTP_EMAIL: ${ENGLISHER_ADMIN_OTP_EMAIL:-}
       # Optional — Google/Facebook sign-in stays disabled (503) until these
       # are set in your shell or a .env file next to this compose file.
       ENGLISHER_GOOGLE_CLIENT_ID: ${ENGLISHER_GOOGLE_CLIENT_ID:-}
@@ -46,9 +55,12 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      mail:
+        condition: service_started
 
-  # Catches invitation emails so the flow can be exercised end to end without
-  # sending anything. Web UI on http://localhost:8025.
+  # Catches admin sign-in OTPs and (eventually) parent invitation emails so
+  # both flows can be exercised end to end without anything actually being
+  # sent. Web UI on http://localhost:8025.
   mail:
     image: axllent/mailpit:latest
     container_name: englisher-mail

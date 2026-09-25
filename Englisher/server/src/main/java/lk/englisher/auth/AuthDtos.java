@@ -36,6 +36,12 @@ public final class AuthDtos {
             @NotBlank String password) {
     }
 
+    /** {@code /auth/verify-otp} — resolves the challenge id a {@link SignInResponse#otpRequired} answer handed back. */
+    public record VerifyOtpRequest(
+            @NotBlank String challengeId,
+            @NotBlank @Size(min = 6, max = 6) String code) {
+    }
+
     /**
      * Google's {@code token} is the OAuth2 access token from
      * {@code initTokenClient}; Facebook's is the user access token from
@@ -78,6 +84,22 @@ public final class AuthDtos {
      * the entire reason it is not in this record.
      */
     public record AuthResponse(String accessToken, long expiresInSeconds, AuthUserDto user, String home) {
+    }
+
+    /**
+     * What signin/google/facebook return — either a completed session, or a
+     * pending admin 2FA challenge to resolve via {@code POST
+     * /auth/verify-otp}. Always the same envelope so the frontend has one
+     * response shape to branch on rather than a status-code convention.
+     */
+    public record SignInResponse(boolean otpRequired, String challengeId, AuthResponse session) {
+        public static SignInResponse otpRequired(String challengeId) {
+            return new SignInResponse(true, challengeId, null);
+        }
+
+        public static SignInResponse signed(AuthResponse session) {
+            return new SignInResponse(false, null, session);
+        }
     }
 
     /** Onboarding's three answers. All optional; unset means never asked. */

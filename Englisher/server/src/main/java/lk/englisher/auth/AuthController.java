@@ -7,7 +7,9 @@ import lk.englisher.auth.AuthDtos.AuthUserDto;
 import lk.englisher.auth.AuthDtos.CreateAdminRequest;
 import lk.englisher.auth.AuthDtos.OAuthSignInRequest;
 import lk.englisher.auth.AuthDtos.SignInRequest;
+import lk.englisher.auth.AuthDtos.SignInResponse;
 import lk.englisher.auth.AuthDtos.SignUpRequest;
+import lk.englisher.auth.AuthDtos.VerifyOtpRequest;
 import lk.englisher.config.AuthProperties;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -61,18 +63,24 @@ public class AuthController {
     }
 
     @PostMapping("/auth/signin")
-    public ResponseEntity<AuthResponse> signIn(@Valid @RequestBody SignInRequest request) {
-        return withRefreshCookie(auth.signIn(request));
+    public ResponseEntity<SignInResponse> signIn(@Valid @RequestBody SignInRequest request) {
+        return respond(auth.signIn(request));
     }
 
     @PostMapping("/auth/google")
-    public ResponseEntity<AuthResponse> google(@Valid @RequestBody OAuthSignInRequest request) {
-        return withRefreshCookie(auth.signInWithGoogle(request.token(), request.role()));
+    public ResponseEntity<SignInResponse> google(@Valid @RequestBody OAuthSignInRequest request) {
+        return respond(auth.signInWithGoogle(request.token(), request.role()));
     }
 
     @PostMapping("/auth/facebook")
-    public ResponseEntity<AuthResponse> facebook(@Valid @RequestBody OAuthSignInRequest request) {
-        return withRefreshCookie(auth.signInWithFacebook(request.token(), request.role()));
+    public ResponseEntity<SignInResponse> facebook(@Valid @RequestBody OAuthSignInRequest request) {
+        return respond(auth.signInWithFacebook(request.token(), request.role()));
+    }
+
+    /** Resolves the {@link SignInResponse#otpRequired} challenge from signin/google/facebook into a real session. */
+    @PostMapping("/auth/verify-otp")
+    public ResponseEntity<AuthResponse> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
+        return withRefreshCookie(auth.verifyOtp(request.challengeId(), request.code()));
     }
 
     @PostMapping("/auth/refresh")
@@ -120,6 +128,17 @@ public class AuthController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, refreshCookie(session.refreshToken()).toString())
                 .body(session.response());
+    }
+
+    /** signin/google/facebook all resolve to either a completed session or a pending 2FA challenge — same envelope either way, no refresh cookie until there's a real session to set it for. */
+    private ResponseEntity<SignInResponse> respond(AuthService.SignInOutcome outcome) {
+        if (outcome instanceof AuthService.OtpRequired otp) {
+            return ResponseEntity.ok(SignInResponse.otpRequired(otp.challengeId()));
+        }
+        AuthService.Session session = ((AuthService.Signed) outcome).session();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, refreshCookie(session.refreshToken()).toString())
+                .body(SignInResponse.signed(session.response()));
     }
 
     private ResponseCookie refreshCookie(String value) {

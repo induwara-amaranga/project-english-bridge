@@ -67,6 +67,9 @@ public class SecurityConfig {
                                 "/api/auth/signin",
                                 "/api/auth/google",
                                 "/api/auth/facebook",
+                                // Resolves the OTP challenge those three hand back for an
+                                // admin account — the caller is not authenticated yet.
+                                "/api/auth/verify-otp",
                                 "/api/auth/refresh",
                                 "/api/auth/signout",
                                 // The placement test runs before there is an

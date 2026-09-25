@@ -234,8 +234,12 @@
                   "en": "We ___ English every day.",
                   "si": ""
                 },
-                "accept": [
-                  "watch"
+                "blanks": [
+                  {
+                    "accept": [
+                      "watch"
+                    ]
+                  }
                 ],
                 "choices": [
                   "watch",
@@ -257,8 +261,12 @@
                       "en": "We ___ English every day.",
                       "si": ""
                     },
-                    "accept": [
-                      "watch"
+                    "blanks": [
+                      {
+                        "accept": [
+                          "watch"
+                        ]
+                      }
                     ],
                     "choices": [
                       "watch",

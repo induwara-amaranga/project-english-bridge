@@ -23,11 +23,17 @@ describe('gradeCard', () => {
     expect(gradeCard(card, 0)).toBe(false);
   });
 
-  it('grades gap_fill against any accepted answer, normalised', () => {
+  it('grades gap_fill against each blank\'s own accepted answers, normalised', () => {
     const card = makeCard('c', 'gap_fill') as Card;
-    (card as unknown as { payload: { template: unknown; accept: string[]; choices: string[] } }).payload = { template: { en: '', si: '' }, accept: ['watch'], choices: [] };
-    expect(gradeCard(card, 'Watch')).toBe(true);
-    expect(gradeCard(card, 'watches')).toBe(false);
+    (card as unknown as { payload: { template: unknown; blanks: { accept: string[] }[]; choices: string[] } }).payload = {
+      template: { en: 'I ___ to ___ every day.', si: '' },
+      blanks: [{ accept: ['go'] }, { accept: ['school', 'work'] }],
+      choices: [],
+    };
+    expect(gradeCard(card, { pending: null, blanks: { 0: 'Go', 1: 'School' } })).toBe(true);
+    expect(gradeCard(card, { pending: null, blanks: { 0: 'go', 1: 'work' } })).toBe(true);
+    expect(gradeCard(card, { pending: null, blanks: { 0: 'go' } })).toBe(false);
+    expect(gradeCard(card, { pending: null, blanks: { 0: 'goes', 1: 'school' } })).toBe(false);
   });
 
   it('grades drag_order only when every token is in its original position', () => {
@@ -88,6 +94,12 @@ describe('isAnswered', () => {
     const card = makeCard('c', 'match') as Card;
     expect(isAnswered(card, { pending: null, pairs: {} })).toBe(false);
     expect(isAnswered(card, { pending: null, pairs: { 0: 0 } })).toBe(true);
+  });
+  it('gap_fill needs at least one blank filled, not all of them', () => {
+    const card = makeCard('c', 'gap_fill') as Card;
+    expect(isAnswered(card, { pending: 0, blanks: {} })).toBe(false);
+    expect(isAnswered(card, { pending: 0, blanks: { 0: '  ' } })).toBe(false);
+    expect(isAnswered(card, { pending: 1, blanks: { 0: 'go' } })).toBe(true);
   });
   it('free_text needs non-whitespace content', () => {
     const card = makeCard('c', 'free_text') as Card;

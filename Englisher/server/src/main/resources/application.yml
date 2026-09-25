@@ -23,6 +23,20 @@ spring:
     # carries `lastActiveISO: string` and the React app calls new Date() on it.
     serialization:
       write-dates-as-timestamps: false
+  mail:
+    # Admin sign-in OTPs (AuthService/OtpMailService). Points at the Mailpit
+    # container in dev (see docker-compose.yml) — nothing leaves the machine
+    # unless ENGLISHER_SMTP_HOST is overridden to a real relay.
+    host: ${ENGLISHER_SMTP_HOST:localhost}
+    port: ${ENGLISHER_SMTP_PORT:1025}
+    username: ${ENGLISHER_SMTP_USER:}
+    password: ${ENGLISHER_SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${ENGLISHER_SMTP_AUTH:false}
+          starttls:
+            enable: ${ENGLISHER_SMTP_STARTTLS:false}
 
 server:
   port: ${ENGLISHER_PORT:8080}
@@ -42,6 +56,10 @@ englisher:
     admin-email: ${ENGLISHER_ADMIN_EMAIL:admin@englisher.test}
     admin-password: ${ENGLISHER_ADMIN_PASSWORD:}
     admin-name: Course Admin
+    # Where the seeded admin's sign-in OTP is delivered — see DataSeeder.
+    # Blank falls back to admin-email itself.
+    admin-otp-email: ${ENGLISHER_ADMIN_OTP_EMAIL:}
+    mail-from: ${ENGLISHER_MAIL_FROM:no-reply@englisher.test}
   oauth:
     google-client-id: ${ENGLISHER_GOOGLE_CLIENT_ID:}
     facebook-app-id: ${ENGLISHER_FACEBOOK_APP_ID:}

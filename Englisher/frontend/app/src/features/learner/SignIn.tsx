@@ -13,6 +13,10 @@ const COPY = {
     forgot: 'Forgot password?', submit: 'Sign in', submitting: 'Signing in…',
     or: 'OR', google: 'Continue with Google', facebook: 'Continue with Facebook',
     noAccount: "Don't have an account?", signUp: 'Sign up',
+    otpFraming: "We emailed a 6-digit code to this account's verification address.",
+    otpLabel: 'Verification code', otpPlaceholder: '000000',
+    otpSubmit: 'Verify', otpSubmitting: 'Verifying…',
+    otpResend: 'Resend code', otpBack: '← Back to sign in',
   },
   si: {
     framing: 'නැවත සාදරයෙන් පිළිගනිමු! ඔබ නැවතුම් තැනින්ම ආරම්භ කරන්න.',
@@ -21,6 +25,10 @@ const COPY = {
     forgot: 'මුරපදය අමතකද?', submit: 'පිවිසෙන්න', submitting: 'පිවිසෙමින්…',
     or: 'හෝ', google: 'Google සමඟ ඉදිරියට යන්න', facebook: 'Facebook සමඟ ඉදිරියට යන්න',
     noAccount: 'ගිණුමක් නැද්ද?', signUp: 'ලියාපදිංචි වන්න',
+    otpFraming: 'මෙම ගිණුමේ තහවුරු කිරීමේ ලිපිනයට අංක 6ක කේතයක් විද්‍යුත් තැපෑලෙන් යවා ඇත.',
+    otpLabel: 'තහවුරු කිරීමේ කේතය', otpPlaceholder: '000000',
+    otpSubmit: 'තහවුරු කරන්න', otpSubmitting: 'තහවුරු කරමින්…',
+    otpResend: 'කේතය නැවත එවන්න', otpBack: '← පිවිසීමට ආපසු',
   },
 };
 
@@ -33,7 +41,15 @@ export function SignIn() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const { signIn, signInWithGoogle: signInWithGoogleSession, signInWithFacebook: signInWithFacebookSession } = useAuth();
+  // Set once a sign-in attempt (password or OAuth) comes back needing a
+  // second factor — `resend` remembers how to re-run that exact attempt for
+  // a fresh code, since a Google/Facebook token can't just be typed again.
+  const [otpChallengeId, setOtpChallengeId] = useState<string | null>(null);
+  const [otpResend, setOtpResend] = useState<(() => void) | null>(null);
+  const [otpCode, setOtpCode] = useState('');
+  const [otpError, setOtpError] = useState('');
+  const [otpBusy, setOtpBusy] = useState(false);
+  const { signIn, signInWithGoogle: signInWithGoogleSession, signInWithFacebook: signInWithFacebookSession, verifyOtp } = useAuth();
   const navigate = useNavigate();
   const c = COPY[lang];
   const isSi = lang === 'si';
@@ -41,14 +57,23 @@ export function SignIn() {
 
   useEffect(() => { preloadOAuthScripts(); }, []);
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const attemptSignIn = async (run: () => ReturnType<typeof signIn>) => {
     if (busy) return;
     setError('');
     setBusy(true);
     try {
-      const user = await signIn(email, password);
-      navigate(roleHome(user.role));
+      const outcome = await run();
+      if (outcome.otpRequired) {
+        setOtpChallengeId(outcome.challengeId);
+        // A fresh attempt overwrites the server's challenge too (AuthService
+        // regenerates on every signin) — clearing stale state here keeps
+        // the two in sync instead of the old code silently going stale.
+        setOtpCode('');
+        setOtpError('');
+        setOtpResend(() => () => { void attemptSignIn(run); });
+      } else {
+        navigate(roleHome(outcome.user.role));
+      }
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -56,22 +81,38 @@ export function SignIn() {
     }
   };
 
-  const withOAuth = (getToken: () => Promise<string>, signInSession: (token: string) => ReturnType<typeof signIn>) => async () => {
-    if (busy) return;
-    setError('');
-    setBusy(true);
-    try {
-      const token = await getToken();
-      const user = await signInSession(token);
-      navigate(roleHome(user.role));
-    } catch (err) {
-      setError(errorMessage(err));
-    } finally {
-      setBusy(false);
-    }
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    void attemptSignIn(() => signIn(email, password));
+  };
+
+  const withOAuth = (getToken: () => Promise<string>, signInSession: (token: string) => ReturnType<typeof signIn>) => () => {
+    void attemptSignIn(async () => signInSession(await getToken()));
   };
   const oauthGoogle = withOAuth(signInWithGoogle, signInWithGoogleSession);
   const oauthFacebook = withOAuth(signInWithFacebook, signInWithFacebookSession);
+
+  const backToSignIn = () => {
+    setOtpChallengeId(null);
+    setOtpResend(null);
+    setOtpCode('');
+    setOtpError('');
+  };
+
+  const submitOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (otpBusy || !otpChallengeId) return;
+    setOtpError('');
+    setOtpBusy(true);
+    try {
+      const user = await verifyOtp(otpChallengeId, otpCode);
+      navigate(roleHome(user.role));
+    } catch (err) {
+      setOtpError(errorMessage(err));
+    } finally {
+      setOtpBusy(false);
+    }
+  };
 
   return (
     <div style={{ fontFamily: isSi ? 'var(--font-si-body)' : 'var(--font-body)', background: 'var(--c-bg)', color: 'var(--c-ink)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -82,29 +123,58 @@ export function SignIn() {
 
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 24px 64px' }}>
         <div style={{ maxWidth: 440, width: '100%' }}>
-          <h1 style={{ fontFamily: headFont, fontWeight: 800, fontSize: 26, margin: '0 0 12px', lineHeight: 1.35, textAlign: 'center' }}>{c.framing}</h1>
+          {otpChallengeId ? (
+            <>
+              <h1 style={{ fontFamily: headFont, fontWeight: 800, fontSize: 26, margin: '0 0 12px', lineHeight: 1.35, textAlign: 'center' }}>{c.otpLabel}</h1>
+              <p style={{ fontSize: 14, color: 'var(--c-ink-soft)', textAlign: 'center', margin: '0 0 8px' }}>{c.otpFraming}</p>
 
-          <form onSubmit={submit} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 18, marginTop: 28 }}>
-            <div className="field"><label className="field__label">{c.emailLabel}</label><input type="email" className="field__input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={c.emailPlaceholder} /></div>
-            <div className="field"><label className="field__label">{c.passwordLabel}</label><input type="password" className="field__input" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={c.passwordPlaceholder} /></div>
-            {error && <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--c-danger-ink-2, #C2354A)' }}>{error}</div>}
-            <div style={{ textAlign: 'right' }}><a href="#" style={{ fontSize: 13, fontWeight: 600 }}>{c.forgot}</a></div>
-            <button type="submit" disabled={busy} style={{ background: 'var(--c-primary)', color: 'white', border: 'none', borderRadius: 999, padding: 16, fontWeight: 700, fontSize: 16, fontFamily: headFont, cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.7 : 1, boxShadow: '0 5px 0 var(--c-primary-shadow)', marginTop: 8 }}>{busy ? c.submitting : c.submit}</button>
-          </form>
+              <form onSubmit={submitOtp} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 18, marginTop: 20 }}>
+                <div className="field">
+                  <label className="field__label">{c.otpLabel}</label>
+                  <input
+                    type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6}
+                    className="field__input" value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder={c.otpPlaceholder}
+                    style={{ letterSpacing: '0.3em', textAlign: 'center', fontSize: 20 }}
+                  />
+                </div>
+                {otpError && <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--c-danger-ink-2, #C2354A)' }}>{otpError}</div>}
+                <button type="submit" disabled={otpBusy || otpCode.length !== 6} style={{ background: 'var(--c-primary)', color: 'white', border: 'none', borderRadius: 999, padding: 16, fontWeight: 700, fontSize: 16, fontFamily: headFont, cursor: otpBusy ? 'default' : 'pointer', opacity: otpBusy || otpCode.length !== 6 ? 0.7 : 1, boxShadow: '0 5px 0 var(--c-primary-shadow)', marginTop: 8 }}>{otpBusy ? c.otpSubmitting : c.otpSubmit}</button>
+              </form>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 22 }}>
-            <div style={{ flex: 1, height: 1, background: 'var(--c-primary-line)' }} /><span style={{ fontSize: 13, fontWeight: 600, color: 'var(--c-input-placeholder)' }}>{c.or}</span><div style={{ flex: 1, height: 1, background: 'var(--c-primary-line)' }} />
-          </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 20 }}>
+                <button type="button" onClick={backToSignIn} style={{ background: 'none', border: 'none', fontSize: 13, fontWeight: 600, color: 'var(--c-ink-soft)', cursor: 'pointer' }}>{c.otpBack}</button>
+                <button type="button" onClick={() => otpResend?.()} disabled={busy} style={{ background: 'none', border: 'none', fontSize: 13, fontWeight: 700, color: 'var(--c-primary)', cursor: busy ? 'default' : 'pointer' }}>{c.otpResend}</button>
+              </div>
+            </>
+          ) : (
+            <>
+              <h1 style={{ fontFamily: headFont, fontWeight: 800, fontSize: 26, margin: '0 0 12px', lineHeight: 1.35, textAlign: 'center' }}>{c.framing}</h1>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 18 }}>
-            <button className="social-btn" onClick={oauthGoogle} disabled={busy} type="button"><GoogleMark />{c.google}</button>
-            <button className="social-btn" onClick={oauthFacebook} disabled={busy} type="button"><FacebookMark />{c.facebook}</button>
-          </div>
+              <form onSubmit={submit} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 18, marginTop: 28 }}>
+                <div className="field"><label className="field__label">{c.emailLabel}</label><input type="email" className="field__input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={c.emailPlaceholder} /></div>
+                <div className="field"><label className="field__label">{c.passwordLabel}</label><input type="password" className="field__input" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={c.passwordPlaceholder} /></div>
+                {error && <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--c-danger-ink-2, #C2354A)' }}>{error}</div>}
+                <div style={{ textAlign: 'right' }}><a href="#" style={{ fontSize: 13, fontWeight: 600 }}>{c.forgot}</a></div>
+                <button type="submit" disabled={busy} style={{ background: 'var(--c-primary)', color: 'white', border: 'none', borderRadius: 999, padding: 16, fontWeight: 700, fontSize: 16, fontFamily: headFont, cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.7 : 1, boxShadow: '0 5px 0 var(--c-primary-shadow)', marginTop: 8 }}>{busy ? c.submitting : c.submit}</button>
+              </form>
 
-          <div style={{ textAlign: 'center', marginTop: 20 }}>
-            <span style={{ fontSize: 14, color: 'var(--c-ink-soft)' }}>{c.noAccount}</span>
-            <Link to="/signup" style={{ fontWeight: 700, fontSize: 14, marginLeft: 4 }}>{c.signUp}</Link>
-          </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 22 }}>
+                <div style={{ flex: 1, height: 1, background: 'var(--c-primary-line)' }} /><span style={{ fontSize: 13, fontWeight: 600, color: 'var(--c-input-placeholder)' }}>{c.or}</span><div style={{ flex: 1, height: 1, background: 'var(--c-primary-line)' }} />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 18 }}>
+                <button className="social-btn" onClick={oauthGoogle} disabled={busy} type="button"><GoogleMark />{c.google}</button>
+                <button className="social-btn" onClick={oauthFacebook} disabled={busy} type="button"><FacebookMark />{c.facebook}</button>
+              </div>
+
+              <div style={{ textAlign: 'center', marginTop: 20 }}>
+                <span style={{ fontSize: 14, color: 'var(--c-ink-soft)' }}>{c.noAccount}</span>
+                <Link to="/signup" style={{ fontWeight: 700, fontSize: 14, marginLeft: 4 }}>{c.signUp}</Link>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

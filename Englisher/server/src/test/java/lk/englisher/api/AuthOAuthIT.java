@@ -55,9 +55,10 @@ class AuthOAuthIT extends AbstractPostgresIT {
 
         JsonNode response = post("/api/auth/google", oauthBody("any-token", null));
 
-        assertThat(response.get("user").get("role").asText()).isEqualTo("student");
-        assertThat(response.get("user").get("email").asText()).isEqualTo("new@test.lk");
-        assertThat(response.get("home").asText()).isEqualTo("/learn");
+        assertThat(response.get("otpRequired").asBoolean()).isFalse();
+        assertThat(response.get("session").get("user").get("role").asText()).isEqualTo("student");
+        assertThat(response.get("session").get("user").get("email").asText()).isEqualTo("new@test.lk");
+        assertThat(response.get("session").get("home").asText()).isEqualTo("/learn");
         assertThat(users.findByGoogleId("g-1")).isPresent();
     }
 
@@ -67,16 +68,16 @@ class AuthOAuthIT extends AbstractPostgresIT {
 
         JsonNode response = post("/api/auth/google", oauthBody("any-token", "parent"));
 
-        assertThat(response.get("user").get("role").asText()).isEqualTo("parent");
-        assertThat(response.get("home").asText()).isEqualTo("/parent");
+        assertThat(response.get("session").get("user").get("role").asText()).isEqualTo("parent");
+        assertThat(response.get("session").get("home").asText()).isEqualTo("/parent");
     }
 
     @Test
     void repeatGoogleSignInReusesTheSameAccount() {
         when(googleVerifier.verify(any())).thenReturn(new GoogleProfile("g-3", "again@test.lk", "Again"));
 
-        String firstId = post("/api/auth/google", oauthBody("token-1", null)).get("user").get("id").asText();
-        String secondId = post("/api/auth/google", oauthBody("token-2", null)).get("user").get("id").asText();
+        String firstId = post("/api/auth/google", oauthBody("token-1", null)).get("session").get("user").get("id").asText();
+        String secondId = post("/api/auth/google", oauthBody("token-2", null)).get("session").get("user").get("id").asText();
 
         assertThat(secondId).isEqualTo(firstId);
     }
@@ -92,8 +93,8 @@ class AuthOAuthIT extends AbstractPostgresIT {
         // role hint is ignored: the account already exists as PARENT.
         JsonNode response = post("/api/auth/google", oauthBody("any-token", "student"));
 
-        assertThat(response.get("user").get("id").asText()).isEqualTo(existing.getId().toString());
-        assertThat(response.get("user").get("role").asText()).isEqualTo("parent");
+        assertThat(response.get("session").get("user").get("id").asText()).isEqualTo(existing.getId().toString());
+        assertThat(response.get("session").get("user").get("role").asText()).isEqualTo("parent");
         assertThat(users.findByGoogleId("g-4")).map(UserEntity::getId).contains(existing.getId());
     }
 
@@ -107,13 +108,32 @@ class AuthOAuthIT extends AbstractPostgresIT {
         assertThat(users.findByGoogleId("g-5")).isEmpty();
     }
 
+    /**
+     * The gap {@link AuthService#finishSignIn} exists to close: without it, an
+     * admin account whose email got linked to Google could sign in with no
+     * password and no OTP at all, since {@code oauthSession}'s
+     * find-by-email-then-link path does not care what role it finds.
+     */
+    @Test
+    void googleSignInToAnExistingAdminAccountStillRequiresAnOtpNotASession() {
+        users.save(new UserEntity("admin-oauth@test.lk", passwords.encode("supersecret1"), "Admin",
+                lk.englisher.auth.Role.ADMIN, json.createObjectNode()));
+        when(googleVerifier.verify(any())).thenReturn(new GoogleProfile("g-6", "admin-oauth@test.lk", "Ignored Name"));
+
+        JsonNode response = post("/api/auth/google", oauthBody("any-token", null));
+
+        assertThat(response.get("otpRequired").asBoolean()).isTrue();
+        assertThat(response.get("session").isNull()).isTrue();
+        assertThat(response.get("challengeId").asText()).isNotBlank();
+    }
+
     @Test
     void firstFacebookSignInWithNoRoleCreatesAStudent() {
         when(facebookVerifier.verify(any())).thenReturn(new FacebookProfile("fb-1", "fbnew@test.lk", "FB Learner"));
 
         JsonNode response = post("/api/auth/facebook", oauthBody("any-token", null));
 
-        assertThat(response.get("user").get("role").asText()).isEqualTo("student");
+        assertThat(response.get("session").get("user").get("role").asText()).isEqualTo("student");
         assertThat(users.findByFacebookId("fb-1")).isPresent();
     }
 
@@ -121,8 +141,8 @@ class AuthOAuthIT extends AbstractPostgresIT {
     void repeatFacebookSignInReusesTheSameAccount() {
         when(facebookVerifier.verify(any())).thenReturn(new FacebookProfile("fb-2", "fbagain@test.lk", "Again"));
 
-        String firstId = post("/api/auth/facebook", oauthBody("token-1", null)).get("user").get("id").asText();
-        String secondId = post("/api/auth/facebook", oauthBody("token-2", null)).get("user").get("id").asText();
+        String firstId = post("/api/auth/facebook", oauthBody("token-1", null)).get("session").get("user").get("id").asText();
+        String secondId = post("/api/auth/facebook", oauthBody("token-2", null)).get("session").get("user").get("id").asText();
 
         assertThat(secondId).isEqualTo(firstId);
     }

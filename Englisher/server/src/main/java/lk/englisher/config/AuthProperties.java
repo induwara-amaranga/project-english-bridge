@@ -47,6 +47,12 @@ public class AuthProperties {
 
     private String adminName = "Course Admin";
 
+    /** Where the seeded admin's sign-in OTP is delivered — the login email above is a placeholder domain that cannot receive mail. Blank falls back to adminEmail. */
+    private String adminOtpEmail = "";
+
+    /** The From: address on OTP emails. */
+    private String mailFrom = "no-reply@englisher.test";
+
     @PostConstruct
     void validate() {
         if (jwtSecret == null || jwtSecret.getBytes().length < 32) {
@@ -134,5 +140,21 @@ public class AuthProperties {
 
     public void setAdminName(String adminName) {
         this.adminName = adminName;
+    }
+
+    public String getAdminOtpEmail() {
+        return adminOtpEmail;
+    }
+
+    public void setAdminOtpEmail(String adminOtpEmail) {
+        this.adminOtpEmail = adminOtpEmail;
+    }
+
+    public String getMailFrom() {
+        return mailFrom;
+    }
+
+    public void setMailFrom(String mailFrom) {
+        this.mailFrom = mailFrom;
     }
 }

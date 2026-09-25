@@ -10,10 +10,13 @@ import lk.englisher.common.ApiException;
 import lk.englisher.config.AuthProperties;
 import lk.englisher.progress.ProgressService;
 import org.springframework.http.HttpStatus;
+import org.springframework.mail.MailException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -29,6 +32,10 @@ import java.util.UUID;
 @Service
 public class AuthService {
 
+    /** 6-digit codes, 10-minute window, 5 guesses before the challenge is dead — the same shape as any other SMS/email OTP. */
+    private static final Duration OTP_TTL = Duration.ofMinutes(10);
+    private static final int OTP_MAX_ATTEMPTS = 5;
+
     private final UserRepository users;
     private final RefreshTokenRepository refreshTokens;
     private final PasswordEncoder passwords;
@@ -38,11 +45,14 @@ public class AuthService {
     private final ObjectMapper json;
     private final GoogleTokenVerifier googleVerifier;
     private final FacebookTokenVerifier facebookVerifier;
+    private final OtpMailService otpMail;
+    private final SecureRandom random = new SecureRandom();
 
     public AuthService(UserRepository users, RefreshTokenRepository refreshTokens,
                        PasswordEncoder passwords, JwtService jwt, AuthProperties properties,
                        ProgressService progress, ObjectMapper json,
-                       GoogleTokenVerifier googleVerifier, FacebookTokenVerifier facebookVerifier) {
+                       GoogleTokenVerifier googleVerifier, FacebookTokenVerifier facebookVerifier,
+                       OtpMailService otpMail) {
         this.users = users;
         this.refreshTokens = refreshTokens;
         this.passwords = passwords;
@@ -52,10 +62,27 @@ public class AuthService {
         this.json = json;
         this.googleVerifier = googleVerifier;
         this.facebookVerifier = facebookVerifier;
+        this.otpMail = otpMail;
     }
 
     /** Signup plus the raw refresh token the controller turns into a cookie. */
     public record Session(AuthResponse response, String refreshToken) {
+    }
+
+    /**
+     * What a sign-in attempt resolves to — a completed {@link Session}, or a
+     * pending admin 2FA challenge that {@link #verifyOtp} must resolve before
+     * one exists. Every path that can end in a session (password, Google,
+     * Facebook) returns this instead of {@code Session} directly, so 2FA has
+     * no provider it can be bypassed through — see {@link #finishSignIn}.
+     */
+    public sealed interface SignInOutcome permits OtpRequired, Signed {
+    }
+
+    public record OtpRequired(String challengeId) implements SignInOutcome {
+    }
+
+    public record Signed(Session session) implements SignInOutcome {
     }
 
     @Transactional
@@ -116,7 +143,7 @@ public class AuthService {
     }
 
     @Transactional
-    public Session signIn(SignInRequest request) {
+    public SignInOutcome signIn(SignInRequest request) {
         UserEntity user = users.findByEmailIgnoringCase(request.email().trim())
                 .orElse(null);
         // One message for "no such account" and "wrong password", so the
@@ -129,17 +156,17 @@ public class AuthService {
         if (!passwords.matches(request.password(), user.getPasswordHash())) {
             throw invalidCredentials();
         }
-        return newSession(user);
+        return finishSignIn(user);
     }
 
     @Transactional
-    public Session signInWithGoogle(String accessToken, String roleHint) {
+    public SignInOutcome signInWithGoogle(String accessToken, String roleHint) {
         GoogleTokenVerifier.GoogleProfile profile = googleVerifier.verify(accessToken);
         return oauthSession(true, profile.subject(), profile.email(), profile.name(), roleHint);
     }
 
     @Transactional
-    public Session signInWithFacebook(String accessToken, String roleHint) {
+    public SignInOutcome signInWithFacebook(String accessToken, String roleHint) {
         FacebookTokenVerifier.FacebookProfile profile = facebookVerifier.verify(accessToken);
         return oauthSession(false, profile.id(), profile.email(), profile.name(), roleHint);
     }
@@ -158,7 +185,7 @@ public class AuthService {
      * GoogleTokenVerifier/FacebookTokenVerifier), so linking on email match is
      * as trustworthy as the password-signup email itself.
      */
-    private Session oauthSession(boolean isGoogle, String providerId, String email, String name, String roleHint) {
+    private SignInOutcome oauthSession(boolean isGoogle, String providerId, String email, String name, String roleHint) {
         UserEntity user = (isGoogle ? users.findByGoogleId(providerId) : users.findByFacebookId(providerId))
                 .orElse(null);
         if (user == null) {
@@ -187,7 +214,7 @@ public class AuthService {
                 progress.createInitial(user.getId());
             }
         }
-        return newSession(user);
+        return finishSignIn(user);
     }
 
     private static void linkProvider(UserEntity user, boolean isGoogle, String providerId) {
@@ -272,8 +299,98 @@ public class AuthService {
         return new Session(response, raw);
     }
 
+    /**
+     * Every path that can end in a session — password, Google, Facebook —
+     * funnels through here, so an admin account gets 2FA no matter which
+     * provider it signs in with. Only {@code Role.ADMIN} is gated; students
+     * and parents go straight through, same as before this existed.
+     */
+    private SignInOutcome finishSignIn(UserEntity user) {
+        if (user.getRole() != Role.ADMIN) {
+            return new Signed(newSession(user));
+        }
+        return new OtpRequired(issueOtpChallenge(user));
+    }
+
+    /**
+     * Generates a fresh 6-digit code, overwriting any challenge already
+     * pending for this account (so only the most recent "resend" — a second
+     * signin attempt — is ever valid), and emails it before committing. A
+     * failed send throws and the transaction rolls the challenge back with
+     * it, rather than leaving the admin on a code-entry screen no email is
+     * coming for.
+     */
+    private String issueOtpChallenge(UserEntity user) {
+        String code = String.format("%06d", random.nextInt(1_000_000));
+        String challengeId = UUID.randomUUID().toString();
+        user.setOtpCodeHash(passwords.encode(code));
+        user.setOtpChallengeId(challengeId);
+        user.setOtpExpiresAt(Instant.now().plus(OTP_TTL));
+        user.setOtpAttempts(0);
+        users.save(user);
+        try {
+            otpMail.sendOtp(user.getOtpDeliveryEmail(), code);
+        } catch (MailException ex) {
+            throw ApiException.serviceUnavailable("auth.otpSendFailed",
+                    "Could not send the verification email. Please try again shortly.");
+        }
+        return challengeId;
+    }
+
+    /**
+     * Resolves an {@link OtpRequired} challenge into a real session. Wrong
+     * codes count against {@link #OTP_MAX_ATTEMPTS} before the challenge is
+     * killed outright — brute-forcing a 6-digit code needs more than five
+     * guesses, and the 10-minute expiry bounds it further either way.
+     *
+     * <p>{@code noRollbackFor}: every failure path here saves a mutation (the
+     * incremented attempt count, or the cleared challenge) and then throws —
+     * Spring's default is to roll back the whole transaction on any unchecked
+     * exception, which would silently undo that save and make the lockout,
+     * the expiry-clear and the one-time-use guarantee all no-ops.
+     */
+    @Transactional(noRollbackFor = ApiException.class)
+    public Session verifyOtp(String challengeId, String code) {
+        UserEntity user = challengeId == null || challengeId.isBlank()
+                ? null
+                : users.findByOtpChallengeId(challengeId).orElse(null);
+        if (user == null) {
+            throw invalidOtp();
+        }
+        if (user.getOtpExpiresAt() == null || user.getOtpExpiresAt().isBefore(Instant.now())) {
+            clearOtp(user);
+            throw ApiException.unauthorized("auth.otpExpired",
+                    "That code has expired. Sign in again to get a new one.");
+        }
+        if (user.getOtpAttempts() >= OTP_MAX_ATTEMPTS) {
+            clearOtp(user);
+            throw ApiException.unauthorized("auth.otpLocked",
+                    "Too many attempts. Sign in again to get a new code.");
+        }
+        if (user.getOtpCodeHash() == null || !passwords.matches(code == null ? "" : code.trim(), user.getOtpCodeHash())) {
+            user.setOtpAttempts(user.getOtpAttempts() + 1);
+            users.save(user);
+            throw invalidOtp();
+        }
+        clearOtp(user);
+        return newSession(user);
+    }
+
+    private void clearOtp(UserEntity user) {
+        user.setOtpCodeHash(null);
+        user.setOtpChallengeId(null);
+        user.setOtpExpiresAt(null);
+        user.setOtpAttempts(0);
+        users.save(user);
+    }
+
     private static ApiException invalidCredentials() {
-        return new ApiException(HttpStatus.UNAUTHORIZED, "auth.invalidCredentials",
+        return ApiException.unauthorized("auth.invalidCredentials",
                 "That email and password do not match an account.");
+    }
+
+    private static ApiException invalidOtp() {
+        return ApiException.unauthorized("auth.invalidOtp",
+                "That code is incorrect or has expired.");
     }
 }

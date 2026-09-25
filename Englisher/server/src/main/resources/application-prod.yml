@@ -1,0 +1,32 @@
+# Production. Activate with SPRING_PROFILES_ACTIVE=prod (or
+# --spring.profiles.active=prod).
+#
+# Deliberately small: application.yml's own defaults are already
+# production-safe on their own — cookie-secure: true, no default
+# jwt-secret/admin-password (the app refuses to boot without a real
+# ENGLISHER_JWT_SECRET, and DataSeeder skips seeding the admin account
+# entirely rather than falling back to a known password — see that class's
+# comment). This profile only adds what a real deployment needs beyond that
+# baseline; it does not relax anything the way application-dev.yml does.
+
+server:
+  # Assumes TLS terminates in front of this app (a load balancer, nginx,
+  # Cloudflare, …) and the app itself is reached over plain HTTP from that
+  # proxy — true of virtually every real deployment. Lets Spring Boot read
+  # X-Forwarded-Proto/Host/For and get the original scheme, host and client
+  # IP right for redirects, logging and any secure-context check, rather than
+  # seeing every request as plain HTTP from the proxy's own address. Only
+  # safe when the proxy actually overwrites those headers instead of passing
+  # through whatever a client sent — true for a load balancer/reverse proxy
+  # you control, not for an app reachable directly from the internet.
+  forward-headers-strategy: framework
+
+springdoc:
+  # The OpenAPI JSON and Swagger UI are both unauthenticated by design
+  # (SecurityConfig permits /v3/api-docs/** and /swagger-ui/** for anyone) —
+  # convenient while building the API, not something to leave world-readable
+  # once it's a real deployment.
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
