@@ -12,7 +12,7 @@ APP_DIR="/opt/englisher"
 echo "==> System packages"
 apt-get update -y
 apt-get upgrade -y
-apt-get install -y ufw fail2ban unattended-upgrades curl git
+apt-get install -y ufw fail2ban unattended-upgrades curl git rclone
 
 echo "==> Unattended security upgrades"
 dpkg-reconfigure -f noninteractive unattended-upgrades
@@ -44,6 +44,15 @@ fi
 mkdir -p "$APP_DIR"
 chown "$DEPLOY_USER:$DEPLOY_USER" "$APP_DIR"
 
+echo "==> Nightly DB backup cron job"
+# Runs as the deploy user (same one docker compose runs under) at 03:00 UTC.
+# infra/backup-db.sh no-ops gracefully until the repo is actually cloned into
+# $APP_DIR and backup.env is configured — see the manual steps below.
+cat > /etc/cron.d/englisher-backup <<EOF
+0 3 * * * $DEPLOY_USER $APP_DIR/infra/backup-db.sh >> $APP_DIR/backup.log 2>&1
+EOF
+chmod 644 /etc/cron.d/englisher-backup
+
 cat <<'EOF'
 
 ==> Manual steps left (deliberately not scripted):
@@ -64,4 +73,12 @@ cat <<'EOF'
 5. Add DEPLOY_HOST / DEPLOY_USER / DEPLOY_SSH_KEY (the deploy user's
    PRIVATE key) as GitHub Actions secrets so deploy.yml can SSH in on
    every future push to main.
+6. Off-site DB backups (cron job for this is already installed, see
+   /etc/cron.d/englisher-backup): as the deploy user, run `rclone config`
+   and set up a remote for wherever backups should land (S3/B2/Spaces/R2/
+   etc.), then:
+     cd /opt/englisher/infra && cp backup.env.example backup.env
+   and set RCLONE_REMOTE to "<that remote name>:<bucket>". Then run
+   `bash /opt/englisher/infra/backup-db.sh` once by hand to confirm a dump
+   actually lands in the bucket before trusting the cron job to do it nightly.
 EOF
