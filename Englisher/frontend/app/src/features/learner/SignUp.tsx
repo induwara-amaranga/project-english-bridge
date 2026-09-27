@@ -21,7 +21,7 @@ const COPY = {
     otpOnSignUp: 'That account needs a verification code to sign in — use the Sign In page instead.',
   },
   si: {
-    framing: 'ඔබේ ප්‍රගතිය සුරකින්න, ඊළඟ වතාවේ ආපහු එනකොට තියෙන්න.',
+    framing: 'ඊළඟ වතාවේ ආපහු එනකොට ඔබේ ප්‍රගතිය තිබීමට , ඔබේ ප්‍රගතිය සුරකින්න.',
     accountType: 'ගිණුම් වර්ගය',
     nameLabel: 'ඔබේ නම', namePlaceholder: 'ඔබේ නම',
     ageLabel: 'ඔබේ වයස', agePlaceholder: 'ඔබේ වයස',

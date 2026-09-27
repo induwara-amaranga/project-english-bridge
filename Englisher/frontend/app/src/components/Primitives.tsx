@@ -37,8 +37,8 @@ export function LangToggle({ lang, onToggle }: { lang: 'en' | 'si'; onToggle: ()
 }
 
 const ROLE_LABEL: Record<Role, { en: string; si: string }> = {
-  student: { en: 'Student', si: 'ශිෂ්‍යයා' },
-  parent: { en: 'Parent', si: 'මාපියා' },
+  student: { en: 'Student', si: 'ශිෂ්‍ය' },
+  parent: { en: 'Parent', si: 'මාපිය' },
   admin: { en: 'Admin', si: 'පරිපාලක' },
 };
 

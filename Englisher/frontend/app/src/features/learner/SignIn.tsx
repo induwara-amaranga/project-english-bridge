@@ -19,7 +19,7 @@ const COPY = {
     otpResend: 'Resend code', otpBack: '← Back to sign in',
   },
   si: {
-    framing: 'නැවත සාදරයෙන් පිළිගනිමු! ඔබ නැවතුම් තැනින්ම ආරම්භ කරන්න.',
+    framing: 'නැවත සාදරයෙන් පිළිගනිමු! ඔබ නැවැත්වූ තැනින්ම ආරම්භ කරන්න.',
     emailLabel: 'විද්‍යුත් තැපැල් ලිපිනය', emailPlaceholder: 'විද්‍යුත් තැපැල් ලිපිනය',
     passwordLabel: 'මුරපදය', passwordPlaceholder: 'මුරපදය',
     forgot: 'මුරපදය අමතකද?', submit: 'පිවිසෙන්න', submitting: 'පිවිසෙමින්…',

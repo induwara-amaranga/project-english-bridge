@@ -20,18 +20,18 @@ const COPY = {
     textbookOutcome: 'All the way to writing a real formal letter with confidence.',
   },
   si: {
-    value: 'ඉංග්‍රීසි ඉගෙන ගන්න, පියවරෙන් පියවර — සිංහල කතා කරන අයට විශේෂයෙන්.',
+    value: 'යන එන ගමන් ඉංග්‍රීසි ඉගෙන ගන්න - සිංහල කතා කරන අය සඳහාම පියවරෙන් පියවර මඟ පෙන්වීම සමඟ සාදා ඇත.',
     cta: 'ඔබේ මට්ටම බලන්න', signIn: 'පිවිසෙන්න', alreadyKnow: 'ඔබේ මට්ටම දැනටමත් දන්නවාද? ලියාපදිංචි වන්න',
     steps: [
       'ඔබ සිටින තැන බැලීමට විනාඩි 2ක පරීක්ෂණයක් කරන්න',
-      'ක්‍රියා කාල සිට විධිමත් ලිපි දක්වා පියවර 8ක් අනුගමනය කරන්න',
+      'ක්‍රියා කාල භේදයේ සිට විධිමත් ලිපි ලිවීම දක්වා පියවර 8ක් අනුගමනය කරන්න',
       'පුහුණු වී ක්ෂණික ප්‍රතිපෝෂණ ලබා ගන්න',
-      'දෛනික අඛණ්ඩතාවක් ගොඩනඟා ඔබේ ප්‍රගතිය බලන්න',
+      'අඛණ්ඩතව දෛනිකව පුහුණු වී ඔබේ ප්‍රගතිය බලන්න',
     ],
-    why: 'සිංහල කතා කරන අයට ඇති බොහෝ ඉංග්‍රීසි සම්පත් විසිරී ඇත හෝ ව්‍යුහගත නැත\nමෙය ඔබට ආරම්භයේ සිට අවසානය දක්වා, ඔබේම භාෂාවෙන් මගපෙන්වීම සමඟ පැහැදිලි එක් මාර්ගයක් ලබා දෙයි.',
+    why: 'සිංහල කතා කරන අයට ඇති බොහෝ ඉංග්‍රීසි පොතපත විසිරී ඇත හෝ ව්‍යුහගත නැත\nමෙය ඔබට ආරම්භයේ සිට අවසානය දක්වා, ඔබේම භාෂාවෙන් මගපෙන්වීම සමඟ පැහැදිලි එක් මාර්ගයක් ලබා දෙයි.',
     textbookHeadline: 'පෙළපොතක් නොවේ - මගපෙන්වන ලද මාර්ගයකි.',
     textbookDifferentiator: 'කියවීමට අහඹු පරිච්ඡේද නැත. සිංහල කතා කරන්නන් මුලින්ම කරන වැරදිවලින් ආරම්භ වී, සෑම පාඩමක්ම ඊට පෙර පාඩම මත ගොඩනැගේ.',
-    textbookOutcome: 'විශ්වාසයෙන් සැබෑ විධිමත් ලිපියක් ලිවීම දක්වාම.',
+    textbookOutcome: 'විශ්වාසයෙන් සැබෑ රාජකාරි ලිපියක් ලිවීම දක්වාම.',
   },
 };
 
@@ -60,7 +60,7 @@ export function Home() {
         <div style={{ flex: '1 0 0', minWidth: 0 }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'var(--c-warning-bg)', color: 'var(--c-warning-ink)', padding: '8px 16px', borderRadius: 999, fontWeight: 700, fontSize: 13, marginBottom: 20 }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--c-warning)' }} />
-            {isSi ? 'සිංහල කතා කරන අය සඳහාම සාදන ලදී' : 'Built for Sinhala speakers'}
+            {isSi ? 'සිංහල කතා කරන අය සඳහාම සාදා ඇත' : 'Built for Sinhala speakers'}
           </div>
           <h1 style={{ fontFamily: headFont, fontWeight: 800, fontSize: 44, lineHeight: 1.2, margin: '0 0 28px', maxWidth: 560 }}>{c.value}</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, height: 69 }}>
