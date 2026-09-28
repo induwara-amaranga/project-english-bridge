@@ -52,6 +52,9 @@ jobs:
           build-args: |
             VITE_GOOGLE_CLIENT_ID=${{ secrets.VITE_GOOGLE_CLIENT_ID }}
             VITE_FACEBOOK_APP_ID=${{ secrets.VITE_FACEBOOK_APP_ID }}
+            VITE_ADSENSE_CLIENT_ID=${{ secrets.VITE_ADSENSE_CLIENT_ID }}
+            VITE_AD_SLOT_ROADMAP=${{ secrets.VITE_AD_SLOT_ROADMAP }}
+            VITE_AD_SLOT_LESSON_DONE=${{ secrets.VITE_AD_SLOT_LESSON_DONE }}
           tags: |
             ghcr.io/${{ github.repository }}-frontend:latest
             ghcr.io/${{ github.repository }}-frontend:${{ github.sha }}

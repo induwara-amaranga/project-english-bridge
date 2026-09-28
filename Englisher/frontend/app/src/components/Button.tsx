@@ -16,8 +16,8 @@ export function Button({ variant = 'primary', size = 'md', className = '', ...re
   return <button className={cls} {...rest} />;
 }
 
-export function LinkButton({ variant = 'primary', size = 'md', className = '', to, ...rest }: CommonProps & AnchorHTMLAttributes<HTMLAnchorElement> & { to: string }) {
+export function LinkButton({ variant = 'primary', size = 'md', className = '', to, state, ...rest }: CommonProps & AnchorHTMLAttributes<HTMLAnchorElement> & { to: string; state?: unknown }) {
   const cls = `btn btn--${size} btn--${variant} ${className}`.trim();
   if (/^https?:|^#/.test(to)) return <a className={cls} href={to} {...rest} />;
-  return <Link className={cls} to={to} {...rest} />;
+  return <Link className={cls} to={to} state={state} {...rest} />;
 }

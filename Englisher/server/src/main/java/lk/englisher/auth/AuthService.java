@@ -285,6 +285,33 @@ public class AuthService {
         return AuthUserDto.of(users.save(user));
     }
 
+    /** The profile page's "edit name" form. */
+    @Transactional
+    public AuthUserDto updateName(UUID userId, String name) {
+        UserEntity user = require(userId);
+        user.setName(name.trim());
+        return AuthUserDto.of(users.save(user));
+    }
+
+    /**
+     * The profile page's "change password" form. An account with a password
+     * already set must confirm it first — the same check {@link #signIn} does
+     * — so a hijacked, still-logged-in session cannot lock the real owner out
+     * by silently swapping the password. An OAuth-only account (no password
+     * hash yet) has nothing to confirm, so this doubles as "set a password"
+     * for it.
+     */
+    @Transactional
+    public void changePassword(UUID userId, String currentPassword, String newPassword) {
+        UserEntity user = require(userId);
+        if (user.getPasswordHash() != null && !passwords.matches(
+                currentPassword == null ? "" : currentPassword, user.getPasswordHash())) {
+            throw ApiException.unauthorized("auth.wrongPassword", "Your current password is incorrect.");
+        }
+        user.setPasswordHash(passwords.encode(newPassword));
+        users.save(user);
+    }
+
     private Session newSession(UserEntity user) {
         String raw = jwt.newRefreshToken();
         refreshTokens.save(new RefreshTokenEntity(

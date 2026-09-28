@@ -53,6 +53,15 @@ public class AuthProperties {
     /** The From: address on OTP emails. */
     private String mailFrom = "no-reply@englisher.test";
 
+    /**
+     * The frontend's own origin, no trailing slash — used to build links that
+     * go out in emails (currently just the parent-invite accept link; see
+     * ParentInviteMailService). Not the same knob as {@link #allowedOrigins}:
+     * that is a CORS allow-list that may hold several origins, this is the one
+     * a human actually clicks.
+     */
+    private String appBaseUrl = "http://localhost:5173";
+
     @PostConstruct
     void validate() {
         if (jwtSecret == null || jwtSecret.getBytes().length < 32) {
@@ -156,5 +165,13 @@ public class AuthProperties {
 
     public void setMailFrom(String mailFrom) {
         this.mailFrom = mailFrom;
+    }
+
+    public String getAppBaseUrl() {
+        return appBaseUrl;
+    }
+
+    public void setAppBaseUrl(String appBaseUrl) {
+        this.appBaseUrl = appBaseUrl;
     }
 }

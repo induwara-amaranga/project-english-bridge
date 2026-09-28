@@ -44,6 +44,27 @@ export function revokeParentLink(): Promise<ParentLink> {
 }
 
 // ---------------------------------------------------------------------------
+// Invite acceptance — the link a parent gets emailed. Public: it may be the
+// parent's first ever visit, so this has nothing to do with which account (if
+// any) is currently signed in — see ParentAcceptInvite.tsx.
+// ---------------------------------------------------------------------------
+
+export interface AcceptResult {
+  /** The link is now bound to the calling parent account. */
+  accepted: boolean;
+  /** The token is good but nobody is signed in — prompt for a parent account and retry. */
+  signupNeeded: boolean;
+  childName: string;
+  contact: string;
+  /** Present once `accepted` — the same shape `loadParentLink` returns. */
+  link?: ParentLink;
+}
+
+export function acceptParentLink(token: string): Promise<AcceptResult> {
+  return apiPost<AcceptResult>(`/api/parent-links/accept?token=${encodeURIComponent(token)}`);
+}
+
+// ---------------------------------------------------------------------------
 // Parent side — ParentDashboard.tsx
 // ---------------------------------------------------------------------------
 

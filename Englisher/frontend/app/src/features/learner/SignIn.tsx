@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { LangToggle } from '../../components/Primitives';
-import { roleHome, useAuth } from '../../hooks/useAuth';
+import { roleHome, useAuth, type AuthUser } from '../../hooks/useAuth';
 import { errorMessage } from '../../lib/apiClient';
 import { preloadOAuthScripts, signInWithFacebook, signInWithGoogle } from '../../lib/oauth';
+import { acceptParentLink } from '../../domain/parentLink';
 
 const COPY = {
   en: {
@@ -51,11 +52,36 @@ export function SignIn() {
   const [otpBusy, setOtpBusy] = useState(false);
   const { signIn, signInWithGoogle: signInWithGoogleSession, signInWithFacebook: signInWithFacebookSession, verifyOtp } = useAuth();
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  // Set by ParentAcceptInvite when a parent clicked their emailed link
+  // without being signed in yet — accept the invitation right after signing
+  // in, instead of sending them to /learn and losing the token.
+  const parentToken = params.get('parentToken');
   const c = COPY[lang];
   const isSi = lang === 'si';
   const headFont = isSi ? 'var(--font-si-display)' : 'var(--font-display)';
 
   useEffect(() => { preloadOAuthScripts(); }, []);
+
+  /** After a completed sign-in, finishes accepting the invite if one is pending, otherwise goes straight home. */
+  const afterSignedIn = async (user: AuthUser) => {
+    if (parentToken) {
+      try {
+        await acceptParentLink(parentToken);
+        navigate('/parent');
+        return;
+      } catch (err) {
+        // Wrong-role accounts (student/admin) land here — drop back to the
+        // main sign-in view (in case this came from the OTP screen, which
+        // has no room of its own to show it) with the reason displayed,
+        // rather than silently dropping the invite.
+        setOtpChallengeId(null);
+        setError(errorMessage(err));
+        return;
+      }
+    }
+    navigate(roleHome(user.role));
+  };
 
   const attemptSignIn = async (run: () => ReturnType<typeof signIn>) => {
     if (busy) return;
@@ -72,7 +98,7 @@ export function SignIn() {
         setOtpError('');
         setOtpResend(() => () => { void attemptSignIn(run); });
       } else {
-        navigate(roleHome(outcome.user.role));
+        await afterSignedIn(outcome.user);
       }
     } catch (err) {
       setError(errorMessage(err));
@@ -106,7 +132,7 @@ export function SignIn() {
     setOtpBusy(true);
     try {
       const user = await verifyOtp(otpChallengeId, otpCode);
-      navigate(roleHome(user.role));
+      await afterSignedIn(user);
     } catch (err) {
       setOtpError(errorMessage(err));
     } finally {

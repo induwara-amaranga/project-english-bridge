@@ -4,11 +4,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.validation.Valid;
 import lk.englisher.auth.AuthDtos.AuthResponse;
 import lk.englisher.auth.AuthDtos.AuthUserDto;
+import lk.englisher.auth.AuthDtos.ChangePasswordRequest;
 import lk.englisher.auth.AuthDtos.CreateAdminRequest;
 import lk.englisher.auth.AuthDtos.OAuthSignInRequest;
 import lk.englisher.auth.AuthDtos.SignInRequest;
 import lk.englisher.auth.AuthDtos.SignInResponse;
 import lk.englisher.auth.AuthDtos.SignUpRequest;
+import lk.englisher.auth.AuthDtos.UpdateNameRequest;
 import lk.englisher.auth.AuthDtos.VerifyOtpRequest;
 import lk.englisher.config.AuthProperties;
 import org.springframework.http.HttpHeaders;
@@ -122,6 +124,19 @@ public class AuthController {
     @PutMapping("/me/preferences")
     public JsonNode updatePreferences(@RequestBody JsonNode preferences) {
         return auth.updatePreferences(CurrentUser.requireId(), preferences).preferences();
+    }
+
+    /** The profile page's "edit name" form. */
+    @PutMapping("/me/name")
+    public AuthUserDto updateName(@Valid @RequestBody UpdateNameRequest request) {
+        return auth.updateName(CurrentUser.requireId(), request.name());
+    }
+
+    /** The profile page's "change password" form. */
+    @PutMapping("/me/password")
+    public ResponseEntity<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        auth.changePassword(CurrentUser.requireId(), request.currentPassword(), request.newPassword());
+        return ResponseEntity.noContent().build();
     }
 
     private ResponseEntity<AuthResponse> withRefreshCookie(AuthService.Session session) {

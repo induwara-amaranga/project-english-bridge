@@ -36,6 +36,22 @@ public final class AuthDtos {
             @NotBlank String password) {
     }
 
+    /** {@code PUT /api/me/name} — the profile page's "edit name" form. */
+    public record UpdateNameRequest(
+            @NotBlank @Size(max = 120) String name) {
+    }
+
+    /**
+     * {@code PUT /api/me/password}. {@code currentPassword} is intentionally
+     * not {@code @NotBlank} — an account that has only ever signed in with
+     * Google/Facebook has no password yet to confirm, so this doubles as
+     * "set a password" for that case (see {@code AuthService.changePassword}).
+     */
+    public record ChangePasswordRequest(
+            String currentPassword,
+            @NotBlank @Size(min = 8, max = 200) String newPassword) {
+    }
+
     /** {@code /auth/verify-otp} — resolves the challenge id a {@link SignInResponse#otpRequired} answer handed back. */
     public record VerifyOtpRequest(
             @NotBlank String challengeId,

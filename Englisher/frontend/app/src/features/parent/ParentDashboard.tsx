@@ -12,7 +12,7 @@ const NOT_LINKED_COPY = {
   },
   si: {
     title: 'තවම දරුවෙකු සම්බන්ධ කර නැත',
-    body: 'ඔබේ දරුවාට ඔවුන්ගේ Profile විවෘත කර මෙම ගිණුමේ විද්‍යුත් තැපැල් ලිපිනයට ආරාධනාවක් යැවීමට කියන්න — ඔවුන් එසේ කළ පසු සහ ඔබ එම විද්‍යුත් තැපෑලෙන් ඔවුන්ගේ ආරාධනාව පිළිගත් පසු මෙම උපකරණ පුවරුව ස්වයංක්‍රීයව අගුළු හැරේ.',
+    body: 'ඔබේ දරුවාට ඔවුන්ගේ Profile එක විවෘත කර මෙම ගිණුමේ විද්‍යුත් තැපැල් ලිපිනයට ආරාධනාවක් යැවීමට කියන්න — ඔවුන් එසේ කළ පසු සහ ඔබ එම විද්‍යුත් තැපෑලෙන් ඔවුන්ගේ ආරාධනාව පිළිගත් පසු මෙම උපකරණ පුවරුව ස්වයංක්‍රීයව අගුළු හැරේ.',
   },
 };
 
@@ -42,7 +42,7 @@ export function ParentDashboard() {
   return (
     <div style={{ fontFamily: 'var(--font-body)', background: 'var(--c-bg)', color: 'var(--c-ink)', minHeight: '100vh' }}>
       <div style={{ background: 'var(--c-primary)', padding: 24 }}>
-        <div style={{ maxWidth: 640, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div className="parent-dash-header" style={{ maxWidth: 640, margin: '0 auto' }}>
           <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg width="22" height="22" viewBox="0 0 22 22" fill="white"><circle cx="11" cy="7" r="4" /><path d="M3 20c0-4 3.5-7 8-7s8 3 8 7" /></svg>
           </div>
@@ -50,7 +50,7 @@ export function ParentDashboard() {
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 24, color: 'white' }}>{data ? (isSi ? `${data.childName} කරන්නේ කෙසේද` : `How ${data.childName} is doing`) : (isSi ? 'මාපිය උපකරණ පුවරුව' : 'Parent dashboard')}</div>
             <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', fontWeight: 600, marginTop: 4 }}>{isSi ? 'ඔවුන්ගේ ඉගෙනීම කෙටියෙන් බැලීමක් — වාර්තා පතක් නොවේ.' : 'A quick look at their learning — not a report card.'}</div>
           </div>
-          <div style={{ textAlign: 'right', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+          <div className="parent-dash-header__actions">
             <LangToggle lang={lang} onToggle={() => setLang((l) => (l === 'en' ? 'si' : 'en'))} />
             {user && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', fontWeight: 600 }}>{user.email}</div>}
             <button onClick={logout} style={{ background: 'rgba(255,255,255,0.18)', color: 'white', border: 'none', borderRadius: 10, padding: '8px 14px', fontWeight: 700, fontSize: 12.5, cursor: 'pointer' }}>{isSi ? 'ඉවත් වන්න' : 'Sign out'}</button>
@@ -76,7 +76,7 @@ export function ParentDashboard() {
 
       {!loading && data && (
         <div style={{ maxWidth: 640, margin: '0 auto', padding: '28px 24px 64px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div className="parent-dash-stats">
             <div className="card">
               <img src="/assets/icons/xp.svg" alt="" width={30} height={30} style={{ display: 'block', marginBottom: 10 }} />
               <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 21 }}>{isSi ? `මුළු XP ${data.progress.xp.toLocaleString()}` : `${data.progress.xp.toLocaleString()} XP total`}</div>
@@ -124,7 +124,7 @@ export function ParentDashboard() {
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0, marginTop: 2 }}><circle cx="10" cy="10" r="8.5" stroke="var(--c-primary)" strokeWidth="1.6" /><path d="M10 6.5v4.5M10 13.5h.01" stroke="var(--c-primary)" strokeWidth="1.8" strokeLinecap="round" /></svg>
             <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: 'var(--c-ink-soft)', fontWeight: 500 }}>
               {isSi
-                ? `මෙම දසුන පෙන්වන්නේ ප්‍රගතිය පමණි, තනි පිළිතුරු හෝ වැරදි නොවේ. ${data.childName} ගේ පුහුණුව ඔවුන්ගේ ලේඛනවල කෙටි උපුටාගැනීමකට වඩා පෞද්ගලිකව පවතී.`
+                ? `මෙම දසුන පෙන්වන්නේ ප්‍රගතිය පමණි, තනි තනිව පිළිතුරු හෝ වැරදි නොවේ. ${data.childName} ගේ පුහුණුව ඔවුන්ගේ ලිවීම්වල කෙටි උපුටාගැනීමකට වඩා පෞද්ගලිකව පවතී.`
                 : <>This view only shows progress, not individual answers or mistakes. {data.childName}&apos;s practice stays private beyond a short excerpt of their writing.</>}
             </p>
           </div>

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCourseEditor, type CourseEditorApi } from './courseEditorState';
 import { CARD_COLUMNS, TYPE_META } from '../../domain/types';
@@ -50,6 +51,10 @@ export function CourseEditor() {
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const logout = () => { signOut(); navigate('/signin'); };
+  // The curriculum tree is a drawer below the 900px breakpoint (see
+  // editor.css) — closed by default, opened from the top bar's toggle,
+  // closed again once something is picked so the editor beneath is visible.
+  const [treeOpen, setTreeOpen] = useState(false);
 
   if (loading) {
     return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#6B6580', fontWeight: 600 }}>Loading curriculum…</div>;
@@ -76,13 +81,17 @@ export function CourseEditor() {
   return (
     <div className="ed-shell">
       {/* ================= TOP BAR ================= */}
-      <div style={{ background: 'white', borderBottom: '1px solid #E3DEF5', padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+      <div className="ed-topbar" style={{ background: 'white', borderBottom: '1px solid #E3DEF5', padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button
+            className="ed-tree-toggle" onClick={() => setTreeOpen(true)} aria-label="Open the curriculum tree"
+            style={{ alignItems: 'center', justifyContent: 'center', width: 34, height: 34, background: '#ECE8FB', border: 'none', borderRadius: 10, fontSize: 15, cursor: 'pointer', flexShrink: 0 }}
+          >☰</button>
           <a href="/admin" onClick={(e) => { e.preventDefault(); navigate('/admin'); }} style={{ display: 'flex', alignItems: 'center', gap: 7, background: '#ECE8FB', borderRadius: 999, padding: '7px 15px', fontSize: 13, fontWeight: 700 }}>← Dashboard</a>
-          <div style={{ width: 1, height: 22, background: '#E3DEF5' }} />
+          <div className="ed-topbar__crumb" style={{ width: 1, height: 22, background: '#E3DEF5' }} />
           <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 16 }}>Content Editor</span>
-          <span style={{ fontSize: 13, color: '#B5AFD4' }}>/</span>
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#6B6580' }}>{breadcrumb}</span>
+          <span className="ed-topbar__crumb" style={{ fontSize: 13, color: '#B5AFD4' }}>/</span>
+          <span className="ed-topbar__crumb" style={{ fontSize: 13, fontWeight: 600, color: '#6B6580' }}>{breadcrumb}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           {saveError && <span style={{ fontSize: 12, fontWeight: 700, color: '#C2354A' }}>{saveError}</span>}
@@ -92,16 +101,18 @@ export function CourseEditor() {
         </div>
       </div>
 
-      <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+      <div className="ed-body">
+        {treeOpen && <div className="ed-tree-backdrop--open" onClick={() => setTreeOpen(false)} />}
+
         {/* ================= PANE 1 — CURRICULUM TREE ================= */}
-        <div style={{ width: 288, flexShrink: 0, background: 'white', borderRight: '1px solid #E3DEF5', overflowY: 'auto', padding: '16px 12px' }}>
+        <div className={`ed-tree${treeOpen ? ' ed-tree--open' : ''}`}>
           <div style={{ fontSize: 11, fontWeight: 700, color: '#6B6580', letterSpacing: '0.06em', padding: '0 8px 12px' }}>CURRICULUM</div>
 
           {curriculum.stages.map((st, si) => {
             const stSelected = sel.stageId === st.id && !sel.lessonId;
             return (
               <div key={st.id}>
-                <div className="treerow" role="button" tabIndex={0} onClick={() => api.selectStage(st.id)} style={{ padding: '9px 8px', background: stSelected ? '#ECE8FB' : 'transparent' }}>
+                <div className="treerow" role="button" tabIndex={0} onClick={() => { api.selectStage(st.id); setTreeOpen(false); }} style={{ padding: '9px 8px', background: stSelected ? '#ECE8FB' : 'transparent' }}>
                   <span style={{ fontSize: 10, color: '#B5AFD4', width: 10 }}>{expanded[st.id] ? '▾' : '▸'}</span>
                   <div style={{ width: 8, height: 8, borderRadius: '50%', background: st.theme.to, flexShrink: 0 }} />
                   <span style={{ fontSize: 13, fontWeight: 700, color: stSelected ? '#6C4FF6' : '#1E1B2E', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flex: 1 }}>{stageName(st)}</span>
@@ -118,7 +129,7 @@ export function CourseEditor() {
                       const lsSelected = sel.lessonId === ls.id && !sel.exerciseId;
                       return (
                         <div key={ls.id}>
-                          <div className="treerow" role="button" tabIndex={0} onClick={() => api.selectLesson(st.id, ls.id)} style={{ padding: '7px 8px 7px 30px', background: lsSelected ? '#ECE8FB' : 'transparent' }}>
+                          <div className="treerow" role="button" tabIndex={0} onClick={() => { api.selectLesson(st.id, ls.id); setTreeOpen(false); }} style={{ padding: '7px 8px 7px 30px', background: lsSelected ? '#ECE8FB' : 'transparent' }}>
                             <span style={{ fontSize: 10 }}>◻</span>
                             <span style={{ fontSize: 12.5, fontWeight: 600, color: lsSelected ? '#6C4FF6' : '#4A4560', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flex: 1 }}>{lessonNameOf(ls)}</span>
                             <TreeMove
@@ -130,7 +141,7 @@ export function CourseEditor() {
                           {ls.exercises.map((x, xi) => {
                             const xSelected = sel.exerciseId === x.id;
                             return (
-                              <div key={x.id} className="treerow" role="button" tabIndex={0} onClick={() => api.selectExercise(st.id, ls.id, x.id)} style={{ padding: '6px 8px 6px 52px', background: xSelected ? '#ECE8FB' : 'transparent' }}>
+                              <div key={x.id} className="treerow" role="button" tabIndex={0} onClick={() => { api.selectExercise(st.id, ls.id, x.id); setTreeOpen(false); }} style={{ padding: '6px 8px 6px 52px', background: xSelected ? '#ECE8FB' : 'transparent' }}>
                                 <span className="cardbadge" style={{ background: TYPE_COLOR[x.type] }}>{TYPE_META[x.type].short}</span>
                                 <span style={{ fontSize: 12, fontWeight: 500, color: xSelected ? '#6C4FF6' : '#6B6580', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flex: 1 }}>{plainText(x.prompt.en) || '(untitled)'}</span>
                                 <TreeMove
@@ -156,7 +167,7 @@ export function CourseEditor() {
         </div>
 
         {/* ================= PANE 2 — INSPECTOR ================= */}
-        <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: '24px 28px' }}>
+        <div className="ed-inspector">
           {stage && !lesson && (
             <>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20, marginBottom: 22 }}>
@@ -610,7 +621,7 @@ function PreviewPane({ api, holder, stage, lesson, exercise }: {
   const previewIdle = !lesson;
 
   return (
-    <div style={{ width: 520, flexShrink: 0, background: 'white', borderLeft: '1px solid #E3DEF5', overflowY: 'auto', padding: 20 }}>
+    <div className="ed-preview">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <span style={{ fontSize: 11, fontWeight: 700, color: '#6B6580', letterSpacing: '0.06em' }}>LEARNER PREVIEW</span>
         <div className="ed-row" onClick={() => api.setShowKey((v) => !v)} style={{ cursor: 'pointer' }}>

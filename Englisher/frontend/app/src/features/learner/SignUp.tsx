@@ -7,6 +7,7 @@ import { completeLesson, submitPlacement } from '../../domain/progress';
 import { clearGuestSession, setGuestStage, takePendingGuestLesson } from '../../domain/guestProgress';
 import { clearOnboardingAnswers, loadOnboardingAnswers } from '../../domain/onboardingAnswers';
 import { preloadOAuthScripts, signInWithFacebook, signInWithGoogle } from '../../lib/oauth';
+import { acceptParentLink } from '../../domain/parentLink';
 
 const COPY = {
   en: {
@@ -19,6 +20,7 @@ const COPY = {
     submit: 'Save and continue', submitting: 'Creating your account…', secondary: 'Continue without an account',
     or: 'OR', google: 'Continue with Google', facebook: 'Continue with Facebook', signIn: 'Sign In',
     otpOnSignUp: 'That account needs a verification code to sign in — use the Sign In page instead.',
+    parentInviteNote: "Creating a parent account to accept your child's invitation.",
   },
   si: {
     framing: 'ඊළඟ වතාවේ ආපහු එනකොට ඔබේ ප්‍රගතිය තිබීමට , ඔබේ ප්‍රගතිය සුරකින්න.',
@@ -30,6 +32,7 @@ const COPY = {
     submit: 'සුරකින්න, ඉදිරියට යන්න', submitting: 'ගිණුම සාදමින්…', secondary: 'ගිණුමකින් තොරව ඉදිරියට යන්න',
     or: 'හෝ', google: 'Google සමඟ ඉදිරියට යන්න', facebook: 'Facebook සමඟ ඉදිරියට යන්න', signIn: 'පිවිසෙන්න',
     otpOnSignUp: 'එම ගිණුමට පිවිසීමට තහවුරු කිරීමේ කේතයක් අවශ්‍යයි — ඒ වෙනුවට Sign In පිටුව භාවිත කරන්න.',
+    parentInviteNote: 'ඔබේ දරුවාගේ ආරාධනාව පිළිගැනීමට මාපිය ගිණුමක් සාදමින්.',
   },
 };
 
@@ -37,8 +40,13 @@ const GoogleMark = () => <svg width="20" height="20" viewBox="0 0 48 48"><path f
 const FacebookMark = () => <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#1877F2" d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07c0 5.99 4.39 10.96 10.13 11.86v-8.4H7.09v-3.46h3.04V9.41c0-3 1.79-4.66 4.53-4.66 1.31 0 2.68.24 2.68.24v2.95h-1.51c-1.49 0-1.95.93-1.95 1.88v2.25h3.32l-.53 3.46h-2.79v8.4C19.61 23.03 24 18.06 24 12.07z" /></svg>;
 
 export function SignUp() {
+  const [params] = useSearchParams();
+  // Set by ParentAcceptInvite when a parent has no account yet — this signup
+  // is specifically to accept that invitation, so the role is locked to
+  // parent rather than left to the toggle (see the RoleToggle below).
+  const parentToken = params.get('parentToken');
   const [lang, setLang] = useState<'en' | 'si'>('en');
-  const [role, setRole] = useState<Role>('student');
+  const [role, setRole] = useState<Role>(parentToken ? 'parent' : 'student');
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
   const [email, setEmail] = useState('');
@@ -47,7 +55,6 @@ export function SignUp() {
   const [busy, setBusy] = useState(false);
   const { signUp, signInWithGoogle: signInWithGoogleSession, signInWithFacebook: signInWithFacebookSession, enterGuestMode, exitGuestMode } = useAuth();
   const navigate = useNavigate();
-  const [params] = useSearchParams();
   // Set by PlacementTest's "Create account" link so a result taken before
   // signing up is not lost the moment a real account exists to hold it.
   const placementStage = params.get('placementStage');
@@ -89,6 +96,16 @@ export function SignUp() {
       clearOnboardingAnswers();
     }
     await applyPlacement(user.role);
+    if (parentToken) {
+      try {
+        await acceptParentLink(parentToken);
+        navigate('/parent');
+        return;
+      } catch (err) {
+        setError(errorMessage(err));
+        return;
+      }
+    }
     navigate(roleHome(user.role));
   };
 
@@ -154,7 +171,11 @@ export function SignUp() {
           <h1 style={{ fontFamily: headFont, fontWeight: 800, fontSize: 26, margin: '0 0 12px', lineHeight: 1.35, textAlign: 'center' }}>{c.framing}</h1>
 
           <form onSubmit={submit} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 18, marginTop: 28 }}>
-            <div className="field"><label className="field__label">{c.accountType}</label><RoleToggle role={role} onChange={setRole} lang={lang} /></div>
+            {parentToken ? (
+              <div style={{ background: 'var(--c-primary-tint)', borderRadius: 12, padding: '12px 16px', fontSize: 13.5, fontWeight: 600, color: 'var(--c-ink-2)', lineHeight: 1.5 }}>{c.parentInviteNote}</div>
+            ) : (
+              <div className="field"><label className="field__label">{c.accountType}</label><RoleToggle role={role} onChange={setRole} lang={lang} /></div>
+            )}
             <div className="field"><label className="field__label">{c.nameLabel}</label><input className="field__input" value={name} onChange={(e) => setName(e.target.value)} placeholder={c.namePlaceholder} /></div>
             {role === 'student' && (
               <div className="field"><label className="field__label">{c.ageLabel}</label><input type="number" min={1} className="field__input" value={age} onChange={(e) => setAge(e.target.value)} placeholder={c.agePlaceholder} /></div>

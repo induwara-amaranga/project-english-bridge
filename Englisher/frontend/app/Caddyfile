@@ -5,6 +5,14 @@
 # Caddy requests and auto-renews a Let's Encrypt certificate for it the first
 # time it starts, which requires DNS for that name to already point at this
 # server and ports 80/443 to be reachable from the internet.
+
+# rate_limit is a third-party directive (see Dockerfile) with no built-in
+# place in Caddy's default directive order, so it has to be told where to
+# run — before the request reaches reverse_proxy.
+{
+	order rate_limit before reverse_proxy
+}
+
 {$DOMAIN} {
 	encode gzip zstd
 
@@ -15,6 +23,30 @@
 		Referrer-Policy "strict-origin-when-cross-origin"
 		Permissions-Policy "geolocation=(), microphone=(), camera=()"
 		-Server
+	}
+
+	# Per-IP throttling on the auth endpoints that matter for brute force /
+	# abuse: signin (password guessing), verify-otp (admin 2FA code
+	# guessing — on top of AuthService's own per-account attempt lockout),
+	# and signup (fake-account spam). Everything else under /api/* (reading
+	# curriculum, submitting progress, etc.) is left unlimited here.
+	rate_limit {
+		zone auth_login {
+			match {
+				path /api/auth/signin /api/auth/verify-otp /api/auth/google /api/auth/facebook
+			}
+			key {remote_host}
+			events 10
+			window 1m
+		}
+		zone auth_signup {
+			match {
+				path /api/auth/signup
+			}
+			key {remote_host}
+			events 5
+			window 1h
+		}
 	}
 
 	# The Spring Boot API, reached over the compose network — never exposed

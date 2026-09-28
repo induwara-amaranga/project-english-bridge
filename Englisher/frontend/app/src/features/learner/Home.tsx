@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { LangToggle } from '../../components/Primitives';
+import { roleHome, useAuth } from '../../hooks/useAuth';
 
 const STEP_ICONS = ['/assets/lock_unlocked.png', '/assets/book_lesson.png', '/assets/chat_bubble.png', '/assets/celebration_confetti.png'];
 
@@ -36,10 +37,18 @@ const COPY = {
 };
 
 export function Home() {
+  const { user, loading } = useAuth();
   const [lang, setLang] = useState<'en' | 'si'>('en');
   const isSi = lang === 'si';
   const c = COPY[lang];
   const headFont = isSi ? 'var(--font-si-display)' : 'var(--font-display)';
+
+  // A signed-in user landing on the marketing page (e.g. a bookmark, or the
+  // "/" they get bounced to on an unknown route) should go straight to their
+  // own home rather than see the pitch again — mirrors RequireRole's own
+  // "wait for the silent session restore before deciding" rule.
+  if (loading) return null;
+  if (user) return <Navigate to={roleHome(user.role)} replace />;
 
   return (
     <div style={{ fontFamily: 'var(--font-body)', background: 'var(--c-bg)', color: 'var(--c-ink)', minHeight: '100vh', overflowX: 'hidden' }}>
@@ -48,7 +57,7 @@ export function Home() {
           <div className="site-nav__mark"><div className="site-nav__mark-dot" /></div>
           <span className="site-nav__wordmark">Englisher</span>
         </Link>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 28, height: 50 }}>
+        <div className="site-nav__links">
           <a href="#how" style={{ fontWeight: 600, fontSize: 15, color: 'var(--c-ink)' }}>{isSi ? 'මෙය ක්‍රියා කරන ආකාරය' : 'How it works'}</a>
           <a href="#why" style={{ fontWeight: 600, fontSize: 15, color: 'var(--c-ink)' }}>{isSi ? 'අප තෝරාගත යුත්තේ ඇයි' : 'Why us'}</a>
           <LangToggle lang={lang} onToggle={() => setLang((l) => (l === 'en' ? 'si' : 'en'))} />
@@ -56,27 +65,27 @@ export function Home() {
         </div>
       </nav>
 
-      <section style={{ maxWidth: 1280, margin: '0 auto', padding: '56px 48px 88px', display: 'flex', gap: 48, alignItems: 'center' }}>
-        <div style={{ flex: '1 0 0', minWidth: 0 }}>
+      <section className="home-shell home-hero" style={{ maxWidth: 1280, margin: '0 auto', paddingTop: 56, paddingBottom: 88 }}>
+        <div className="home-hero__copy">
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'var(--c-warning-bg)', color: 'var(--c-warning-ink)', padding: '8px 16px', borderRadius: 999, fontWeight: 700, fontSize: 13, marginBottom: 20 }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--c-warning)' }} />
             {isSi ? 'සිංහල කතා කරන අය සඳහාම සාදා ඇත' : 'Built for Sinhala speakers'}
           </div>
-          <h1 style={{ fontFamily: headFont, fontWeight: 800, fontSize: 44, lineHeight: 1.2, margin: '0 0 28px', maxWidth: 560 }}>{c.value}</h1>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, height: 69 }}>
-            <Link to="/onboarding/goal" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 200, height: 49, background: 'var(--c-primary)', color: 'white', borderRadius: 14, padding: '16px 32px', fontWeight: 800, fontSize: 17, fontFamily: headFont, boxShadow: '0 6px 0 var(--c-primary-hover)' }}>{c.cta}</Link>
+          <h1 className={`home-hero__title${isSi ? ' home-hero__title--si' : ''}`} style={{ fontFamily: headFont, fontWeight: 800, lineHeight: 1.2, marginTop: 0, marginBottom: 28, maxWidth: 560 }}>{c.value}</h1>
+          <div className="home-hero__actions">
+            <Link to="/onboarding/goal" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: 49, background: 'var(--c-primary)', color: 'white', borderRadius: 14, padding: '16px 32px', fontWeight: 800, fontSize: 17, fontFamily: headFont, boxShadow: '0 6px 0 var(--c-primary-hover)' }}>{c.cta}</Link>
             <Link to="/signup" style={{ fontFamily: headFont, fontWeight: 700, fontSize: 15, lineHeight: 1.2, color: 'var(--c-ink-soft)' }}>{c.alreadyKnow}</Link>
           </div>
         </div>
-        <div style={{ position: 'relative', flex: '0 0 500px', width: 500, height: 340 }}>
-          <div style={{ position: 'absolute', left: 100, top: 20, width: 300, height: 300, borderRadius: '50%', background: 'var(--c-warning-bg)' }} />
-          <img src="/assets/mascot_elephant.png" alt="" style={{ position: 'absolute', left: 120, top: 40, width: 260, height: 260, objectFit: 'contain' }} />
+        <div className="home-hero__art">
+          <div style={{ position: 'absolute', left: '20%', top: '6%', width: '60%', height: '88%', borderRadius: '50%', background: 'var(--c-warning-bg)' }} />
+          <img src="/assets/mascot_elephant.png" alt="" style={{ position: 'absolute', left: '24%', top: '12%', width: '52%', height: '76%', objectFit: 'contain' }} />
         </div>
       </section>
 
-      <section id="how" style={{ maxWidth: 1280, margin: '0 auto', padding: '40px 48px 88px' }}>
+      <section id="how" className="home-shell" style={{ maxWidth: 1280, margin: '0 auto', paddingTop: 40, paddingBottom: 88 }}>
         <h2 style={{ fontFamily: headFont, fontWeight: 800, fontSize: 30, margin: '0 0 40px', textAlign: 'center' }}>{isSi ? 'මෙය ක්‍රියා කරන ආකාරය' : 'How it works'}</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24 }}>
+        <div className="home-steps">
           {c.steps.map((text, i) => (
             <div key={i} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div style={{ width: 56, height: 56, borderRadius: 14, background: 'var(--c-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -89,17 +98,17 @@ export function Home() {
         </div>
       </section>
 
-      <section id="why" style={{ maxWidth: 900, margin: '0 auto', padding: '40px 48px 88px', textAlign: 'center' }}>
+      <section id="why" className="home-shell" style={{ maxWidth: 900, margin: '0 auto', paddingTop: 40, paddingBottom: 88, textAlign: 'center' }}>
         <div style={{ width: 44, height: 6, borderRadius: 4, background: 'var(--c-warning)', margin: '0 auto 28px' }} />
-        <p style={{ fontFamily: headFont, fontWeight: 700, fontSize: 24, lineHeight: 1.5, margin: '0 auto', maxWidth: 804, whiteSpace: 'pre-wrap' }}>{c.why}</p>
+        <p className="home-why__text" style={{ fontFamily: headFont, fontWeight: 700, lineHeight: 1.5, margin: '0 auto', maxWidth: 804, whiteSpace: 'pre-wrap' }}>{c.why}</p>
       </section>
 
-      <section style={{ maxWidth: 1280, margin: '0 auto', padding: '0 48px 96px' }}>
-        <div style={{ background: 'var(--c-ink)', borderRadius: 28, padding: 56, display: 'flex', gap: 40, alignItems: 'center' }}>
-          <h2 style={{ fontFamily: headFont, fontWeight: 800, fontSize: 32, color: 'var(--c-bg)', margin: 0, lineHeight: 1.25, flex: '0 0 464px', maxWidth: 464 }}>{c.textbookHeadline}</h2>
+      <section className="home-shell" style={{ maxWidth: 1280, margin: '0 auto', paddingBottom: 96 }}>
+        <div className="home-cta">
+          <h2 className="home-cta__heading" style={{ fontFamily: headFont, fontWeight: 800, color: 'var(--c-bg)', margin: 0, lineHeight: 1.25 }}>{c.textbookHeadline}</h2>
           <div style={{ display: 'flex', flex: '1 0 0', minWidth: 0, flexDirection: 'column', gap: 20 }}>
             <p style={{ margin: 0, color: 'var(--c-bg)', opacity: 0.85, fontSize: 17, lineHeight: 1.6, fontWeight: 500 }}>{c.textbookDifferentiator}</p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,255,255,0.08)', borderRadius: 14, padding: '12px 20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,255,255,0.08)', borderRadius: 14, padding: '12px 20px', flexWrap: 'wrap' }}>
               <img src="/assets/envelope_letter.png" alt="" style={{ width: 44, height: 44, objectFit: 'contain', flexShrink: 0 }} />
               <p style={{ margin: 0, color: 'var(--c-bg)', fontSize: 16, fontWeight: 700, lineHeight: 1.4 }}>{c.textbookOutcome}</p>
             </div>
@@ -107,15 +116,16 @@ export function Home() {
         </div>
       </section>
 
-      <footer style={{ maxWidth: 1280, margin: '0 auto', padding: '40px 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--c-line)' }}>
+      <footer className="home-shell home-footer" style={{ maxWidth: 1280, margin: '0 auto', paddingTop: 40, paddingBottom: 40, borderTop: '1px solid var(--c-line)' }}>
         <div className="site-nav__brand">
           <div className="site-nav__mark"><div className="site-nav__mark-dot" /></div>
           <span className="site-nav__wordmark">Englisher</span>
         </div>
-        <div style={{ display: 'flex', gap: 28 }}>
+        <div className="home-footer__links">
           <a href="#how" style={{ fontSize: 14, fontWeight: 600, color: 'var(--c-ink-soft)' }}>{isSi ? 'මෙය ක්‍රියා කරන ආකාරය' : 'How it works'}</a>
           <a href="#why" style={{ fontSize: 14, fontWeight: 600, color: 'var(--c-ink-soft)' }}>{isSi ? 'අප තෝරාගත යුත්තේ ඇයි' : 'Why us'}</a>
           <a href="#" style={{ fontSize: 14, fontWeight: 600, color: 'var(--c-ink-soft)' }}>{isSi ? 'සම්බන්ධ වන්න' : 'Contact'}</a>
+          <Link to="/privacy" style={{ fontSize: 14, fontWeight: 600, color: 'var(--c-ink-soft)' }}>{isSi ? 'රහස්‍යතා ප්‍රතිපත්තිය' : 'Privacy'}</Link>
         </div>
         <span style={{ fontSize: 13, color: 'var(--c-ink-soft)' }}>© 2026 Englisher</span>
       </footer>

@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { apiPost, refreshSession, setAuthListener, type AuthSession, type SignInEnvelope } from '../lib/apiClient';
+import { apiPost, apiPut, refreshSession, setAuthListener, type AuthSession, type SignInEnvelope } from '../lib/apiClient';
 import { isGuestActive, setGuestActive } from '../lib/guestSession';
+import { clearGuestSession, setGuestStage } from '../domain/guestProgress';
+import { CURRICULUM_DEFAULT } from '../domain/curriculum';
 
 // Real auth, against the Spring Boot API (SPRINGBOOT-MIGRATION.md section 4).
 // The access token lives only in memory (in apiClient.ts); the refresh token
@@ -64,6 +66,15 @@ interface AuthContextValue {
   signOut: () => Promise<void>;
   enterGuestMode: () => void;
   exitGuestMode: () => void;
+  /** The profile page's "edit name" form. */
+  updateName: (name: string) => Promise<AuthUser>;
+  /**
+   * The profile page's "change password" form. `currentPassword` may be
+   * empty for an account that has only ever signed in with Google/Facebook —
+   * the server only enforces it when a password is already set
+   * (AuthService.changePassword).
+   */
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -130,7 +141,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     applySession(null);
   }, [applySession]);
 
+  const updateName = useCallback(async (name: string) => {
+    const updated = await apiPut<AuthUser>('/api/me/name', { name });
+    setUser(updated);
+    return updated;
+  }, []);
+
+  const changePassword = useCallback(async (currentPassword: string, newPassword: string) => {
+    await apiPut('/api/me/password', { currentPassword, newPassword });
+  }, []);
+
   const enterGuestMode = useCallback(() => {
+    // Every entry into guest mode starts a clean slate — otherwise a leftover
+    // preview/pending-lesson from a guest run that was abandoned (no signup)
+    // sticks around in localStorage and makes a brand-new guest look like
+    // they've already completed a lesson (and already used their one-lesson
+    // allowance) the moment they try a lesson again.
+    clearGuestSession();
+    // Default to the first stage so a fresh guest can actually open lesson
+    // one straight away (progress.ts's stageStatus locks every stage when
+    // currentStageId is empty). The placement-test/signup callers that know
+    // a recommended stage call setGuestStage again right after this to
+    // override it — this is just the floor for callers that don't.
+    setGuestStage(CURRICULUM_DEFAULT.stages[0].id);
     setGuestActive(true);
     setIsGuest(true);
   }, []);
@@ -143,10 +176,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       user, loading, isGuest, signIn, signUp, signInWithGoogle, signInWithFacebook, verifyOtp, signOut,
-      enterGuestMode, exitGuestMode,
+      enterGuestMode, exitGuestMode, updateName, changePassword,
     }),
     [user, loading, isGuest, signIn, signUp, signInWithGoogle, signInWithFacebook, verifyOtp, signOut,
-      enterGuestMode, exitGuestMode],
+      enterGuestMode, exitGuestMode, updateName, changePassword],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

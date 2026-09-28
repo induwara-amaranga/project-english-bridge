@@ -60,6 +60,9 @@ englisher:
     # Blank falls back to admin-email itself.
     admin-otp-email: ${ENGLISHER_ADMIN_OTP_EMAIL:}
     mail-from: ${ENGLISHER_MAIL_FROM:no-reply@englisher.test}
+    # The link inside a parent-invite email points here — the frontend's own
+    # origin, not the API's.
+    app-base-url: ${ENGLISHER_APP_BASE_URL:http://localhost:5173}
   oauth:
     google-client-id: ${ENGLISHER_GOOGLE_CLIENT_ID:}
     facebook-app-id: ${ENGLISHER_FACEBOOK_APP_ID:}

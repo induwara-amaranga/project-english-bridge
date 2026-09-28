@@ -5,6 +5,7 @@ import { useProgress } from '../../hooks/useProgress';
 import { playableStages } from '../../domain/curriculum';
 import { stageStatus } from '../../domain/progress';
 import { BottomNav } from '../../components/BottomNav';
+import { AdSlot } from '../../components/AdSlot';
 import { LangToggle } from '../../components/Primitives';
 import { TravelTransition } from '../../components/TravelTransition';
 import { LottieBox } from '../../components/LottieBox';
@@ -266,6 +267,13 @@ export function Roadmap() {
             </div>
           </div>
         )}
+
+        {/* Browsing, no task in progress — the one approved spot for a
+            banner on this page (see the "Ads on Englisher" write-up). Empty
+            until AdSense approval hands over a real slot id. */}
+        <div style={{ marginTop: 24 }}>
+          <AdSlot slotId={import.meta.env.VITE_AD_SLOT_ROADMAP as string | undefined} />
+        </div>
       </div>
 
       <BottomNav lang={lang} />

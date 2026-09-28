@@ -9,6 +9,7 @@ import lk.englisher.parent.ParentDtos.AcceptResultDto;
 import lk.englisher.parent.ParentDtos.ParentLinkDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.mail.MailException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,11 +23,12 @@ import java.util.regex.Pattern;
 /**
  * The invite / resend / revoke / accept flow.
  *
- * <p>Email and SMS delivery are deliberately out of scope: the invite link is
- * logged, the same spirit as the prototype's "PROTOTYPE ONLY — the real
- * invitation is a signed link" banner, one layer more real
- * (SPRINGBOOT-MIGRATION.md Phase 6). Wiring SES or Twilio replaces exactly one
- * method here, {@link #deliver}.
+ * <p>An email invitation is actually sent, over SMTP via
+ * {@link ParentInviteMailService} (see {@link #deliver}). A phone invitation
+ * is not — SMS delivery is still out of scope, so a phone contact just logs
+ * the token the same spirit as the prototype's "PROTOTYPE ONLY — the real
+ * invitation is a signed link" banner. Wiring Twilio (or similar) replaces
+ * exactly that one branch.
  */
 @Service
 public class ParentLinkService {
@@ -40,12 +42,15 @@ public class ParentLinkService {
     private final ParentLinkRepository links;
     private final UserRepository users;
     private final AuthProperties properties;
+    private final ParentInviteMailService inviteMail;
     private final SecureRandom random = new SecureRandom();
 
-    public ParentLinkService(ParentLinkRepository links, UserRepository users, AuthProperties properties) {
+    public ParentLinkService(ParentLinkRepository links, UserRepository users, AuthProperties properties,
+                             ParentInviteMailService inviteMail) {
         this.links = links;
         this.users = users;
         this.properties = properties;
+        this.inviteMail = inviteMail;
     }
 
     // ------------------------------------------------------------------
@@ -220,12 +225,25 @@ public class ParentLinkService {
     }
 
     /**
-     * Stands in for email/SMS delivery. The token is logged rather than sent —
-     * swap this one method for SES/Twilio and the rest of the flow is already
-     * real.
+     * Emails the invite when the contact is an email address; logs the token
+     * for a phone contact, same as before (SMS is still out of scope — see
+     * the class doc). A failed send throws and the caller's transaction rolls
+     * the whole invite/resend back with it, rather than leaving a "sent"
+     * invitation on record that never actually reached anyone.
      */
     private void deliver(ParentLinkEntity link, String rawToken) {
-        log.info("Parent invitation for child {} to {} ({}): accept with token {} (expires {})",
-                link.getChildUserId(), link.getContact(), link.getChannel(), rawToken, link.getExpiresAt());
+        if (!"email".equals(link.getChannel())) {
+            log.info("Parent invitation for child {} to {} ({}): accept with token {} (expires {})",
+                    link.getChildUserId(), link.getContact(), link.getChannel(), rawToken, link.getExpiresAt());
+            return;
+        }
+        String childName = users.findById(link.getChildUserId()).map(UserEntity::getName).orElse(null);
+        String acceptUrl = properties.getAppBaseUrl() + "/parent/accept?token=" + rawToken;
+        try {
+            inviteMail.sendInvite(link.getContact(), childName, acceptUrl);
+        } catch (MailException ex) {
+            throw ApiException.serviceUnavailable("parentLink.mailSendFailed",
+                    "Could not send the invitation email. Please try again shortly.");
+        }
     }
 }

@@ -59,10 +59,13 @@
 .btn--lg { padding: 16px 40px; font-size: 17px; }
 .btn--md { padding: 12px 28px; font-size: 15px; }
 .btn--primary { background: var(--c-primary); color: white; box-shadow: 0 6px 0 var(--c-primary-hover); }
-.btn--primary:hover:not(:disabled) { background: var(--c-primary-hover); }
+/* `color` repeated here, not just `background` — a bare `a:hover` in global.css
+   otherwise beats `.btn--primary`'s color on specificity and repaints the text
+   the same shade as this hover background, making it disappear. */
+.btn--primary:hover:not(:disabled) { background: var(--c-primary-hover); color: white; }
 .btn--primary:disabled { background: var(--c-disabled); box-shadow: 0 6px 0 var(--c-disabled-shadow); }
 .btn--secondary { background: white; color: var(--c-primary); border: 2px solid var(--c-primary); }
-.btn--secondary:hover { background: var(--c-primary-tint-2); }
+.btn--secondary:hover { background: var(--c-primary-tint-2); color: var(--c-primary); }
 .btn--pill-outline { background: white; color: var(--c-ink-2); border: 2px solid var(--c-primary-line); border-radius: var(--r-pill); font-family: var(--font-body); font-weight: 700; }
 
 /* Card */
@@ -146,8 +149,111 @@
 .check-row__text { font-size: 15px; line-height: 1.5; }
 
 /* Nav bar (marketing pages) */
-.site-nav { display: flex; align-items: center; justify-content: space-between; padding: 20px 48px; max-width: 1280px; margin: 0 auto; width: 100%; }
+.site-nav { display: flex; align-items: center; justify-content: space-between; padding: 20px 48px; max-width: 1280px; margin: 0 auto; width: 100%; flex-wrap: wrap; gap: 12px; }
 .site-nav__brand { display: flex; align-items: center; gap: 10px; }
 .site-nav__mark { width: 36px; height: 36px; border-radius: 10px; background: var(--c-primary); display: flex; align-items: center; justify-content: center; }
 .site-nav__mark-dot { width: 14px; height: 14px; border-radius: 50%; background: var(--c-bg); }
 .site-nav__wordmark { font-family: var(--font-display); font-weight: 800; font-size: 22px; color: var(--c-ink); }
+.site-nav__links { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
+@media (max-width: 640px) {
+  .site-nav { padding: 16px 20px; }
+  .site-nav__links { gap: 14px; }
+  /* The two in-page anchors are a "read more" convenience, not navigation —
+     dropped first so the language toggle and Sign In button (which matter on
+     every visit) always have room. */
+  .site-nav__links a[href^="#"] { display: none; }
+}
+
+/* ---- Home (marketing page) — responsive at three widths: desktop,
+   ~900px (hero/CTA stack), ~640px (tight phone gutters, nav trims down). ---- */
+.home-shell { padding-inline: 48px; }
+@media (max-width: 640px) {
+  .home-shell { padding-inline: 20px; }
+}
+
+.home-hero { display: flex; gap: 48px; align-items: center; }
+.home-hero__copy { flex: 1 0 0; min-width: 0; }
+.home-hero__title { font-size: 44px; margin-left: 0; margin-right: 0; }
+/* The Sinhala headline runs longer than its English counterpart at the same
+   pixel size (Noto Sans Sinhala's glyphs also sit visually heavier), so it
+   gets its own, slightly smaller scale — English is untouched. */
+.home-hero__title--si { font-size: 38px; }
+.home-hero__actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.home-hero__art { position: relative; flex: 0 0 500px; width: 500px; height: 340px; }
+@media (max-width: 900px) {
+  .home-hero { flex-direction: column; text-align: center; }
+  .home-hero__title { font-size: 34px; margin-left: auto; margin-right: auto; }
+  .home-hero__title--si { font-size: 29px; }
+  .home-hero__actions { justify-content: center; }
+  .home-hero__art { flex: 0 0 auto; width: 100%; max-width: 320px; height: 220px; }
+}
+
+.home-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+@media (max-width: 900px) { .home-steps { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px) { .home-steps { grid-template-columns: 1fr; } }
+
+.home-why__text { font-size: 24px; }
+@media (max-width: 640px) { .home-why__text { font-size: 19px; } }
+
+.home-cta { background: var(--c-ink); border-radius: 28px; padding: 56px; display: flex; gap: 40px; align-items: center; }
+.home-cta__heading { flex: 0 0 464px; max-width: 464px; font-size: 32px; }
+@media (max-width: 760px) {
+  .home-cta { flex-direction: column; align-items: stretch; padding: 32px 24px; gap: 24px; }
+  .home-cta__heading { flex: 1 1 auto; max-width: none; font-size: 26px; text-align: center; }
+}
+
+.home-footer { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
+.home-footer__links { display: flex; gap: 28px; flex-wrap: wrap; }
+@media (max-width: 640px) {
+  .home-footer { flex-direction: column; text-align: center; }
+  .home-footer__links { justify-content: center; }
+}
+
+/* ---- Parent dashboard --------------------------------------------------
+   The header packs an avatar, a title block and a right-hand actions column
+   into one row — fine at 640px+, but the actions column needs to drop under
+   the title instead of squeezing it once the child's name makes the title
+   long on a phone-width screen. */
+.parent-dash-header { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.parent-dash-header__actions { text-align: right; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+@media (max-width: 480px) {
+  .parent-dash-header__actions { text-align: left; align-items: flex-start; flex-direction: row; flex-wrap: wrap; width: 100%; margin-left: 58px; }
+}
+
+.parent-dash-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 420px) { .parent-dash-stats { grid-template-columns: 1fr; } }
+
+/* ---- Admin dashboard ----------------------------------------------------
+   Built dense and desktop-first (a course's stat block alone is five items
+   wide). None of these change the desktop layout — every rule only kicks in
+   once the row genuinely can't fit, so a course/lesson row wraps onto a
+   second line instead of clipping or forcing horizontal scroll. */
+.admin-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.admin-header__actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+.admin-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+@media (max-width: 900px) { .admin-tiles { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px) { .admin-tiles { grid-template-columns: 1fr; } }
+
+.admin-panels { display: flex; gap: 16px; align-items: stretch; }
+@media (max-width: 900px) { .admin-panels { flex-direction: column; } }
+
+.admin-course-row { padding: 18px 22px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.admin-course-row__title { cursor: pointer; display: flex; align-items: center; gap: 12px; flex: 1 1 240px; min-width: 0; }
+.admin-course-row__stats { display: flex; align-items: center; gap: 26px; flex-wrap: wrap; }
+@media (max-width: 640px) {
+  .admin-course-row__stats { gap: 16px; justify-content: flex-start; width: 100%; margin-left: 62px; }
+}
+
+.admin-lesson-row { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid #EFECFA; flex-wrap: wrap; }
+.admin-lesson-row__title { flex: 1 1 180px; min-width: 0; }
+
+/* ---- Exercise answer feedback ------------------------------------------
+   Icon + message + "Next question" button in one row. At phone width the
+   message alone can run to 3-4 lines, squeezing the button into a sliver
+   beside it — drop the button to its own full-width row underneath instead. */
+.exercise-feedback { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.exercise-feedback__btn { align-self: flex-end; }
+@media (max-width: 560px) {
+  .exercise-feedback__btn { align-self: stretch; width: 100%; text-align: center; }
+}

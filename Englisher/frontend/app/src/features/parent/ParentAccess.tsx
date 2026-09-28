@@ -87,8 +87,8 @@ export function ParentAccess() {
   const headerSub = loading
     ? (isSi ? 'පූරණය වෙමින්…' : 'Loading…')
     : status === 'accepted' ? (isSi ? `සම්බන්ධයි: ${link.contact}` : 'Connected to ' + link.contact)
-    : status === 'invited' ? (isSi ? 'ආරාධනාව යවා ඇත — පිළිගැනීම බලාපොරොත්තුවෙන්' : 'Invitation sent — waiting to be accepted')
-    : (isSi ? 'ඔබේ ප්‍රගතිය අනුගමනය කිරීමට මාපියෙකු ආරාධනා කරන්න' : 'Invite a parent to follow your progress');
+    : status === 'invited' ? (isSi ? 'ආරාධනාව යවා ඇත — පිළිගැනීම බලාපොරොත්තුවෙන් සිටී' : 'Invitation sent — waiting to be accepted')
+    : (isSi ? 'ඔබේ ප්‍රගතිය අනුගමනය කිරීමට මාපියෙකුට ආරාධනා කරන්න' : 'Invite a parent to follow your progress');
 
   return (
     <div style={{ fontFamily: 'var(--font-body)', background: 'var(--c-bg)', color: 'var(--c-ink)', minHeight: '100vh' }}>
@@ -126,10 +126,10 @@ export function ParentAccess() {
 
           {status === 'none' && (
             <div className="card">
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 17, marginBottom: 4 }}>{isSi ? 'මාපියෙකු ආරාධනා කරන්න' : 'Invite a parent'}</div>
-              <div style={{ fontSize: 13.5, color: 'var(--c-ink-soft)', fontWeight: 600, lineHeight: 1.6, marginBottom: 18 }}>{isSi ? 'ඔවුන්ගේ විද්‍යුත් තැපැල් ලිපිනය හෝ දුරකථන අංකය ඇතුළත් කරන්න. අපි ඔවුන්ට ආරාධනාවක් යවන්නෙමු — ඔවුන් එය පිළිගත් පසුව පමණක් ඔබේ ප්‍රගතිය දැකිය හැක.' : "Enter their email address or phone number. We'll send them an invitation — they can only see your progress after they accept it."}</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 17, marginBottom: 4 }}>{isSi ? 'මාපියෙකුට ආරාධනා කරන්න' : 'Invite a parent'}</div>
+              <div style={{ fontSize: 13.5, color: 'var(--c-ink-soft)', fontWeight: 600, lineHeight: 1.6, marginBottom: 18 }}>{isSi ? 'ඔවුන්ගේ විද්‍යුත් තැපැල් ලිපිනය ඇතුළත් කරන්න. අපි ඔවුන්ට ආරාධනාවක් යවන්නෙමු — ඔවුන් එය පිළිගත් පසුව පමණක් ඔබේ ප්‍රගතිය දැකිය හැක.' : "Enter their email address or phone number. We'll send them an invitation — they can only see your progress after they accept it."}</div>
               <form onSubmit={onInvite} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <input value={contact} onChange={(e) => { setContact(e.target.value); setError(''); }} placeholder="parent@example.com or +94 71 234 5678" style={{ fontSize: 16, padding: '14px 18px', borderRadius: 999, border: `2px solid ${error ? '#F2C9D0' : 'var(--c-primary-line)'}`, outline: 'none' }} />
+                <input value={contact} onChange={(e) => { setContact(e.target.value); setError(''); }} placeholder="parent@example.com" style={{ fontSize: 16, padding: '14px 18px', borderRadius: 999, border: `2px solid ${error ? '#F2C9D0' : 'var(--c-primary-line)'}`, outline: 'none' }} />
                 {error && <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--c-danger-ink-2)', paddingLeft: 4 }}>{error}</div>}
                 <button type="submit" disabled={busy} style={{ background: valid ? 'var(--c-primary)' : 'var(--c-disabled)', color: 'white', border: 'none', borderRadius: 999, padding: 15, fontWeight: 700, fontSize: 16, fontFamily: 'var(--font-display)', cursor: valid && !busy ? 'pointer' : 'not-allowed', boxShadow: `0 5px 0 ${valid ? 'var(--c-primary-shadow)' : 'var(--c-disabled-shadow)'}`, marginTop: 4, opacity: busy ? 0.7 : 1 }}>{busy ? (isSi ? 'යවමින්…' : 'Sending…') : (isSi ? 'ආරාධනාව යවන්න' : 'Send invitation')}</button>
               </form>

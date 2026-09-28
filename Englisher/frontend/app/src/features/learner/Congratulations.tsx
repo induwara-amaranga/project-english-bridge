@@ -80,7 +80,7 @@ export function Congratulations() {
           </h1>
           <p className="rise-in" style={{ margin: 0, fontSize: 16, lineHeight: 1.6, color: 'rgba(255,255,255,0.85)', fontWeight: 600, maxWidth: 440 }}>
             {isSi
-              ? `ඔබ මාවතේ ඇති පාඨමාලා ${courseCount}ම නිම කළා — ක්‍රියා කාල පාඩමේ සිට අවසාන පාඩම දක්වා සෑම පාඩමක්ම.`
+              ? `ඔබ මාවතේ ඇති පාඨමාලා ${courseCount}ම නිම කළා — ක්‍රියා කාල භේදයේ සිට අවසාන පාඩම දක්වා සෑම පාඩමක්ම.`
               : `You have finished all ${courseCount} course${courseCount === 1 ? '' : 's'} on the roadmap — every lesson, from tenses to the last one.`}
           </p>
         </div>

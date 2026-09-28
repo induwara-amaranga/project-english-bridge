@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useCurriculum } from '../../hooks/useCurriculum';
 import { useProgress } from '../../hooks/useProgress';
 import { useAuth } from '../../hooks/useAuth';
@@ -9,6 +9,7 @@ import { previewGuestLessonAward } from '../../domain/guestProgress';
 import { saveLessonResult, scoreOf, type ExerciseOutcome } from '../../domain/lessonResults';
 import { LangToggle } from '../../components/Primitives';
 import { LinkButton } from '../../components/Button';
+import { AdSlot } from '../../components/AdSlot';
 import { LottieBox } from '../../components/LottieBox';
 import { ScoreDial } from '../../components/ScoreDial';
 import { CelebrationBadge } from '../../components/CelebrationBadge';
@@ -23,6 +24,19 @@ import { CORRECT, WRONG, randomCelebration } from '../../lib/animations';
 type InteractiveCard = Extract<Card, { type: 'mcq' | 'gap_fill' | 'drag_order' | 'match' | 'free_text' | 'multi_select' | 'essay' | 'rubric' | 'translate_si_en' }>;
 const isInteractive = (c: Card): c is InteractiveCard => c.type !== 'text';
 
+/**
+ * What the "Review answers" link on the completion screen hands forward, and
+ * what its own back button hands back — so landing on this route via that
+ * round trip reopens the completion screen instead of restarting the lesson
+ * from question one. A plain visit here (from the lesson intro's "Go to
+ * exercise") carries no such state and always starts fresh, replay included.
+ */
+interface RestoredCompleteState {
+  restored: true;
+  award: CompleteLessonResult | null;
+  outcomes: ExerciseOutcome[];
+}
+
 /** Skip and Check are the same control at opposite ends of the row, so they share their metrics. */
 const ACTION_BUTTON = {
   minWidth: 168,
@@ -35,6 +49,7 @@ const ACTION_BUTTON = {
 
 export function ExercisePage() {
   const { stageId, lessonId } = useParams();
+  const location = useLocation();
   const { curriculum } = useCurriculum();
   const { setProgress } = useProgress();
   const { isGuest } = useAuth();
@@ -46,11 +61,16 @@ export function ExercisePage() {
   const exercises = useMemo(() => lesson?.exercises || [], [lesson]);
   const backHref = `/learn/${stageId}`;
 
+  // Only set when the review screen's own back button sent us here — see
+  // RestoredCompleteState. Read once; this route's params don't change under
+  // this component, so there's no need to react to it changing later.
+  const restored = (location.state as RestoredCompleteState | null)?.restored ? (location.state as RestoredCompleteState) : null;
+
   const [qIndex, setQIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, Answer>>({});
   const [allAnswers, setAllAnswers] = useState<Record<string, Answer>>({});
   const [checked, setChecked] = useState(false);
-  const [complete, setComplete] = useState(false);
+  const [complete, setComplete] = useState(!!restored);
   const [finishing, setFinishing] = useState(false);
   /** Covers the screen while the lesson is graded, so the swap to the
    *  completion card is a cross-fade instead of a mid-request pop. */
@@ -58,9 +78,9 @@ export function ExercisePage() {
   const [lang, setLang] = useState<'en' | 'si'>('en');
   const isSi = lang === 'si';
   /** One record per question, kept for the review screen — see domain/lessonResults.ts. */
-  const [outcomes, setOutcomes] = useState<ExerciseOutcome[]>([]);
+  const [outcomes, setOutcomes] = useState<ExerciseOutcome[]>(restored?.outcomes ?? []);
   /** The server's award breakdown for the completion screen — null while still answering. */
-  const [award, setAward] = useState<CompleteLessonResult | null>(null);
+  const [award, setAward] = useState<CompleteLessonResult | null>(restored?.award ?? null);
   /** Picked once per lesson so the completion screen keeps the same animation while it is open. */
   const [celebration] = useState(randomCelebration);
 
@@ -219,8 +239,8 @@ export function ExercisePage() {
             {checked && (
               <div
                 key={`fb-${qIndex}`}
-                className={allRight ? 'pop-in' : 'shake-in'}
-                style={{ background: allRight ? 'var(--c-success-bg)' : 'var(--c-danger-bg)', border: `1px solid ${allRight ? 'var(--c-success)' : 'var(--c-danger)'}`, borderRadius: 16, padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 16 }}
+                className={`exercise-feedback ${allRight ? 'pop-in' : 'shake-in'}`}
+                style={{ background: allRight ? 'var(--c-success-bg)' : 'var(--c-danger-bg)', border: `1px solid ${allRight ? 'var(--c-success)' : 'var(--c-danger)'}`, borderRadius: 16, padding: '18px 20px' }}
               >
                 <LottieBox name={allRight ? CORRECT : WRONG} size={56} fallback={<OutcomeBadge ok={allRight} />} />
                 <p className={lang === 'si' ? 'si' : undefined} style={{ margin: 0, flex: 1, minWidth: 0, fontSize: 15, lineHeight: 1.6, fontWeight: 700, color: allRight ? 'var(--c-success-ink)' : 'var(--c-danger-ink)' }}>
@@ -230,7 +250,7 @@ export function ExercisePage() {
                       ? (lang === 'si' ? fb.correct.si || fb.correct.en : fb.correct.en) || (isSi ? 'නිවැරදියි.' : 'Correct.')
                       : (lang === 'si' ? fb.incorrect.si || fb.incorrect.en : fb.incorrect.en) || (isSi ? 'නිවැරදි නැත — නැවත බලන්න.' : 'Not quite — have another look.')}
                 </p>
-                <button onClick={next} onPointerDown={bubble} disabled={finishing} className="bubble-host press" style={{ alignSelf: 'flex-end', background: 'var(--c-primary)', color: 'white', border: 'none', borderRadius: 12, padding: '12px 28px', fontWeight: 700, fontSize: 15, fontFamily: 'var(--font-display)', cursor: finishing ? 'default' : 'pointer', opacity: finishing ? 0.7 : 1, flexShrink: 0 }}>
+                <button onClick={next} onPointerDown={bubble} disabled={finishing} className="exercise-feedback__btn bubble-host press" style={{ background: 'var(--c-primary)', color: 'white', border: 'none', borderRadius: 12, padding: '12px 28px', fontWeight: 700, fontSize: 15, fontFamily: 'var(--font-display)', cursor: finishing ? 'default' : 'pointer', opacity: finishing ? 0.7 : 1, flexShrink: 0 }}>
                   {finishing ? (isSi ? 'සුරකිමින්…' : 'Saving…') : qIndex + 1 >= exercises.length ? (isSi ? 'අවසන් කරන්න' : 'Finish') : (isSi ? 'ඊළඟ ප්‍රශ්නය' : 'Next question')}
                 </button>
               </div>
@@ -320,7 +340,10 @@ export function ExercisePage() {
             )}
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center', marginTop: 4 }}>
-              <LinkButton to={`/learn/${stage.id}/${lesson.id}/review`} variant="secondary" size="lg">{isSi ? 'පිළිතුරු සමාලෝචනය' : 'Review answers'}</LinkButton>
+              <LinkButton
+                to={`/learn/${stage.id}/${lesson.id}/review`} variant="secondary" size="lg"
+                state={{ fromExercise: true, award, outcomes }}
+              >{isSi ? 'පිළිතුරු සමාලෝචනය' : 'Review answers'}</LinkButton>
               {showGuestPrompt ? (
                 <button onClick={() => navigate('/guest-save')} onPointerDown={bubble} className="btn btn--lg btn--primary bubble-host">{isSi ? 'ඉදිරියට' : 'Continue'}</button>
               ) : isCourseComplete ? (
@@ -328,6 +351,14 @@ export function ExercisePage() {
               ) : (
                 <LinkButton to={backHref} variant="primary" size="lg">{isSi ? 'පාඩම් වෙත' : 'Back to lessons'}</LinkButton>
               )}
+            </div>
+
+            {/* Lesson just finished, next action already taken above — the
+                one approved pause point on this screen (never mid-question;
+                see the "Ads on Englisher" write-up). Empty until AdSense
+                approval hands over a real slot id. */}
+            <div style={{ width: '100%', marginTop: 8 }}>
+              <AdSlot slotId={import.meta.env.VITE_AD_SLOT_LESSON_DONE as string | undefined} />
             </div>
           </div>
         )}

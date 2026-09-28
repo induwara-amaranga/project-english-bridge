@@ -82,7 +82,7 @@ export function CourseDashboard() {
 
   return (
     <div style={{ fontFamily: 'var(--font-body)', color: 'var(--c-ink)', minHeight: '100vh' }}>
-      <div style={{ background: 'white', borderBottom: '1px solid var(--c-line)', padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="admin-header" style={{ background: 'white', borderBottom: '1px solid var(--c-line)', padding: '12px 20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Link to="/" className="site-nav__brand" style={{ padding: 0 }}>
             <div style={{ width: 32, height: 32, borderRadius: 9, background: 'var(--c-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ width: 12, height: 12, borderRadius: '50%', background: 'var(--c-bg)' }} /></div>
@@ -91,7 +91,7 @@ export function CourseDashboard() {
           <div style={{ width: 1, height: 22, background: 'var(--c-line)' }} />
           <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16 }}>Course Dashboard</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="admin-header__actions">
           <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--c-ink-soft)' }}>{note}</span>
           <div style={{ background: 'var(--c-primary-tint)', color: 'var(--c-primary)', borderRadius: 999, padding: '6px 14px', fontSize: 12, fontWeight: 700 }}>Draft · v{curriculum.version + 1}</div>
           {user && <span style={{ fontSize: 12, color: 'var(--c-ink-soft)' }}>{user.email}</span>}
@@ -103,9 +103,9 @@ export function CourseDashboard() {
       {inviting && <InviteAdminDialog onClose={() => setInviting(false)} />}
 
       <div style={{ maxWidth: 1120, margin: '0 auto', padding: '28px 24px 64px' }}>
-        <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
+        <div className="admin-tiles" style={{ marginBottom: 20 }}>
           {tiles.map((t) => (
-            <div key={t.label} className="card" style={{ flex: 1, padding: '18px 20px', border: '1px solid var(--c-line)', borderRadius: 18 }}>
+            <div key={t.label} className="card" style={{ padding: '18px 20px', border: '1px solid var(--c-line)', borderRadius: 18 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--c-ink-soft)', letterSpacing: '0.06em' }}>{t.label}</div>
               <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 32, lineHeight: 1.1, margin: '6px 0 2px' }}>{t.value}</div>
               <div style={{ fontSize: 12, color: 'var(--c-ink-soft)', fontWeight: 600 }}>{t.sub}</div>
@@ -113,7 +113,7 @@ export function CourseDashboard() {
           ))}
         </div>
 
-        <div style={{ display: 'flex', gap: 16, marginBottom: 32, alignItems: 'stretch' }}>
+        <div className="admin-panels" style={{ marginBottom: 32 }}>
           <div className="card" style={{ flex: 1.3, padding: '20px 22px', border: '1px solid var(--c-line)', borderRadius: 18 }}>
             <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, margin: 0 }}>Exercise mix</h3>
             <div style={{ fontSize: 12, color: 'var(--c-ink-soft)', fontWeight: 600, margin: '3px 0 18px' }}>{totalExercises} exercises across all courses</div>
@@ -158,8 +158,8 @@ export function CourseDashboard() {
             const isExpanded = !!expanded[st.id];
             return (
               <div key={st.id} className="card" style={{ overflow: 'hidden', padding: 0, border: '1px solid var(--c-line)', borderRadius: 18 }}>
-                <div style={{ padding: '18px 22px', display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <div onClick={() => toggle(st.id)} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+                <div className="admin-course-row">
+                  <div onClick={() => toggle(st.id)} className="admin-course-row__title">
                     <span style={{ fontSize: 11, color: 'var(--c-ink-disabled)', width: 10 }}>{isExpanded ? '▾' : '▸'}</span>
                     <div style={{ width: 38, height: 38, borderRadius: '50%', background: st.theme.to, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15 }}>{st.order}</div>
                     <div style={{ minWidth: 0 }}>
@@ -167,7 +167,7 @@ export function CourseDashboard() {
                       <div className="si" style={{ fontSize: 12, color: 'var(--c-ink-soft)', fontWeight: 600 }}>{st.title.si || '—'}</div>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 26, flexShrink: 0 }}>
+                  <div className="admin-course-row__stats" style={{ flexShrink: 0 }}>
                     <div style={{ textAlign: 'right' }}><div style={{ fontSize: 11, color: 'var(--c-ink-soft)', fontWeight: 700 }}>LESSONS</div><div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 17 }}>{st.lessons.length}</div></div>
                     <div style={{ textAlign: 'right' }}><div style={{ fontSize: 11, color: 'var(--c-ink-soft)', fontWeight: 700 }}>EXERCISES</div><div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 17 }}>{exCount}</div></div>
                     <div style={{ width: 132 }}>
@@ -185,9 +185,9 @@ export function CourseDashboard() {
                 {isExpanded && (
                   <div style={{ borderTop: '1px solid var(--c-line)', background: '#FBFAFF', padding: '8px 22px 16px' }}>
                     {st.lessons.map((l) => (
-                      <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 0', borderBottom: '1px solid #EFECFA' }}>
+                      <div key={l.id} className="admin-lesson-row">
                         <div style={{ width: 26, height: 26, borderRadius: 8, background: 'var(--c-primary-tint)', color: 'var(--c-primary)', fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{l.order}</div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="admin-lesson-row__title">
                           <div style={{ fontSize: 14, fontWeight: 700 }}>{l.title.en || '(untitled lesson)'}</div>
                           <div style={{ fontSize: 12, color: 'var(--c-ink-soft)', fontWeight: 500, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.explanation.en || 'No explanation set'}</div>
                         </div>

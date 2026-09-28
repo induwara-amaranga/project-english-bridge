@@ -115,7 +115,7 @@ export function PlacementTest() {
             <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 28, margin: '0 0 16px', lineHeight: 1.3 }}>{isSi ? 'ඔබේ ආරම්භක ලක්ෂ්‍යය සොයමු.' : "Let's find your starting point."}</h1>
             <p style={{ fontSize: 17, lineHeight: 1.6, color: 'var(--c-ink-2)', margin: '0 0 36px' }}>
               {isSi
-                ? `ඉක්මන් ප්‍රශ්න ${QUESTIONS.length}ක්, විනාඩි 2ක් පමණ. ගිණුමක් අවශ්‍ය නැත — අවංකව පිළිතුරු දෙන්න, මෙය කිරීමට වැරදි ක්‍රමයක් නැත.`
+                ? `විනාඩි 2කින් පමණ , ඉක්මන් ප්‍රශ්න ${QUESTIONS.length}ක්. ගිණුමක් අවශ්‍ය නැත — අවංකව පිළිතුරු දෙන්න, මෙය කිරීමට වැරදි ක්‍රමයක් නැත.`
                 : `${QUESTIONS.length} quick questions, about 2 minutes. No account needed — just answer honestly, there's no wrong way to do this.`}
             </p>
             <button onClick={() => { setStartedAt(Date.now()); setScreen('question'); }} style={{ background: 'var(--c-primary)', color: 'white', border: 'none', borderRadius: 999, padding: '18px 48px', fontWeight: 800, fontSize: 17, fontFamily: 'var(--font-display)', cursor: 'pointer', boxShadow: '0 6px 0 var(--c-primary-shadow)' }}>{isSi ? 'ආරම්භ කරන්න' : 'Start'}</button>

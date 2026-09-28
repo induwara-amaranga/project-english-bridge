@@ -2,9 +2,10 @@ Here's every source file containing hardcoded Sinhala text (found by scanning fo
 
 Global / shared components
 
-components/BottomNav.tsx — bottom nav tab labels
-components/StreakFreezeDialog.tsx — streak-repair/at-risk popup
-components/Primitives.tsx — RoleToggle labels (Student/Parent)
+components/BottomNav.tsx — bottom nav tab labels /
+components/StreakFreezeDialog.tsx — streak-repair/at-risk popup /
+components/Primitives.tsx — RoleToggle labels (Student/Parent) /
+
 Learner-facing pages
 
 features/learner/Home.tsx — landing page /
@@ -12,16 +13,16 @@ features/learner/SignIn.tsx /
 features/learner/SignUp.tsx /
 features/learner/Profile.tsx
 features/learner/Roadmap.tsx /
-features/learner/StageLessons.tsx
-features/learner/Lesson.tsx
-features/learner/Exercise.tsx
-features/learner/ExerciseCardView.tsx — instructional labels/placeholders only (MCQ options etc. intentionally stay English)
-features/learner/ReviewAnswers.tsx
-features/learner/Progress.tsx
-features/learner/GuestSavePrompt.tsx
-features/learner/PlacementTest.tsx
-features/learner/CourseComplete.tsx 
-features/learner/Congratulations.tsx — includes the 5 quotes
+features/learner/StageLessons.tsx /
+features/learner/Lesson.tsx /
+features/learner/Exercise.tsx /
+features/learner/ExerciseCardView.tsx — instructional labels/placeholders only (MCQ options etc. intentionally stay English)  /
+features/learner/ReviewAnswers.tsx /
+features/learner/Progress.tsx /
+features/learner/GuestSavePrompt.tsx /
+features/learner/PlacementTest.tsx /
+features/learner/CourseComplete.tsx /
+features/learner/Congratulations.tsx — includes the 5 quotes /
 
 Onboarding
 
@@ -32,8 +33,8 @@ features/onboarding/Walkthrough.tsx /
 
 Parent-facing
 
-features/parent/ParentAccess.tsx
-features/parent/ParentDashboard.tsx
+features/parent/ParentAccess.tsx /
+features/parent/ParentDashboard.tsx /
 
 Writing tasks — shell chrome is bilingual, but each of these three also hardcodes its own promptSi (and rubric/idea-bank Sinhala where present) as actual lesson content, not UI chrome:
 

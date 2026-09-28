@@ -1,10 +1,10 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import { useCurriculum } from '../../hooks/useCurriculum';
 import { useLessonResults } from '../../hooks/useLessonResults';
 import { useProgress } from '../../hooks/useProgress';
 import { scoreOf, type ExerciseOutcome, type LessonResult } from '../../domain/lessonResults';
-import { retryQuestion, RETRY_QUESTION_COST_COINS, type Progress, type StageOutcome } from '../../domain/progress';
+import { retryQuestion, RETRY_QUESTION_COST_COINS, type CompleteLessonResult, type Progress, type StageOutcome } from '../../domain/progress';
 import { LangToggle } from '../../components/Primitives';
 import { LinkButton } from '../../components/Button';
 import { ScoreDial } from '../../components/ScoreDial';
@@ -24,6 +24,13 @@ import { defaultAnswerFor, type Answer } from '../../domain/grading';
 // graded — no second grading implementation to drift out of step.
 
 type Scope = 'lesson' | 'stage-wrong';
+
+/** What the exercise completion screen's "Review answers" link hands forward — see Exercise.tsx's RestoredCompleteState. */
+interface ExerciseReviewState {
+  fromExercise: true;
+  award: CompleteLessonResult | null;
+  outcomes: ExerciseOutcome[];
+}
 
 interface ResolvedQuestion {
   key: string;
@@ -47,6 +54,7 @@ function resolveQuestions(curriculum: Curriculum, result: LessonResult): Resolve
 
 export function ReviewAnswers({ scope = 'lesson' }: { scope?: Scope }) {
   const { stageId, lessonId } = useParams();
+  const location = useLocation();
   const { curriculum, loading: curriculumLoading } = useCurriculum();
   const { results: allResults, loading: resultsLoading } = useLessonResults();
   const { progress, setProgress } = useProgress();
@@ -78,7 +86,14 @@ export function ReviewAnswers({ scope = 'lesson' }: { scope?: Scope }) {
     if (stageOutcome.cleared) setClearedOutcome(stageOutcome);
   };
 
-  const backHref = isCourse ? `/learn/${stageId}/complete` : `/learn/${stageId}`;
+  // Reached straight from the lesson-complete screen's own "Review answers"
+  // button (see Exercise.tsx) — send its back button there instead of past
+  // it to the stage's lesson list, carrying the award/outcomes it handed
+  // forward so that screen can reopen exactly as it was, not restart the
+  // lesson from question one.
+  const fromExercise = !isCourse && (location.state as ExerciseReviewState | null)?.fromExercise ? (location.state as ExerciseReviewState) : null;
+  const backHref = isCourse ? `/learn/${stageId}/complete` : fromExercise ? `/learn/${stageId}/${lessonId}/practice` : `/learn/${stageId}`;
+  const backState = fromExercise ? { restored: true, award: fromExercise.award, outcomes: fromExercise.outcomes } : undefined;
   const stage = curriculum.stages.find((s) => s.id === stageId);
   const stageTitle = isSi ? (stage?.title.si || stage?.title.en) : stage?.title.en;
   const title = isCourse
@@ -89,7 +104,7 @@ export function ReviewAnswers({ scope = 'lesson' }: { scope?: Scope }) {
     <div className="app-shell" style={{ fontFamily: 'var(--font-body)', background: 'var(--c-bg)', color: 'var(--c-ink)' }}>
       <div style={{ background: 'var(--c-primary)', padding: '20px 24px' }}>
         <div style={{ maxWidth: 940, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 14 }}>
-          <Link to={backHref} style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <Link to={backHref} state={backState} replace={!!fromExercise} style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 3L5 9L11 15" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </Link>
           <div>

@@ -23,15 +23,18 @@ import { FormalLetter } from './features/learner/FormalLetter';
 import { ProgressPage } from './features/learner/Progress';
 import { Profile } from './features/learner/Profile';
 import { ParentAccess } from './features/parent/ParentAccess';
+import { ParentAcceptInvite } from './features/parent/ParentAcceptInvite';
 import { ParentDashboard } from './features/parent/ParentDashboard';
 import { CourseDashboard } from './features/admin/CourseDashboard';
 import { CourseEditor } from './features/admin/CourseEditor';
+import { Privacy } from './features/legal/Privacy';
 
 export default function App() {
   return (
     <AuthProvider>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/privacy" element={<Privacy />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/signin" element={<SignIn />} />
         <Route path="/placement" element={<PlacementTest />} />
@@ -75,6 +78,10 @@ export default function App() {
         {/* The child (student) manages the invite; the parent account views the
             result — see the note in useAuth.tsx. */}
         <Route path="/parent/access" element={<RequireRole role="student"><ParentAccess /></RequireRole>} />
+        {/* Public — the link an invite email actually sends; may be the
+            parent's first-ever visit, so it handles both auth states itself
+            rather than going through RequireRole. See ParentAcceptInvite. */}
+        <Route path="/parent/accept" element={<ParentAcceptInvite />} />
         <Route path="/parent" element={<RequireRole role="parent"><ParentDashboard /></RequireRole>} />
 
         {/* Admin — the admin dashboard */}
