@@ -39,12 +39,19 @@ spring:
             enable: ${ENGLISHER_SMTP_STARTTLS:false}
 
 server:
-  port: ${ENGLISHER_PORT:8080}
+  # Heroku assigns the port at runtime via $PORT.
+  port: ${PORT:${ENGLISHER_PORT:8080}}
   error:
     include-stacktrace: never
     include-message: never
 
 englisher:
+  rate-limit:
+    # Per-IP throttling of the sign-in/sign-up endpoints — see AuthRateLimitFilter.
+    enabled: true
+    # How many proxies sit in front of the app and append to X-Forwarded-For.
+    # 0 = use the TCP peer address (local dev). application-prod.yml sets 1.
+    trusted-proxy-hops: ${ENGLISHER_TRUSTED_PROXY_HOPS:0}
   auth:
     jwt-secret: ${ENGLISHER_JWT_SECRET:}
     access-token-ttl: 15m

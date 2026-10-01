@@ -1,11 +1,17 @@
 name: CI
 
 # Fast feedback on pull requests, and reused (via workflow_call) as the test
-# gate deploy.yml runs before it will build or deploy anything on main — so a
-# direct push (no PR) still can't reach production untested.
+# gate deploy.yml runs before it will deploy anything on main — so a direct
+# push (no PR) still can't reach production untested.
+#
+# Lives at the repository root because GitHub only reads workflows from
+# <root>/.github/workflows; the app itself is under Englisher/.
 on:
   pull_request:
     branches: [main]
+    paths:
+      - "Englisher/**"
+      - ".github/workflows/**"
   workflow_call: {}
 
 permissions:
@@ -17,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: server
+        working-directory: Englisher/server
     steps:
       - uses: actions/checkout@v4
 
@@ -26,7 +32,7 @@ jobs:
           distribution: temurin
           java-version: "21"
           cache: maven
-          cache-dependency-path: server/pom.xml
+          cache-dependency-path: Englisher/server/pom.xml
 
       # `verify` runs unit tests and the embedded-Postgres integration tests
       # (real PostgreSQL binary, no Docker/Testcontainers needed — see
@@ -38,7 +44,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: frontend/app
+        working-directory: Englisher/frontend/app
     steps:
       - uses: actions/checkout@v4
 
@@ -46,7 +52,7 @@ jobs:
         with:
           node-version: "20"
           cache: npm
-          cache-dependency-path: frontend/app/package-lock.json
+          cache-dependency-path: Englisher/frontend/app/package-lock.json
 
       - run: npm ci
       - run: npm run lint

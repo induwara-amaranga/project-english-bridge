@@ -150,7 +150,9 @@ export function previewGuestLessonAward(
   const allCorrect = totalExercises > 0 && correctExercises === totalExercises;
 
   // A guest's first-ever activity: nextStreak's same-day floor always lands on 1.
-  const xp = (lessonKind === 'practice' ? BASE_XP_PRACTICE : BASE_XP_TEACH) + 1;
+  // Scaled by correct exercises, rounded down, like ProgressService.lessonXp.
+  const fullXp = (lessonKind === 'practice' ? BASE_XP_PRACTICE : BASE_XP_TEACH) + 1;
+  const xp = totalExercises === 0 ? fullXp : Math.floor((fullXp * correctExercises) / totalExercises);
   const coins = COINS_PER_LESSON + correctExercises * COINS_PER_CORRECT_EXERCISE + COINS_PER_STREAK_DAY;
   const bonusXp = allCorrect ? LESSON_PERFECT_BONUS_XP : 0;
   const bonusCoins = allCorrect ? LESSON_PERFECT_BONUS_COINS : 0;

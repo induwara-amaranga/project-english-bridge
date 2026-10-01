@@ -53,7 +53,9 @@ Every connection setting is an environment variable, so nothing is hardcoded:
 | `ENGLISHER_DB_URL` | `jdbc:postgresql://localhost:5432/englisher` |
 | `ENGLISHER_DB_USER` | `englisher` |
 | `ENGLISHER_DB_PASSWORD` | `englisher` |
-| `ENGLISHER_PORT` | `8080` |
+| `DATABASE_URL` | *(none — Heroku's `postgres://` URL; used only when `ENGLISHER_DB_URL` is unset)* |
+| `PORT` / `ENGLISHER_PORT` | `8080` (`PORT` wins; Heroku sets it) |
+| `ENGLISHER_TRUSTED_PROXY_HOPS` | `0` (`1` under `prod`) — proxies appending to X-Forwarded-For, for the auth rate limit |
 | `ENGLISHER_JWT_SECRET` | *(none — required outside `dev`)* |
 | `ENGLISHER_ADMIN_PASSWORD` | *(none — no admin is seeded without it)* |
 | `ENGLISHER_ALLOWED_ORIGINS` | `http://localhost:5173,http://localhost:4173` |

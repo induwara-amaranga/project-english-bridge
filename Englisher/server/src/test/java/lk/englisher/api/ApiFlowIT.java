@@ -273,6 +273,28 @@ class ApiFlowIT extends AbstractPostgresIT {
     }
 
     @Test
+    void halfRightEarnsHalfTheXpRoundedDownAndNoBonus() {
+        String token = signUpStudent("halfway@test.lk").accessToken();
+
+        var answers = json.createObjectNode();
+        answers.put("wo-1-c1", 1);                       // correct
+        answers.set("wo-2-c1", json.createArrayNode().add(1).add(0).add(2));  // wrong
+
+        var request = json.createObjectNode();
+        request.put("stageId", "tenses");
+        request.set("answers", answers);
+
+        ResponseEntity<JsonNode> response = exchange(HttpMethod.POST,
+                "/api/progress/lessons/word-order/complete", token, request, JsonNode.class);
+
+        // 1 of 2 exercises right: floor(9 / 2).
+        assertThat(response.getBody().get("passed").asBoolean()).isFalse();
+        assertThat(response.getBody().get("xpAwarded").asInt()).isEqualTo(4);
+        assertThat(response.getBody().get("bonusXp").asInt()).isZero();
+        assertThat(get("/api/progress", token).get("xp").asInt()).isEqualTo(4);
+    }
+
+    @Test
     void correctAnswersAwardXpExactlyOnce() {
         String token = signUpStudent("honest@test.lk").accessToken();
 
@@ -286,16 +308,19 @@ class ApiFlowIT extends AbstractPostgresIT {
 
         ResponseEntity<JsonNode> first = exchange(HttpMethod.POST,
                 "/api/progress/lessons/word-order/complete", token, request, JsonNode.class);
+        // word-order is a teach lesson: 8 base + 1 for a day-one streak, plus
+        // the 10 XP flawless-lesson bonus.
         assertThat(first.getBody().get("passed").asBoolean()).isTrue();
-        assertThat(first.getBody().get("xpAwarded").asInt()).isEqualTo(10);
-        assertThat(first.getBody().get("progress").get("xp").asInt()).isEqualTo(10);
+        assertThat(first.getBody().get("xpAwarded").asInt()).isEqualTo(9);
+        assertThat(first.getBody().get("bonusXp").asInt()).isEqualTo(10);
+        assertThat(first.getBody().get("progress").get("xp").asInt()).isEqualTo(19);
         assertThat(first.getBody().get("progress").get("streakDays").asInt()).isEqualTo(1);
 
         // Replaying the same completion must not farm XP.
         ResponseEntity<JsonNode> second = exchange(HttpMethod.POST,
                 "/api/progress/lessons/word-order/complete", token, request, JsonNode.class);
         assertThat(second.getBody().get("xpAwarded").asInt()).isZero();
-        assertThat(get("/api/progress", token).get("xp").asInt()).isEqualTo(10);
+        assertThat(get("/api/progress", token).get("xp").asInt()).isEqualTo(19);
 
         JsonNode completed = get("/api/progress", token).get("completedLessonIds");
         assertThat(completed.get("tenses")).hasSize(1);

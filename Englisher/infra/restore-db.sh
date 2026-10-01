@@ -1,33 +1,32 @@
 #!/usr/bin/env bash
-# Restores a gzipped pg_dump produced by infra/backup-db.sh. Run by hand only
-# — never from cron or CI — since it drops and recreates the database before
-# replaying the dump.
+# Restores the production database. Run by hand only. It replaces every
+# table's contents, so the app is put in maintenance mode while it runs.
 #
-# Usage: infra/restore-db.sh /opt/englisher/backups/englisher-<timestamp>.sql.gz
-#    or: infra/restore-db.sh path/to/downloaded-from-bucket.sql.gz
+# Usage: bash infra/restore-db.sh <app-name> <backup>
+#   <backup> is either a Heroku backup id from `heroku pg:backups -a <app>`
+#   (e.g. b012), or a local .dump file from infra/backup-db.sh (needs
+#   pg_restore installed locally).
 set -euo pipefail
-cd "$(dirname "$0")/../server"
 
-FILE="${1:?Usage: $0 <backup-file.sql.gz>}"
-[ -f "$FILE" ] || { echo "No such file: $FILE" >&2; exit 1; }
+APP="${1:?Usage: $0 <app-name> <backup-id|file.dump>}"
+BACKUP="${2:?Usage: $0 <app-name> <backup-id|file.dump>}"
 
-COMPOSE="docker compose -f docker-compose.yml -f docker-compose.prod.yml"
-
-echo "This will DROP the englisher database and replace it with $FILE."
+echo "This will REPLACE the $APP database with $BACKUP."
 read -r -p "Type 'restore' to continue: " confirm
 [ "$confirm" = "restore" ] || { echo "Aborted."; exit 1; }
 
-echo "==> Stopping backend (so nothing writes during restore)"
-$COMPOSE stop backend
+echo "==> Maintenance mode on"
+heroku maintenance:on -a "$APP"
+trap 'echo "==> Maintenance mode off"; heroku maintenance:off -a "$APP"' EXIT
 
-echo "==> Dropping and recreating database"
-$COMPOSE exec -T db psql -U englisher -d postgres -c "DROP DATABASE IF EXISTS englisher;"
-$COMPOSE exec -T db psql -U englisher -d postgres -c "CREATE DATABASE englisher OWNER englisher;"
+if [ -f "$BACKUP" ]; then
+  echo "==> Restoring local file $BACKUP"
+  pg_restore --verbose --clean --if-exists --no-acl --no-owner \
+    -d "$(heroku config:get DATABASE_URL -a "$APP")" "$BACKUP"
+else
+  echo "==> Restoring Heroku backup $BACKUP"
+  heroku pg:backups:restore "$BACKUP" DATABASE_URL -a "$APP" --confirm "$APP"
+fi
 
-echo "==> Restoring from $FILE"
-gunzip -c "$FILE" | $COMPOSE exec -T db psql -U englisher -d englisher
-
-echo "==> Restarting backend"
-$COMPOSE start backend
-
-echo "==> Done — check: $COMPOSE logs backend"
+echo "==> Restarting dynos"
+heroku ps:restart -a "$APP"

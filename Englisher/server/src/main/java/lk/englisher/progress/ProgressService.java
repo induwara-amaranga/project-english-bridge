@@ -159,9 +159,9 @@ public class ProgressService {
 
     /**
      * Grades a lesson's interactive cards and marks it complete — the first
-     * time this is called for a given lesson, regardless of score. Every
-     * interactive card answered correctly earns the "flawless lesson" bonus;
-     * it no longer decides whether the lesson counts at all.
+     * time this is called for a given lesson, regardless of score. XP is paid
+     * only for exercises answered correctly (see {@link #lessonXp}), and every
+     * interactive card correct adds the "flawless lesson" bonus on top.
      */
     @Transactional
     public CompleteLessonResponse completeLesson(UUID userId, String lessonId, CompleteLessonRequest request) {
@@ -204,7 +204,7 @@ public class ProgressService {
         AwardResult awardResult = AwardResult.NONE;
         if (!alreadyComplete) {
             awardResult = award(progress, located.stage().id(), lessonId, located.lesson().kind(),
-                    allCorrect, correctExercises);
+                    allCorrect, correctExercises, totalExercises);
         }
         progress.setCurrentStagePct(percentThrough(located.stage(), progress));
 
@@ -237,7 +237,7 @@ public class ProgressService {
      * still the only anti-farming boundary: a retake never re-enters here.
      */
     private AwardResult award(ProgressEntity progress, String stageId, String lessonId, String lessonKind,
-                              boolean allCorrect, int correctExercises) {
+                              boolean allCorrect, int correctExercises, int totalExercises) {
         ObjectNode completed = progress.getCompletedLessonIds() instanceof ObjectNode node
                 ? node.deepCopy()
                 : json.createObjectNode();
@@ -253,8 +253,7 @@ public class ProgressService {
         progress.setStreakDays(newStreak);
         progress.setLastActive(now);
 
-        int xp = "practice".equals(lessonKind) ? BASE_XP_PRACTICE : BASE_XP_TEACH;
-        xp += Math.min(newStreak, STREAK_XP_CAP);
+        int xp = lessonXp(lessonKind, newStreak, correctExercises, totalExercises);
         int coins = COINS_PER_LESSON + correctExercises * COINS_PER_CORRECT_EXERCISE;
         if (streakGrew) {
             coins += COINS_PER_STREAK_DAY;
@@ -280,6 +279,17 @@ public class ProgressService {
         progress.setCoins(progress.getCoins() + coins + bonusCoins + streakMilestoneBonusCoins);
         return new AwardResult(xp, coins, bonusXp, bonusCoins,
                 streakMilestoneDays, streakMilestoneBonusXp, streakMilestoneBonusCoins);
+    }
+
+    /**
+     * Base plus streak XP, scaled by the share of exercises answered correctly
+     * and rounded down, so a wrong answer never earns XP. A lesson with no
+     * exercises has nothing to get wrong and pays in full.
+     */
+    static int lessonXp(String lessonKind, int streakDays, int correctExercises, int totalExercises) {
+        int full = ("practice".equals(lessonKind) ? BASE_XP_PRACTICE : BASE_XP_TEACH)
+                + Math.min(streakDays, STREAK_XP_CAP);
+        return totalExercises == 0 ? full : full * correctExercises / totalExercises;
     }
 
     /**

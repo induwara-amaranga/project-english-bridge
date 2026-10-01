@@ -10,16 +10,20 @@
 # baseline; it does not relax anything the way application-dev.yml does.
 
 server:
-  # Assumes TLS terminates in front of this app (a load balancer, nginx,
-  # Cloudflare, …) and the app itself is reached over plain HTTP from that
-  # proxy — true of virtually every real deployment. Lets Spring Boot read
-  # X-Forwarded-Proto/Host/For and get the original scheme, host and client
-  # IP right for redirects, logging and any secure-context check, rather than
-  # seeing every request as plain HTTP from the proxy's own address. Only
-  # safe when the proxy actually overwrites those headers instead of passing
-  # through whatever a client sent — true for a load balancer/reverse proxy
-  # you control, not for an app reachable directly from the internet.
+  # TLS terminates at Heroku's router, which reaches the dyno over plain HTTP
+  # and sets X-Forwarded-Proto. Reading it lets Spring Security see requests
+  # as secure (and send HSTS). Heroku *appends* to X-Forwarded-For rather than
+  # overwriting it, so request.getRemoteAddr() — its leftmost entry — is
+  # client-controlled here. Never key anything security-relevant off it;
+  # AuthRateLimitFilter resolves the client IP from the right end instead.
   forward-headers-strategy: framework
+
+englisher:
+  rate-limit:
+    # Heroku's router is the one proxy in front of the dyno. Set
+    # ENGLISHER_TRUSTED_PROXY_HOPS=2 if the API is also proxied through
+    # Cloudflare (orange cloud), which adds its own hop.
+    trusted-proxy-hops: ${ENGLISHER_TRUSTED_PROXY_HOPS:1}
 
 springdoc:
   # The OpenAPI JSON and Swagger UI are both unauthenticated by design

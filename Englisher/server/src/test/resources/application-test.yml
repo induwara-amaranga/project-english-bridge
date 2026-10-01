@@ -1,6 +1,10 @@
 # Integration-test profile. The datasource URL is injected by
 # AbstractPostgresIT's @DynamicPropertySource, pointing at the embedded server.
 englisher:
+  # The integration tests sign in far more than 10 times a minute from one IP.
+  # AuthRateLimitFilterTest covers the limiter on its own.
+  rate-limit:
+    enabled: false
   auth:
     jwt-secret: test-only-signing-key-at-least-32-bytes-long
     cookie-secure: false

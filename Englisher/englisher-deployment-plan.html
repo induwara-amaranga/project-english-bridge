@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Englisher Deployment Plan</title>
+<style>
+  :root {
+    --bg: #fbfaf8; --surface: #ffffff; --text: #1f1e1c; --muted: #6b6862;
+    --border: #e4e1db; --accent: #c4623d; --code-bg: #f1eee9; --head-bg: #f6f4f0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1918; --surface: #222120; --text: #ebe8e3; --muted: #a29e97;
+      --border: #3a3835; --accent: #e08a65; --code-bg: #2c2a28; --head-bg: #2a2826;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 820px; margin: 0 auto; padding: 48px 16px 80px; }
+  h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 8px; }
+  .meta { color: var(--muted); font-size: .9rem; margin-bottom: 32px; }
+  h2 {
+    font-size: 1.35rem; margin: 48px 0 12px; padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 { font-size: 1rem; margin: 24px 0 6px; }
+  p { margin: 10px 0; }
+  code {
+    font: .86em/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    background: var(--code-bg); padding: 1px 5px; border-radius: 4px;
+    overflow-wrap: anywhere;
+  }
+  pre {
+    background: var(--code-bg); padding: 14px 16px; border-radius: 8px;
+    overflow-x: auto; margin: 12px 0;
+  }
+  pre code { background: none; padding: 0; font-size: .85rem; overflow-wrap: normal; }
+  .table-wrap { overflow-x: auto; margin: 14px 0; }
+  table {
+    width: 100%; border-collapse: collapse; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 8px; font-size: .94rem;
+  }
+  th, td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--border); }
+  th { background: var(--head-bg); font-weight: 600; }
+  tr:last-child td { border-bottom: none; }
+  ul { padding-left: 22px; margin: 8px 0; }
+  ul.check { list-style: none; padding-left: 0; }
+  ul.check li { display: flex; gap: 10px; align-items: flex-start; margin: 6px 0; }
+  ul.check input { margin-top: 6px; accent-color: var(--accent); flex-shrink: 0; }
+  ul.check input:checked + span { color: var(--muted); text-decoration: line-through; }
+  .summary {
+    background: var(--surface); border: 1px solid var(--border);
+    border-left: 3px solid var(--accent); border-radius: 8px; padding: 6px 18px;
+  }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Englisher Production Deployment Plan</h1>
+<div class="meta">2 October 2026 · induwara · revised: Heroku + Cloudflare Pages replace the DigitalOcean droplet</div>
+
+<h2>Summary</h2>
+<div class="summary">
+<p><strong>Hosting:</strong> the API and its database run on <strong>Heroku</strong>, paid for by the GitHub Student Developer Pack credit ($13/month for 24 months). The React app runs on <strong>Cloudflare Pages</strong>, which is free. The droplet plan was dropped because the DigitalOcean offer is no longer in the Student Pack.</p>
+<p><strong>Architecture in one line:</strong> the app is served from <code>englisher.lk</code> on Cloudflare Pages and calls the API at <code>api.englisher.lk</code>. That's a Spring Boot container on a Heroku web dyno, behind Heroku's router, connected to Heroku Postgres. There are no servers to patch, firewall or SSH into.</p>
+<p><strong>CI/CD in one line:</strong> push to <code>main</code> → tests run → the backend image is pushed to Heroku's registry and released → the workflow waits for the API to report healthy → the frontend is built and published to Cloudflare Pages.</p>
+<p><strong>Cost:</strong> $12/month of Heroku usage (Basic dyno $7 + Postgres Essential-0 $5) against the $13 credit, so $0 out of pocket for 24 months. A custom domain is required and is a separate cost.</p>
+</div>
+
+<h2>Architecture</h2>
+<p>Two providers, two subdomains of one domain:</p>
+<div class="table-wrap"><table>
+  <tr><th>Piece</th><th>Role</th><th>Reachable from</th></tr>
+  <tr><td>Cloudflare Pages (<code>englisher.lk</code>)</td><td>Serves the built React app, applies security headers from <code>public/_headers</code>, falls back to <code>index.html</code> for client-side routes, owns the frontend's TLS certificate</td><td>Internet</td></tr>
+  <tr><td>Heroku router (<code>api.englisher.lk</code>)</td><td>Heroku's built-in reverse proxy: terminates TLS (Heroku ACM certificate), forwards to the dyno's <code>$PORT</code>, appends <code>X-Forwarded-For</code></td><td>Internet</td></tr>
+  <tr><td>Web dyno (Spring Boot)</td><td>The API: JWT auth, curriculum, admin, OAuth verification, server-side grading, per-IP rate limiting on sign-in</td><td>Only through the Heroku router</td></tr>
+  <tr><td>Heroku Postgres Essential-0</td><td>All persistent data, with nightly PGBackups snapshots</td><td>The dyno, over SSL, via <code>DATABASE_URL</code></td></tr>
+  <tr><td>SMTP relay</td><td>Admin sign-in OTPs and parent invitations. Mailpit is for local development only</td><td>Outbound from the dyno</td></tr>
+</table></div>
+<p>Request flow: the browser loads the app from <code>https://englisher.lk</code>, and the app calls <code>https://api.englisher.lk/api/...</code> with <code>credentials: 'include'</code>. The refresh token is an httpOnly <code>SameSite=Lax</code> cookie, so <strong>the app and the API must share the same registrable domain</strong>. The default <code>*.pages.dev</code> and <code>*.herokuapp.com</code> addresses would sign users out on every reload. <code>ENGLISHER_ALLOWED_ORIGINS</code> allows credentialed CORS from the frontend origin only.</p>
+<p>Heroku doesn't run Docker Compose. <code>server/docker-compose.yml</code> remains the local development stack, and the production-only overlay was removed. This is still a single dyno, which is fine for launch. The backlog covers what to change before scaling out.</p>
+
+<h2>CI/CD pipeline</h2>
+<p>Changes in the repository (staged, not yet committed or pushed):</p>
+<div class="table-wrap"><table>
+  <tr><th>File</th><th>Purpose</th></tr>
+  <tr><td><code>/.github/workflows/ci.yml</code></td><td>Moved to the <em>repository root</em>. It previously sat in <code>Englisher/.github/</code>, where GitHub never ran it. Runs on pull requests that touch <code>Englisher/</code>: backend <code>./mvnw verify</code> (unit tests plus integration tests against embedded Postgres) and frontend lint + build. Reused by <code>deploy.yml</code> as its test gate.</td></tr>
+  <tr><td><code>/.github/workflows/deploy.yml</code></td><td>On push to <code>main</code>: tests → build the backend image and push it to <code>registry.heroku.com</code> → release it through the Heroku Platform API → poll <code>/actuator/health/readiness</code> for up to 3 minutes → build the frontend with <code>VITE_API_BASE_URL</code> → <code>wrangler pages deploy</code>. The frontend only ships once the new API is healthy.</td></tr>
+  <tr><td><code>infra/heroku-setup.sh</code> + <code>heroku.env.example</code></td><td>One-time, run by hand: creates the app on the container stack, adds Postgres, schedules nightly backups, sets config vars (including JVM memory limits for a 512 MB dyno), adds the API domain.</td></tr>
+  <tr><td><code>infra/backup-db.sh</code>, <code>restore-db.sh</code></td><td>On-demand backup with a local download, and restore from a Heroku backup id or a local <code>.dump</code> file, with maintenance mode on while it runs.</td></tr>
+  <tr><td><code>frontend/app/public/_headers</code></td><td>HSTS, nosniff, frame-deny, referrer and permissions policy on Cloudflare Pages. These replace Caddy's headers.</td></tr>
+  <tr><td>Backend code</td><td>Reads Heroku's <code>$PORT</code>; <code>HerokuDatabaseUrlPostProcessor</code> converts <code>DATABASE_URL</code> to JDBC with SSL on every boot; <code>AuthRateLimitFilter</code> replaces Caddy's sign-in rate limit. All of these are unit tested.</td></tr>
+  <tr><td>Removed</td><td><code>docker-compose.prod.yml</code>, the frontend <code>Dockerfile</code> + <code>Caddyfile</code>, <code>infra/server-setup.sh</code>, <code>deploy.sh</code>, <code>backup.env.example</code>. GHCR images and SSH deploys are no longer used.</td></tr>
+</table></div>
+<p><strong>GitHub Actions settings</strong> (repo Settings → Secrets and variables → Actions). The old <code>DEPLOY_HOST</code>, <code>DEPLOY_USER</code> and <code>DEPLOY_SSH_KEY</code> secrets can be deleted.</p>
+<div class="table-wrap"><table>
+  <tr><th>Name</th><th>Type</th><th>Value</th></tr>
+  <tr><td><code>HEROKU_API_KEY</code></td><td>Secret</td><td>From <code>heroku authorizations:create -d "GitHub Actions deploy"</code>. Doesn't expire like a login token.</td></tr>
+  <tr><td><code>HEROKU_APP_NAME</code></td><td>Variable</td><td>e.g. <code>englisher-api</code></td></tr>
+  <tr><td><code>API_BASE_URL</code></td><td>Variable</td><td><code>https://api.englisher.lk</code></td></tr>
+  <tr><td><code>CLOUDFLARE_API_TOKEN</code></td><td>Secret</td><td>Token with the "Cloudflare Pages: Edit" permission</td></tr>
+  <tr><td><code>CLOUDFLARE_ACCOUNT_ID</code></td><td>Secret</td><td>Shown in the Cloudflare dashboard</td></tr>
+  <tr><td><code>CLOUDFLARE_PAGES_PROJECT</code></td><td>Variable</td><td>e.g. <code>englisher</code></td></tr>
+  <tr><td><code>VITE_GOOGLE_CLIENT_ID</code>, <code>VITE_FACEBOOK_APP_ID</code>, <code>VITE_ADSENSE_*</code></td><td>Secret</td><td>Unchanged</td></tr>
+</table></div>
+
+<h2>Launch plan</h2>
+
+<h3>1. Accounts and domain</h3>
+<ul class="check">
+  <li><input type="checkbox"><span>Claim the Heroku student credit through the GitHub Student Developer Pack and add a card (Heroku requires one even when the credit covers everything).</span></li>
+  <li><input type="checkbox"><span>Install the Heroku CLI and run <code>heroku login</code>.</span></li>
+  <li><input type="checkbox"><span>Add the domain to Cloudflare and switch its nameservers at the registrar. Propagation can take hours, so do this first.</span></li>
+  <li><input type="checkbox"><span>Set up a real SMTP relay (Brevo, Mailgun, SES, Postmark…) with SPF/DKIM for the domain.</span></li>
+</ul>
+
+<h3>2. Heroku</h3>
+<ul class="check">
+  <li><input type="checkbox"><span>Copy <code>infra/heroku.env.example</code> to <code>infra/heroku.env</code> (gitignored) and fill it in: <code>ENGLISHER_JWT_SECRET</code> (<code>openssl rand -base64 32</code>), admin email/password, SMTP credentials, <code>ENGLISHER_ALLOWED_ORIGINS=https://englisher.lk</code>.</span></li>
+  <li><input type="checkbox"><span>Run <code>bash infra/heroku-setup.sh englisher-api api.englisher.lk</code>.</span></li>
+  <li><input type="checkbox"><span>In Cloudflare DNS, add <code>CNAME api → &lt;DNS target the script printed&gt;</code> with the proxy <strong>off</strong> (grey cloud), so Heroku can issue the certificate.</span></li>
+</ul>
+
+<h3>3. Cloudflare Pages</h3>
+<ul class="check">
+  <li><input type="checkbox"><span>Workers &amp; Pages → Create → Pages → Direct Upload. Create the project (e.g. <code>englisher</code>).</span></li>
+  <li><input type="checkbox"><span>Add <code>englisher.lk</code> under the project's Custom domains.</span></li>
+</ul>
+
+<h3>4. GitHub</h3>
+<ul class="check">
+  <li><input type="checkbox"><span>Add the secrets and variables from the table above.</span></li>
+  <li><input type="checkbox"><span>Commit the staged changes and push to <code>main</code>. Watch the Actions tab: tests → Heroku release → readiness → Pages publish should all go green.</span></li>
+</ul>
+
+<h3>5. After the first deploy</h3>
+<ul class="check">
+  <li><input type="checkbox"><span><code>heroku ps:type web=basic -a englisher-api</code> (Basic doesn't sleep. Eco would cold-start after 30 idle minutes).</span></li>
+  <li><input type="checkbox"><span><code>heroku certs:auto:enable -a englisher-api</code> for the <code>api</code> certificate.</span></li>
+  <li><input type="checkbox"><span>Confirm <code>https://englisher.lk</code> loads, sign-in works, and the session survives a page reload (that proves the cookie setup).</span></li>
+  <li><input type="checkbox"><span>Sign in as the seeded admin and confirm the 2FA OTP email arrives.</span></li>
+  <li><input type="checkbox"><span>Run through the security checklist below.</span></li>
+</ul>
+
+<h2>Security checklist</h2>
+<p>Already true of this codebase:</p>
+<ul>
+  <li>Non-root user inside the backend container.</li>
+  <li>No default JWT secret or admin password. The app refuses to boot, or skips seeding, rather than falling back to a known value.</li>
+  <li><code>cookie-secure: true</code> and Swagger/OpenAPI disabled under the <code>prod</code> Spring profile.</li>
+  <li>OAuth tokens (Google/Facebook) verified server-side against the provider.</li>
+  <li>Admin accounts have 2FA.</li>
+  <li>Lessons are graded server-side, and XP is paid only for exercises answered correctly. A client can't claim XP for wrong answers.</li>
+  <li>Sign-in, OTP and social sign-in are limited to 10 requests per minute per IP, and signup to 5 per hour. The client IP is read from the trusted right end of <code>X-Forwarded-For</code>, so a client can't spoof it.</li>
+</ul>
+<p>Handled by the platforms:</p>
+<ul class="check">
+  <li><input type="checkbox"><span>TLS on both hosts: Cloudflare for the app, Heroku ACM for the API. HSTS and security headers via <code>_headers</code> and Spring Security.</span></li>
+  <li><input type="checkbox"><span>Postgres isn't on any network you manage, and connections require SSL.</span></li>
+  <li><input type="checkbox"><span>OS patching, firewalling and SSH are no longer your job. No SSH access exists to harden.</span></li>
+</ul>
+<p>Still on you:</p>
+<ul class="check">
+  <li><input type="checkbox"><span><code>ENGLISHER_ALLOWED_ORIGINS</code> set to the real frontend origin only (not <code>*</code>, not <code>localhost</code>).</span></li>
+  <li><input type="checkbox"><span>Secrets live only in Heroku config vars, <code>infra/heroku.env</code> on your machine (never committed) and GitHub Actions secrets.</span></li>
+  <li><input type="checkbox"><span>Keep the API's DNS record DNS-only. If you later turn on the Cloudflare proxy for <code>api</code>, set <code>ENGLISHER_TRUSTED_PROXY_HOPS=2</code>, or every request will appear to come from Cloudflare's IP.</span></li>
+  <li><input type="checkbox"><span>Watch the Heroku billing page. Anything beyond the $13/month credit (a bigger dyno, the Key-Value Store, a second dyno) is charged to your card.</span></li>
+  <li><input type="checkbox"><span>Turn on Dependabot alerts (Settings → Code security) for <code>frontend/app</code> and <code>server/pom.xml</code>.</span></li>
+</ul>
+
+<h2>Rollback &amp; incident response</h2>
+<p><strong>A bad API deploy:</strong> the workflow fails if readiness doesn't come up, and the frontend isn't published. To return to the previous release:</p>
+<pre><code>heroku releases -a englisher-api            # find the last good version
+heroku releases:rollback v42 -a englisher-api</code></pre>
+<p><strong>A bad frontend deploy:</strong> Cloudflare dashboard → the Pages project → Deployments → pick an earlier deployment → Rollback.</p>
+
+<p><strong>Checking logs:</strong></p>
+<pre><code>heroku logs --tail -a englisher-api
+heroku ps -a englisher-api                  # dyno state, restarts, memory (R14) errors</code></pre>
+
+<p><strong>Database backups</strong> are automated: <code>heroku-setup.sh</code> schedules a nightly snapshot at 02:00 Sri Lanka time, and the Essential tier keeps about a week of them. Before risky changes, and now and then to keep a copy outside Heroku:</p>
+<pre><code>bash infra/backup-db.sh englisher-api       # capture + download to infra/backups/
+heroku pg:backups -a englisher-api          # list snapshots</code></pre>
+
+<p><strong>Restoring</strong> (puts the app in maintenance mode while it runs):</p>
+<pre><code>bash infra/restore-db.sh englisher-api b012                                  # a Heroku snapshot
+bash infra/restore-db.sh englisher-api infra/backups/englisher-&lt;stamp&gt;.dump # a local copy</code></pre>
+
+<h2>Cost &amp; backlog</h2>
+<p><strong>Monthly cost:</strong></p>
+<div class="table-wrap"><table>
+  <tr><th>Item</th><th>Cost</th></tr>
+  <tr><td>Heroku Basic dyno</td><td>$7</td></tr>
+  <tr><td>Heroku Postgres Essential-0 (formerly Mini)</td><td>$5</td></tr>
+  <tr><td>Student credit</td><td>−$12 (of $13 available, no rollover)</td></tr>
+  <tr><td>Cloudflare Pages</td><td>$0</td></tr>
+  <tr><td>Domain (if not already owned)</td><td>~$1–2/mo spread over the year</td></tr>
+  <tr><td>SMTP relay at this volume</td><td>~$0 (free tiers)</td></tr>
+  <tr><td><strong>Total out of pocket</strong></td><td><strong>~$0–2/month for 24 months, then about $12/month for Heroku</strong></td></tr>
+</table></div>
+<p>The $3 Key-Value Store in the credit is unused. Nothing in the app needs Redis.</p>
+
+<p><strong>Backlog</strong>, worth doing once the site is live and stable:</p>
+<ul class="check">
+  <li><input type="checkbox"><span>Uptime monitoring (UptimeRobot or similar, free) on <code>https://api.englisher.lk/actuator/health/readiness</code>.</span></li>
+  <li><input type="checkbox"><span>Automate an off-Heroku backup copy (for example a scheduled GitHub Action that downloads the latest snapshot to Cloudflare R2), so losing the Heroku account doesn't mean losing the data.</span></li>
+  <li><input type="checkbox"><span>Before running more than one dyno: move the rate-limit counters to a shared store, since they're currently in memory per dyno.</span></li>
+  <li><input type="checkbox"><span>Upgrade to a Standard Postgres plan if point-in-time recovery becomes important. Essential-tier plans only have daily snapshots.</span></li>
+  <li><input type="checkbox"><span>Plan for month 25: when the credit ends, either pay about $12/month or move to another host.</span></li>
+</ul>
+
+</main>
+</body>
+</html>
