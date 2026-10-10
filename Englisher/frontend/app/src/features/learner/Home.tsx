@@ -7,7 +7,7 @@ const STEP_ICONS = ['/assets/lock_unlocked.png', '/assets/book_lesson.png', '/as
 
 const COPY = {
   en: {
-    value: 'Learn English on the go — built for Sinhala speakers with step by step guide.',
+    value: 'Learn bite sized lessons on the go — built for Sinhala speakers with step by step guide.',
     cta: 'Check your level', signIn: 'Sign In', alreadyKnow: 'Already know your level? Sign up',
     steps: [
       'Take a 2-minute check to see where you stand',
@@ -21,7 +21,7 @@ const COPY = {
     textbookOutcome: 'All the way to writing a real formal letter with confidence.',
   },
   si: {
-    value: 'යන එන ගමන් ඉංග්‍රීසි ඉගෙන ගන්න - සිංහල කතා කරන අය සඳහාම පියවරෙන් පියවර මඟ පෙන්වීම සමඟ සාදා ඇත.',
+    value: 'යන එන ගමන් ලේසියෙන් පාඩම් ඉගෙන ගන්න - සිංහල කතා කරන අය සඳහාම පියවරෙන් පියවර මඟ පෙන්වීම සමඟ සාදා ඇත.',
     cta: 'ඔබේ මට්ටම බලන්න', signIn: 'පිවිසෙන්න', alreadyKnow: 'ඔබේ මට්ටම දැනටමත් දන්නවාද? ලියාපදිංචි වන්න',
     steps: [
       'ඔබ සිටින තැන බැලීමට විනාඩි 2ක පරීක්ෂණයක් කරන්න',
