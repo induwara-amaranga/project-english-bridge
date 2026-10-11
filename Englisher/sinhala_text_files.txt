@@ -1,5 +1,5 @@
 Here's every source file containing hardcoded Sinhala text (found by scanning for Sinhala-script characters across the frontend). Grouped by area:
-
+ah
 Global / shared components
 
 components/BottomNav.tsx — bottom nav tab labels /
