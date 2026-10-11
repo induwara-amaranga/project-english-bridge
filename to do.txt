@@ -1,7 +1,27 @@
 to do
 
-- social login done
+- social login > done
 
-- get a proper deployment plan
+- fix guest sign up > done
 
-- fix guest sign up
+- Sinhala to English > done
+
+- admin sign in flow > done
+
+- check and correct Sinhala texts > done
+
+- get a proper deployment plan > done
+
+- contact in home page - after getting domain
+
+- change username password - done
+
+- parent email sending - done
+
+- still there is guest mode data problems - done
+
+- UI not responsive 
+
+- ads - done
+
+

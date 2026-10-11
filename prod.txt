@@ -1,0 +1,24 @@
+Good news: this repo already has a solid production setup baked in (docker-compose.prod.yml, deploy.yml, server-setup.sh) with comments explaining the reasoning. Here's what's actually still open before you flip it live:
+
+1. Provision the server (one-time, manual)
+Run infra/server-setup.sh on the target box, then do the steps it prints but doesn't automate:
+
+Harden SSH (PasswordAuthentication no, PermitRootLogin no) from a second session
+Point the domain's DNS A record at the server's IP before first boot (Caddy needs it to issue the Let's Encrypt cert)
+Add DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY as GitHub Actions secrets, plus VITE_GOOGLE_CLIENT_ID/VITE_FACEBOOK_APP_ID, under a production environment (that's what .github/workflows/deploy.yml:65 targets)
+2. Fill in server/.env on the server — per server/.env.example, the ones with no safe default (app refuses to boot or skips seeding without them):
+
+ENGLISHER_DB_PASSWORD, ENGLISHER_JWT_SECRET (openssl rand -base64 32)
+ENGLISHER_ADMIN_EMAIL / ENGLISHER_ADMIN_PASSWORD / ENGLISHER_ADMIN_OTP_EMAIL — set the OTP email to a real inbox you can read, since this is your only way into the admin account
+ENGLISHER_ALLOWED_ORIGINS — your real frontend origin, not localhost
+ENGLISHER_SMTP_* — a real relay (SES/SendGrid/Mailgun/etc). The comment explicitly warns off personal Gmail SMTP for prod
+DOMAIN — must match the DNS record from step 1
+3. Verify OAuth apps are actually production-ready — Google/Facebook developer consoles need the production domain in their authorized redirect URIs, and if the Facebook app is still in "development mode" only test users can log in with it. Worth double-checking since social login and guest signup were just recently touched per your to-do notes.
+
+4. Database backups — I don't see any backup strategy for the Postgres volume anywhere in infra/ or the compose files. Worth setting up (pg_dump cron, or a managed DB) before real user data exists, since there's currently no recovery path if the volume is lost.
+
+5. Confirm CI is green and Sinhala text review is actually done — your to-do.txt marks "check and correct Sinhala texts" as still working, not done, which is worth resolving before launch if that content is user-facing.
+
+One thing I didn't dig into: monitoring/alerting beyond the /actuator/health check deploy.sh polls once at deploy time — if you want uptime alerts after that, nothing currently pages you if the app goes down between deploys.
+
+Want me to help set up Postgres backups or check the OAuth redirect URI configs next?

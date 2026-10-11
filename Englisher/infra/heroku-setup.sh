@@ -3,7 +3,7 @@
 # `heroku login`. Deploys after this are .github/workflows/deploy.yml.
 #
 # Usage: bash infra/heroku-setup.sh <app-name> <api-domain>
-#   e.g. bash infra/heroku-setup.sh englisher-api api.englisher.lk
+#   e.g. bash infra/heroku-setup.sh englisher-api api.englisherlk.com
 set -euo pipefail
 cd "$(dirname "$0")"
 
