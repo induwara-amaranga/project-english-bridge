@@ -51,12 +51,12 @@ jobs:
         with:
           context: ./Englisher/server
           platforms: linux/amd64
-          push: true
-          # Heroku's registry can only release a plain single-platform image;
-          # buildx's default attestations turn the push into an OCI index.
+          # Heroku's registry rejects OCI manifests ("unsupported"), which is
+          # what buildx's docker-container driver pushes by default. Push the
+          # Docker v2 media types instead, as a plain single-platform image.
           provenance: false
           sbom: false
-          tags: registry.heroku.com/${{ vars.HEROKU_APP_NAME }}/web
+          outputs: type=image,name=registry.heroku.com/${{ vars.HEROKU_APP_NAME }}/web,push=true,oci-mediatypes=false
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
