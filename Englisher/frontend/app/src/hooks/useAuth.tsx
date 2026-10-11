@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { apiPost, apiPut, refreshSession, setAuthListener, type AuthSession, type SignInEnvelope } from '../lib/apiClient';
+import { apiPost, apiPut, refreshSession, setAccessToken, setAuthListener, type AuthSession, type SignInEnvelope } from '../lib/apiClient';
 import { isGuestActive, setGuestActive } from '../lib/guestSession';
 import { clearGuestSession, setGuestStage } from '../domain/guestProgress';
 import { CURRICULUM_DEFAULT } from '../domain/curriculum';
@@ -85,6 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isGuest, setIsGuest] = useState(isGuestActive);
 
   const applySession = useCallback((session: AuthSession | null) => {
+    setAccessToken(session ? session.accessToken : null);
     setUser(session ? (session.user as AuthUser) : null);
   }, []);
 

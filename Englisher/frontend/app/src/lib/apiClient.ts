@@ -31,6 +31,10 @@ let accessToken: string | null = null;
 export function getAccessToken(): string | null {
   return accessToken;
 }
+/** useAuth calls this with every session it applies, so a fresh sign-in/sign-up is authenticated immediately instead of needing a 401 + refresh round trip first. */
+export function setAccessToken(token: string | null): void {
+  accessToken = token;
+}
 
 /** The shape of AuthResponse (auth/AuthDtos.java) — kept generic here so this module has no dependency on useAuth. */
 export interface AuthSession {
