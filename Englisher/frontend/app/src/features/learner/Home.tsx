@@ -124,7 +124,7 @@ export function Home() {
         <div className="home-footer__links">
           <a href="#how" style={{ fontSize: 14, fontWeight: 600, color: 'var(--c-ink-soft)' }}>{isSi ? 'මෙය ක්‍රියා කරන ආකාරය' : 'How it works'}</a>
           <a href="#why" style={{ fontSize: 14, fontWeight: 600, color: 'var(--c-ink-soft)' }}>{isSi ? 'අප තෝරාගත යුත්තේ ඇයි' : 'Why us'}</a>
-          <a href="#" style={{ fontSize: 14, fontWeight: 600, color: 'var(--c-ink-soft)' }}>{isSi ? 'සම්බන්ධ වන්න' : 'Contact'}</a>
+          <a href="mailto:info@englisherlk.com" title={isSi ? 'සම්බන්ධ වන්න' : 'Contact us'} style={{ fontSize: 14, fontWeight: 600, color: 'var(--c-ink-soft)' }}>info@englisherlk.com</a>
           <Link to="/privacy" style={{ fontSize: 14, fontWeight: 600, color: 'var(--c-ink-soft)' }}>{isSi ? 'රහස්‍යතා ප්‍රතිපත්තිය' : 'Privacy'}</Link>
         </div>
         <span style={{ fontSize: 13, color: 'var(--c-ink-soft)' }}>© 2026 Englisher</span>
