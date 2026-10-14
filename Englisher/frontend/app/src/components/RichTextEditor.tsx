@@ -41,17 +41,29 @@ const ALIGNMENTS = ['left', 'center', 'right', 'justify'] as const;
 const ALIGN_ICON: Record<(typeof ALIGNMENTS)[number], string> = { left: '⟵', center: '↔', right: '⟶', justify: '☰' };
 
 // The app's own illustrations (public/assets), offered as click-to-insert
-// thumbnails so an admin doesn't have to know or type their paths.
+// thumbnails so an admin doesn't have to know or type their paths. Mascots live
+// in assets/maskots; paths are URL-encoded because some file names have spaces,
+// which would otherwise end the markdown image link early.
+const MASCOT_DIR = '/assets/maskots/';
 const IMAGE_LIBRARY = [
-  { src: '/assets/mascot_elephant.png', label: 'Elephant mascot' },
-  { src: '/assets/mascot_spacesuit.png', label: 'Spacesuit mascot' },
-  { src: '/assets/rocket_ship.png', label: 'Rocket ship' },
-  { src: '/assets/book_lesson.png', label: 'Book' },
-  { src: '/assets/chat_bubble.png', label: 'Chat bubble' },
-  { src: '/assets/celebration_confetti.png', label: 'Confetti' },
-  { src: '/assets/envelope_letter.png', label: 'Envelope' },
-  { src: '/assets/lock_unlocked.png', label: 'Unlocked' },
-];
+  ['mascot_elephant.png', 'Elephant mascot'],
+  ['mascot_spacesuit.png', 'Spacesuit mascot'],
+  ['wave.png', 'Waving'],
+  ['thumbs up.png', 'Thumbs up'],
+  ['reading.png', 'Reading'],
+  ['motivating.png', 'Motivating'],
+  ['playing_ball.png', 'Playing ball'],
+  ['playing_guitar.png', 'Playing guitar'],
+  ['hoola hoop.png', 'Hula hoop'],
+].map(([file, label]) => ({ src: encodeURI(MASCOT_DIR + file), label }))
+  .concat([
+    { src: '/assets/rocket_ship.png', label: 'Rocket ship' },
+    { src: '/assets/book_lesson.png', label: 'Book' },
+    { src: '/assets/chat_bubble.png', label: 'Chat bubble' },
+    { src: '/assets/celebration_confetti.png', label: 'Confetti' },
+    { src: '/assets/envelope_letter.png', label: 'Envelope' },
+    { src: '/assets/lock_unlocked.png', label: 'Unlocked' },
+  ]);
 
 export function RichField({ label, value, onChange, rows = 3, placeholder, si = false }: {
   label: string; value: string; onChange: (v: string) => void; rows?: number; placeholder?: string;

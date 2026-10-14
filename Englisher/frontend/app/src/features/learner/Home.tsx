@@ -79,7 +79,7 @@ export function Home() {
         </div>
         <div className="home-hero__art">
           <div style={{ position: 'absolute', left: '20%', top: '6%', width: '60%', height: '88%', borderRadius: '50%', background: 'var(--c-warning-bg)' }} />
-          <img src="/assets/mascot_elephant.png" alt="" style={{ position: 'absolute', left: '24%', top: '12%', width: '52%', height: '76%', objectFit: 'contain' }} />
+          <img src="/assets/maskots/mascot_elephant.png" alt="" style={{ position: 'absolute', left: '24%', top: '12%', width: '52%', height: '76%', objectFit: 'contain' }} />
         </div>
       </section>
 
