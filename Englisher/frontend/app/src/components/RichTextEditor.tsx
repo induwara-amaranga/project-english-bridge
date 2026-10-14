@@ -11,7 +11,7 @@ import TableHeader from '@tiptap/extension-table-header';
 import TableCell from '@tiptap/extension-table-cell';
 import { Markdown, type MarkdownStorage } from 'tiptap-markdown';
 import { errorMessage, uploadImage } from '../lib/apiClient';
-import { AlignAwareHeading, AlignAwareParagraph } from './richTextAlign';
+import { AlignAwareHeading, AlignAwareParagraph, stripAlignedBlockPadding } from './richTextAlign';
 
 // tiptap-markdown doesn't ship the `@tiptap/core` Storage augmentation
 // itself, so `editor.storage.markdown` is untyped without this.
@@ -94,7 +94,9 @@ export function RichField({ label, value, onChange, rows = 3, placeholder, si = 
       Placeholder.configure({ placeholder: placeholder || '' }),
       Markdown.configure({ html: true, linkify: false, breaks: false, transformPastedText: true }),
     ],
-    content: value,
+    content: stripAlignedBlockPadding(value),
+    // Keep runs of spaces exactly as stored instead of collapsing them like HTML.
+    parseOptions: { preserveWhitespace: 'full' },
     editorProps: { attributes: { class: si ? 'rt si' : 'rt' } },
     onUpdate: ({ editor: e }) => onChange(e.storage.markdown.getMarkdown()),
   });
@@ -107,7 +109,7 @@ export function RichField({ label, value, onChange, rows = 3, placeholder, si = 
   useEffect(() => {
     if (!editor || editor.isFocused) return;
     if (editor.storage.markdown.getMarkdown() === (value || '')) return;
-    editor.commands.setContent(value || '');
+    editor.commands.setContent(stripAlignedBlockPadding(value || ''), { parseOptions: { preserveWhitespace: 'full' } });
   }, [editor, value]);
 
   // `useEditor` only re-renders this component on content changes, not on

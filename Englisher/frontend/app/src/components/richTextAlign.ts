@@ -20,7 +20,8 @@ function alignedBlockHTML(node: PMNode): string {
   const dom = new DOMParser().parseFromString(html, 'text/html');
   const el = dom.body.firstElementChild;
   if (!el) return html;
-  el.innerHTML = el.innerHTML.trim() ? `\n${el.innerHTML}\n` : '\n';
+  // An empty block needs a visible placeholder or it collapses to nothing.
+  el.innerHTML = el.innerHTML.trim() ? `\n${el.innerHTML}\n` : '\n&nbsp;\n';
   return el.outerHTML;
 }
 
@@ -42,11 +43,54 @@ function alignAware(plain: NodeSerializeFn): NodeSerializeFn {
   };
 }
 
+// Markdown drops what a writer typed on purpose: an empty paragraph vanishes
+// (so blank lines collapse), and a paragraph's leading/trailing spaces are
+// trimmed on parse. `&nbsp;` is the one spelling that survives that — markdown-it
+// only decodes entities after it has trimmed. So blank paragraphs, edge spaces
+// and any literal non-breaking space are all written as `&nbsp;`. Spaces in the
+// middle of a line already survive (see `white-space: pre-wrap` in global.css).
+const NBSP = '&nbsp;';
+
+function preserveParagraph(state: MarkdownSerializerState, node: PMNode): void {
+  const text = node.textContent;
+  if (node.content.size === 0) {
+    state.write(NBSP);
+    state.closeBlock(node);
+    return;
+  }
+  if (text && !/\S/.test(text.replace(/ /g, ' ')) && node.childCount === 1) {
+    state.write(NBSP.repeat(text.length));
+    state.closeBlock(node);
+    return;
+  }
+  state.write(); // flush the previous block and write any list/quote indent
+  const start = state.out.length;
+  state.renderInline(node);
+  const line = state.out.slice(start)
+    .replace(/ /g, NBSP)
+    .replace(/^ +/, (m) => NBSP.repeat(m.length))
+    .replace(/ +$/, (m) => NBSP.repeat(m.length));
+  state.out = state.out.slice(0, start) + line;
+  state.closeBlock(node);
+}
+
 export const AlignAwareParagraph = ParagraphExt.extend({
   addStorage() {
-    return { markdown: { serialize: alignAware(defaultMarkdownSerializer.nodes.paragraph), parse: {} } };
+    return { markdown: { serialize: alignAware(preserveParagraph), parse: {} } };
   },
 });
+
+/**
+ * The aligned-block serializer above wraps a block's content in newlines
+ * (`<p style=…>\ncontent\n</p>`). Harmless when whitespace collapses, but now
+ * that whitespace is preserved they would show up as extra blank lines — so
+ * strip them wherever stored markdown (or its rendered HTML) is read back.
+ */
+export function stripAlignedBlockPadding(src: string): string {
+  return src
+    .replace(/(<(?:p|h[1-3])\b[^>]*>)\r?\n/g, '$1')
+    .replace(/\r?\n(<\/(?:p|h[1-3])>)/g, '$1');
+}
 
 export const AlignAwareHeading = HeadingExt.extend({
   addStorage() {

@@ -114,6 +114,10 @@ input::placeholder, textarea::placeholder { color: var(--c-input-placeholder); }
    preview variant; the bare `.rt` is the full learner-facing size. ---- */
 .rt { font-size: 16px; line-height: 1.75; }
 .rt p, .rt ul, .rt ol { margin: 0 0 10px; }
+/* Show spaces and line breaks exactly as the author typed them. Deliberately on
+   the text blocks only: on .rt itself the newlines markdown-it puts between
+   block tags would render as blank lines. */
+.rt p, .rt h1, .rt h2, .rt h3, .rt th, .rt td { white-space: pre-wrap; }
 .rt p:last-child, .rt ul:last-child, .rt ol:last-child { margin-bottom: 0; }
 .rt ul, .rt ol { padding-left: 22px; }
 .rt li { margin-bottom: 2px; }

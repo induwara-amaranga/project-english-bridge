@@ -1,5 +1,6 @@
 import MarkdownIt from 'markdown-it';
 import DOMPurify from 'dompurify';
+import { stripAlignedBlockPadding } from './richTextAlign';
 
 // Cards store real CommonMark now — the same markdown tiptap-markdown
 // serializes out of the Tiptap editor in RichTextEditor.tsx. One markdown-it
@@ -42,7 +43,7 @@ DOMPurify.addHook('uponSanitizeAttribute', (_node, data) => {
 });
 
 export function renderMarkdown(src: string): string {
-  return DOMPurify.sanitize(md.render(String(src == null ? '' : src)), SANITIZE_CONFIG);
+  return DOMPurify.sanitize(stripAlignedBlockPadding(md.render(String(src == null ? '' : src))), SANITIZE_CONFIG);
 }
 
 export function RichText({ src, dense = false }: { src: string; dense?: boolean }) {
