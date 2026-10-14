@@ -120,6 +120,8 @@ input::placeholder, textarea::placeholder { color: var(--c-input-placeholder); }
 .rt li::marker { color: var(--c-primary); font-weight: 700; }
 .rt a { text-decoration: underline; }
 .rt img { display: inline-block; vertical-align: top; max-width: 80%; max-height: 420px; width: auto; height: auto; object-fit: contain; border-radius: 12px; margin: 0 0 10px; }
+/* Mascots are character art, not photos — keep them smaller than a regular image (aspect ratio is kept by width/height: auto). */
+.rt img[src*="/assets/maskots/"] { max-width: 40%; }
 .rt img.ProseMirror-selectednode { outline: 3px solid #4f8cff; }
 .rt strong { font-weight: 700; }
 .rt em { font-style: italic; }
