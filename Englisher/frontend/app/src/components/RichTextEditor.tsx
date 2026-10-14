@@ -133,6 +133,7 @@ export function RichField({ label, value, onChange, rows = 3, placeholder, si = 
       bulletList: e.isActive('bulletList'),
       orderedList: e.isActive('orderedList'),
       align: ALIGNMENTS.find((a) => e.isActive({ textAlign: a })),
+      inTable: e.isActive('table'),
     }),
   });
 
@@ -141,6 +142,15 @@ export function RichField({ label, value, onChange, rows = 3, placeholder, si = 
   const setLink = () => {
     const url = window.prompt('Link URL', 'https://');
     if (url) editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+  };
+  const insertTable = () => {
+    const answer = window.prompt('Table size (rows x columns)', '3x3');
+    if (!answer) return;
+    const m = answer.match(/^\s*(\d+)\s*[x×,*]\s*(\d+)\s*$/i);
+    const rows = m ? Math.min(20, Math.max(1, Number(m[1]))) : 0;
+    const cols = m ? Math.min(10, Math.max(1, Number(m[2]))) : 0;
+    if (!rows) return window.alert('Enter the size like 4x3 (rows x columns).');
+    editor.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run();
   };
   const insertLibraryImage = (img: { src: string; label: string }) => {
     editor.chain().focus().setImage({ src: img.src, alt: img.label }).run();
@@ -213,7 +223,17 @@ export function RichField({ label, value, onChange, rows = 3, placeholder, si = 
         <button type="button" className="fmtbtn" onClick={() => fileInput.current?.click()} title="Upload image from your computer">Upload</button>
         <input ref={fileInput} type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden onChange={onPickFile} />
         <button type="button" className={`fmtbtn${libraryOpen ? ' fmtbtn--active' : ''}`} onClick={() => setLibraryOpen((o) => !o)} title="Pick a mascot or illustration">Mascots</button>
-        <button type="button" className="fmtbtn" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} title="Insert table">⊞</button>
+        <button type="button" className="fmtbtn" onClick={insertTable} title="Insert table">⊞</button>
+        {toolbar.inTable && (
+          <>
+            <span className="fmtbar__sep" />
+            <button type="button" className="fmtbtn" onClick={() => editor.chain().focus().addRowAfter().run()} title="Add a row below the cursor">+ Row</button>
+            <button type="button" className="fmtbtn" onClick={() => editor.chain().focus().deleteRow().run()} title="Delete the cursor's row">− Row</button>
+            <button type="button" className="fmtbtn" onClick={() => editor.chain().focus().addColumnAfter().run()} title="Add a column to the right of the cursor">+ Col</button>
+            <button type="button" className="fmtbtn" onClick={() => editor.chain().focus().deleteColumn().run()} title="Delete the cursor's column">− Col</button>
+            <button type="button" className="fmtbtn" onClick={() => editor.chain().focus().deleteTable().run()} title="Delete the whole table">Delete table</button>
+          </>
+        )}
       </div>
       {libraryOpen && (
         <div className="imglib">
