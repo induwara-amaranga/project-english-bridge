@@ -122,6 +122,13 @@ input::placeholder, textarea::placeholder { color: var(--c-input-placeholder); }
 .rt img { display: inline-block; vertical-align: top; max-width: 80%; max-height: 420px; width: auto; height: auto; object-fit: contain; border-radius: 12px; margin: 0 0 10px; }
 /* Mascots are character art, not photos — keep them smaller than a regular image (aspect ratio is kept by width/height: auto). */
 .rt img[src*="/assets/maskots/"] { max-width: 40%; }
+/* Mascots float so the text wraps around them. Left by default; a right-aligned
+   paragraph (style="text-align: right", see richTextAlign.ts) floats it right,
+   and a centred one drops the float so the mascot sits on its own line. */
+.rt { display: flow-root; }
+.rt img[src*="/assets/maskots/"] { float: left; margin: 2px 16px 8px 0; }
+.rt [style*="text-align: right"] img[src*="/assets/maskots/"], .rt [style*="text-align:right"] img[src*="/assets/maskots/"] { float: right; margin: 2px 0 8px 16px; }
+.rt [style*="text-align: center"] img[src*="/assets/maskots/"], .rt [style*="text-align:center"] img[src*="/assets/maskots/"] { float: none; margin: 0 0 10px; }
 .rt img.ProseMirror-selectednode { outline: 3px solid #4f8cff; }
 .rt strong { font-weight: 700; }
 .rt em { font-style: italic; }
