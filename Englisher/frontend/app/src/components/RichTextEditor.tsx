@@ -40,12 +40,26 @@ type HeadingLevel = (typeof HEADING_LEVELS)[number];
 const ALIGNMENTS = ['left', 'center', 'right', 'justify'] as const;
 const ALIGN_ICON: Record<(typeof ALIGNMENTS)[number], string> = { left: '⟵', center: '↔', right: '⟶', justify: '☰' };
 
+// The app's own illustrations (public/assets), offered as click-to-insert
+// thumbnails so an admin doesn't have to know or type their paths.
+const IMAGE_LIBRARY = [
+  { src: '/assets/mascot_elephant.png', label: 'Elephant mascot' },
+  { src: '/assets/mascot_spacesuit.png', label: 'Spacesuit mascot' },
+  { src: '/assets/rocket_ship.png', label: 'Rocket ship' },
+  { src: '/assets/book_lesson.png', label: 'Book' },
+  { src: '/assets/chat_bubble.png', label: 'Chat bubble' },
+  { src: '/assets/celebration_confetti.png', label: 'Confetti' },
+  { src: '/assets/envelope_letter.png', label: 'Envelope' },
+  { src: '/assets/lock_unlocked.png', label: 'Unlocked' },
+];
+
 export function RichField({ label, value, onChange, rows = 3, placeholder, si = false }: {
   label: string; value: string; onChange: (v: string) => void; rows?: number; placeholder?: string;
   /** Renders the editable text in the Sinhala font — for `.si` fields (e.g. a Sinhala translation), same as the plain `.fld.si` inputs elsewhere. */
   si?: boolean;
 }) {
   const [zoom, setZoom] = useState(100);
+  const [libraryOpen, setLibraryOpen] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const editor = useEditor({
@@ -114,11 +128,9 @@ export function RichField({ label, value, onChange, rows = 3, placeholder, si = 
     const url = window.prompt('Link URL', 'https://');
     if (url) editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
   };
-  const addImage = () => {
-    const src = window.prompt('Image path or URL', 'assets/mascot_elephant.png');
-    if (!src) return;
-    const alt = window.prompt('Caption (alt text)', 'Caption') || '';
-    editor.chain().focus().setImage({ src, alt }).run();
+  const insertLibraryImage = (img: { src: string; label: string }) => {
+    editor.chain().focus().setImage({ src: img.src, alt: img.label }).run();
+    setLibraryOpen(false);
   };
   const onPickFile = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -186,9 +198,19 @@ export function RichField({ label, value, onChange, rows = 3, placeholder, si = 
         <button type="button" className="fmtbtn" onClick={setLink} title="Link">Link</button>
         <button type="button" className="fmtbtn" onClick={() => fileInput.current?.click()} title="Upload image from your computer">Upload</button>
         <input ref={fileInput} type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden onChange={onPickFile} />
-        <button type="button" className="fmtbtn" onClick={addImage} title="Image by URL">Image URL</button>
+        <button type="button" className={`fmtbtn${libraryOpen ? ' fmtbtn--active' : ''}`} onClick={() => setLibraryOpen((o) => !o)} title="Pick a mascot or illustration">Mascots</button>
         <button type="button" className="fmtbtn" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} title="Insert table">⊞</button>
       </div>
+      {libraryOpen && (
+        <div className="imglib">
+          {IMAGE_LIBRARY.map((img) => (
+            <button key={img.src} type="button" className="imglib__item" onClick={() => insertLibraryImage(img)} title={`Insert ${img.label}`}>
+              <img src={img.src} alt={img.label} />
+              <span>{img.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
       <div className="richfield-shell" style={{ minHeight: rows * 24 + 16, zoom: `${zoom}%` }} onClick={() => editor.chain().focus().run()}>
         <EditorContent editor={editor} />
       </div>

@@ -33,7 +33,11 @@ function alignAware(plain: NodeSerializeFn): NodeSerializeFn {
       plain(state, node, parent, index);
       return;
     }
-    state.write(alignedBlockHTML(node));
+    // `text(…, false)` writes line by line, so inside a list item every line of
+    // the HTML block gets the item's continuation indent. A plain `write()` only
+    // indents the first line, which pulled the rest out of the list item and
+    // rendered each bullet as an empty marker plus a loose paragraph.
+    state.text(alignedBlockHTML(node), false);
     state.closeBlock(node);
   };
 }
