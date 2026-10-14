@@ -64,13 +64,16 @@ function preserveParagraph(state: MarkdownSerializerState, node: PMNode): void {
     return;
   }
   state.write(); // flush the previous block and write any list/quote indent
-  const start = state.out.length;
+  // `out` is the serializer's output buffer; it's public at runtime but marked
+  // @internal, so it's missing from the published typings.
+  const buf = state as MarkdownSerializerState & { out: string };
+  const start = buf.out.length;
   state.renderInline(node);
-  const line = state.out.slice(start)
+  const line = buf.out.slice(start)
     .replace(/ /g, NBSP)
-    .replace(/^ +/, (m) => NBSP.repeat(m.length))
-    .replace(/ +$/, (m) => NBSP.repeat(m.length));
-  state.out = state.out.slice(0, start) + line;
+    .replace(/^ +/, (m: string) => NBSP.repeat(m.length))
+    .replace(/ +$/, (m: string) => NBSP.repeat(m.length));
+  buf.out = buf.out.slice(0, start) + line;
   state.closeBlock(node);
 }
 
