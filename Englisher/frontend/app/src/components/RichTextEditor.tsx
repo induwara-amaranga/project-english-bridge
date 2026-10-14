@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { EditorContent, useEditor, useEditorState } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
@@ -10,6 +10,7 @@ import TableRow from '@tiptap/extension-table-row';
 import TableHeader from '@tiptap/extension-table-header';
 import TableCell from '@tiptap/extension-table-cell';
 import { Markdown, type MarkdownStorage } from 'tiptap-markdown';
+import { errorMessage, uploadImage } from '../lib/apiClient';
 import { AlignAwareHeading, AlignAwareParagraph } from './richTextAlign';
 
 // tiptap-markdown doesn't ship the `@tiptap/core` Storage augmentation
@@ -45,6 +46,7 @@ export function RichField({ label, value, onChange, rows = 3, placeholder, si = 
   si?: boolean;
 }) {
   const [zoom, setZoom] = useState(100);
+  const fileInput = useRef<HTMLInputElement>(null);
 
   const editor = useEditor({
     extensions: [
@@ -58,7 +60,7 @@ export function RichField({ label, value, onChange, rows = 3, placeholder, si = 
       AlignAwareHeading.configure({ levels: [...HEADING_LEVELS] }),
       TextAlign.configure({ types: ['paragraph', 'heading'] }),
       Highlight,
-      Image,
+      Image.configure({ inline: true }), // inline so an image sits in a paragraph and the align buttons (text-align) apply to it
       Table.configure({ resizable: false }),
       TableRow,
       TableHeader,
@@ -118,6 +120,18 @@ export function RichField({ label, value, onChange, rows = 3, placeholder, si = 
     const alt = window.prompt('Caption (alt text)', 'Caption') || '';
     editor.chain().focus().setImage({ src, alt }).run();
   };
+  const onPickFile = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-picking the same file
+    if (!file) return;
+    try {
+      const src = await uploadImage(file);
+      const alt = file.name.replace(/\.[^.]+$/, '');
+      editor.chain().focus().setImage({ src, alt }).run();
+    } catch (err) {
+      window.alert(errorMessage(err));
+    }
+  };
 
   return (
     <div>
@@ -170,7 +184,9 @@ export function RichField({ label, value, onChange, rows = 3, placeholder, si = 
 
         <span className="fmtbar__sep" />
         <button type="button" className="fmtbtn" onClick={setLink} title="Link">Link</button>
-        <button type="button" className="fmtbtn" onClick={addImage} title="Image">Image</button>
+        <button type="button" className="fmtbtn" onClick={() => fileInput.current?.click()} title="Upload image from your computer">Upload</button>
+        <input ref={fileInput} type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden onChange={onPickFile} />
+        <button type="button" className="fmtbtn" onClick={addImage} title="Image by URL">Image URL</button>
         <button type="button" className="fmtbtn" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} title="Insert table">⊞</button>
       </div>
       <div className="richfield-shell" style={{ minHeight: rows * 24 + 16, zoom: `${zoom}%` }} onClick={() => editor.chain().focus().run()}>

@@ -62,6 +62,8 @@ public class SecurityConfig {
                         // read the curriculum with no token — writing still requires
                         // ADMIN via /api/admin/curriculum's own @PreAuthorize.
                         .requestMatchers(HttpMethod.GET, "/api/curriculum").permitAll()
+                        // Lesson images are <img src> targets, which cannot carry a bearer token.
+                        .requestMatchers(HttpMethod.GET, "/api/uploads/*").permitAll()
                         .requestMatchers(
                                 "/api/auth/signup",
                                 "/api/auth/signin",

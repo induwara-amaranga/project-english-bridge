@@ -18,6 +18,10 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
   jackson:
     # Timestamps go over the wire as ISO-8601 strings, because Progress
     # carries `lastActiveISO: string` and the React app calls new Date() on it.
@@ -46,6 +50,9 @@ server:
     include-message: never
 
 englisher:
+  uploads:
+    # Lesson images (upload/UploadController). Point at a persistent volume in prod.
+    dir: ${ENGLISHER_UPLOADS_DIR:./uploads}
   rate-limit:
     # Per-IP throttling of the sign-in/sign-up endpoints — see AuthRateLimitFilter.
     enabled: true

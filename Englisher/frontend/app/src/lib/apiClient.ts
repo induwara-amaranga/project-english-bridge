@@ -80,13 +80,15 @@ async function parseError(res: Response): Promise<ApiRequestError> {
 
 async function doFetch(path: string, opts: RequestOptions): Promise<Response> {
   const headers: Record<string, string> = { Accept: 'application/json' };
-  if (opts.body !== undefined) headers['Content-Type'] = 'application/json';
+  const isForm = opts.body instanceof FormData;
+  // For FormData the browser must set Content-Type itself (it carries the multipart boundary).
+  if (opts.body !== undefined && !isForm) headers['Content-Type'] = 'application/json';
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
   return fetch(`${BASE_URL}${path}`, {
     method: opts.method || 'GET',
     headers,
     credentials: 'include',
-    body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+    body: opts.body === undefined ? undefined : isForm ? (opts.body as FormData) : JSON.stringify(opts.body),
   });
 }
 
@@ -142,5 +144,12 @@ export async function apiRequest<T>(path: string, opts: RequestOptions = {}): Pr
 
 export const apiGet = <T,>(path: string): Promise<T> => apiRequest<T>(path);
 export const apiPost = <T,>(path: string, body?: unknown): Promise<T> => apiRequest<T>(path, { method: 'POST', body });
-export const apiPut = <T,>(path: string, body?: unknown): Promise<T> => apiRequest<T>(path, { method: 'PUT', body });
+/** Uploads a lesson image (ADMIN); resolves to the URL the server stored it at. */
+export async function uploadImage(file: File): Promise<string> {
+  const form = new FormData();
+  form.append('file', file);
+  const { url } = await apiRequest<{ url: string }>('/api/admin/uploads', { method: 'POST', body: form });
+  return `${BASE_URL}${url}`;
+}
+export const apiPut =<T,>(path: string, body?: unknown): Promise<T> => apiRequest<T>(path, { method: 'PUT', body });
 export const apiDelete = <T,>(path: string): Promise<T> => apiRequest<T>(path, { method: 'DELETE' });
