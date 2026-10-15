@@ -24,7 +24,8 @@ const GLOW_COLORS = ['#3ECF6E', '#14D8C4', '#6C4FF6', '#FF6B4A', '#FFB800', '#FF
 const STAGE_BACKGROUNDS = ['/assets/planets/background_1.png', '/assets/planets/background_2.png', '/assets/planets/background_3.png'];
 const OFFSETS_BY_COUNT = (n: number) => {
   const base = [0, 80, -70, 90, -50, 70, -80, 60];
-  return base.slice(0, Math.max(n, 1));
+  // Repeat the zig-zag so stages with more than 8 lessons keep their path.
+  return Array.from({ length: Math.max(n, 1) }, (_, i) => base[i % base.length]);
 };
 const V_STEP = 108;
 const V_GAP = 42;
