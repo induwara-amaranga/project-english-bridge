@@ -1,7 +1,7 @@
 import { RichText } from '../../components/RichText';
 import { CheckboxRow } from '../../components/Primitives';
-import { gradeCard, norm, seededShuffle, splitGapFillTemplate, type Answer, type DragOrderAnswer, type GapFillAnswer, type MatchAnswer, type MultiSelectAnswer, type RubricAnswer } from '../../domain/grading';
-import type { Card, DragOrderPayload, EssayPayload, GapFillPayload, MatchPayload, McqPayload, MultiSelectPayload, RubricPayload, TranslateSiEnPayload } from '../../domain/types';
+import { gradeCard, norm, seededShuffle, splitGapFillTemplate, type Answer, type DragOrderAnswer, type GapFillAnswer, type MatchAnswer, type MultiSelectAnswer, type RubricAnswer, type WriteInFrontAnswer } from '../../domain/grading';
+import type { Card, DragOrderPayload, EssayPayload, GapFillPayload, MatchPayload, McqPayload, MultiSelectPayload, RubricPayload, TranslateSiEnPayload, WriteInFrontPayload } from '../../domain/types';
 import { bubble } from '../../lib/bubble';
 
 // One card, rendered for answering *and* for review. The review screens pass
@@ -223,6 +223,34 @@ export function ExerciseCardView({ card, answer, setAnswer, checked, lang, readO
                 style={{ width: '100%', border: `2px solid ${checked ? (gradeCard(card, answer) ? 'var(--c-success)' : 'var(--c-danger)') : 'var(--c-primary-line)'}`, borderRadius: 999, padding: '14px 18px', fontSize: 16, marginTop: 10, outline: 'none', fontFamily: 'var(--font-body)' }}
               />
             </>
+          );
+        })()}
+
+        {card.type === 'write_in_front' && (() => {
+          const p = card.payload as WriteInFrontPayload;
+          const values = (answer as WriteInFrontAnswer)?.values || [];
+          const setValue = (i: number, val: string) => {
+            const next = p.items.map((_, k) => values[k] || '');
+            next[i] = val;
+            set({ values: next });
+          };
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
+              {p.items.map((item, i) => {
+                const ok = checked && gradeCard({ ...card, payload: { items: [item] } } as Card, { values: [values[i] || ''] });
+                const border = checked ? (ok ? 'var(--c-success)' : 'var(--c-danger)') : 'var(--c-primary-line)';
+                return (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <span style={{ flex: '0 0 38%', fontSize: 16, fontWeight: 700, overflowWrap: 'anywhere' }}>{item.word || '…'}</span>
+                    <input
+                      value={values[i] || ''} readOnly={readOnly} onChange={(e) => setValue(i, e.target.value)}
+                      placeholder={readOnly ? (si ? 'පිළිතුරු දී නැත' : 'Not answered') : '…'}
+                      style={{ flex: 1, minWidth: 0, border: `2px solid ${border}`, borderRadius: 12, padding: '10px 14px', fontSize: 15, outline: 'none', fontFamily: 'var(--font-body)' }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
           );
         })()}
 

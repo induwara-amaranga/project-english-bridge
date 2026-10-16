@@ -70,6 +70,16 @@ function LessonCard({ card, lang }: { card: Card; lang: 'en' | 'si' }) {
         {(card.type === 'essay' || card.type === 'rubric') && (
           <div style={{ background: 'var(--c-primary-tint-2)', border: '2px solid var(--c-primary-line)', borderRadius: 12, padding: 14, minHeight: 64, fontSize: 14, color: 'var(--c-ink-disabled)', marginTop: 12 }}>{si ? 'අභ්‍යාස තිරයේ පිළිතුරු දෙනු ලැබේ' : 'Answered on the exercise screen'}</div>
         )}
+        {card.type === 'write_in_front' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
+            {(card.payload as { items: { word: string }[] }).items.map((it, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ flex: '0 0 38%', fontSize: 15, fontWeight: 700 }}>{it.word || '…'}</span>
+                <div style={{ flex: 1, background: 'var(--c-primary-tint-2)', border: '2px solid var(--c-primary-line)', borderRadius: 12, height: 40 }} />
+              </div>
+            ))}
+          </div>
+        )}
         {card.type === 'translate_si_en' && (
           <>
             {/* Always Sinhala — the sentence itself, not chrome. */}

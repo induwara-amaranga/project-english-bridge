@@ -76,6 +76,16 @@ describe('gradeCard', () => {
     expect(gradeCard(card, 'I go school')).toBe(false);
   });
 
+  it('grades write_in_front: every item must match one of its accepted answers', () => {
+    const card = makeCard('c', 'write_in_front') as Card;
+    (card as unknown as { payload: unknown }).payload = { items: [{ word: 'child', accept: ['children'] }, { word: 'man', accept: ['men'] }] };
+    expect(gradeCard(card, { values: ['Children', ' men. '] })).toBe(true);
+    expect(gradeCard(card, { values: ['children', 'mans'] })).toBe(false);
+    expect(gradeCard(card, { values: ['children'] })).toBe(false);
+    expect(isAnswered(card, { values: [] })).toBe(false);
+    expect(isAnswered(card, { values: ['', 'men'] })).toBe(true);
+  });
+
   it('essay and rubric cards are never auto-graded — always pass once answered', () => {
     const essay = makeCard('c', 'essay') as Card;
     expect(gradeCard(essay, 'anything at all')).toBe(true);

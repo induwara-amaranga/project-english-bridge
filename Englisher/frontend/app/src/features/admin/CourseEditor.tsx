@@ -4,7 +4,7 @@ import { useCourseEditor, type CourseEditorApi } from './courseEditorState';
 import { CARD_COLUMNS, TYPE_META } from '../../domain/types';
 import type {
   Card, CardType, Column, DragOrderPayload, EssayPayload, Exercise, ExerciseType,
-  GapFillPayload, Lesson, MatchPayload, McqPayload, MultiSelectPayload, RubricPayload, Stage, TranslateSiEnPayload,
+  GapFillPayload, Lesson, MatchPayload, McqPayload, MultiSelectPayload, RubricPayload, Stage, TranslateSiEnPayload, WriteInFrontPayload,
 } from '../../domain/types';
 import { cardGridColumn, emptyPayload, plainText } from '../../domain/curriculum';
 import { seededShuffle, splitGapFillTemplate } from '../../domain/grading';
@@ -13,10 +13,10 @@ import { RichField } from '../../components/RichTextEditor';
 import { RichText } from '../../components/RichText';
 import './editor.css';
 
-const CARD_TYPES: CardType[] = ['text', 'mcq', 'gap_fill', 'drag_order', 'match', 'free_text', 'multi_select', 'essay', 'rubric', 'translate_si_en'];
+const CARD_TYPES: CardType[] = ['text', 'mcq', 'gap_fill', 'drag_order', 'match', 'free_text', 'multi_select', 'essay', 'rubric', 'translate_si_en', 'write_in_front'];
 const TYPE_COLOR: Record<CardType, string> = {
   mcq: '#6C4FF6', gap_fill: '#0FA593', drag_order: '#B37E00', match: '#FF4D5E', free_text: '#2FAE63', text: '#4A4560',
-  multi_select: '#5539E0', essay: '#FF6B4A', rubric: '#8A84A8', translate_si_en: '#0F8FA5',
+  multi_select: '#5539E0', essay: '#FF6B4A', rubric: '#8A84A8', translate_si_en: '#0F8FA5', write_in_front: '#D9558B',
 };
 const CARD_SHORT = (t: CardType) => (t === 'text' ? 'TEXT' : TYPE_META[t as ExerciseType].short);
 const UNLOCK_LABEL: Record<string, string> = { always: 'Open to everyone', afterStage: 'After the previous course', minXp: 'At an XP threshold' };
@@ -500,6 +500,28 @@ function PayloadEditor({ api, card }: { api: CourseEditorApi; card: Card }) {
     );
   }
 
+  if (card.type === 'write_in_front') {
+    const p = card.payload as WriteInFrontPayload;
+    return (
+      <div>
+        <label className="lbl">Words — the learner sees each word with a box in front of it to write the answer</label>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {p.items.map((it, i) => (
+            <div key={i} className="ed-row">
+              <div style={{ width: 22, fontSize: 12, fontWeight: 700, color: '#B5AFD4', textAlign: 'center', flexShrink: 0 }}>{i + 1}</div>
+              <input className="fld" style={{ flex: 1 }} value={it.word} onChange={(e) => { const v = e.target.value; api.editExercisePayload((pl) => { (pl as WriteInFrontPayload).items[i].word = v; }); }} placeholder="Word (e.g. child)" />
+              <span style={{ color: '#B5AFD4', fontSize: 14, flexShrink: 0 }}>→</span>
+              <input className="fld" style={{ flex: 1 }} defaultValue={it.accept.join(', ')} onBlur={(e) => { const v = csvIn(e.target.value); api.editExercisePayload((pl) => { (pl as WriteInFrontPayload).items[i].accept = v; }); }} placeholder="Accepted: children" />
+              <button className="iconbtn" onClick={() => api.editExercisePayload((pl) => { const wp = pl as WriteInFrontPayload; if (wp.items.length > 1) wp.items.splice(i, 1); })}>✕</button>
+            </div>
+          ))}
+          <button className="addbtn" onClick={() => api.editExercisePayload((pl) => { (pl as WriteInFrontPayload).items.push({ word: '', accept: [] }); })}>+ Add word</button>
+          <span style={{ fontSize: 11.5, color: '#9B94BE' }}>Accepted answers are comma separated. Matching ignores capitalisation, punctuation and extra spaces. The card is correct only when every box is.</span>
+        </div>
+      </div>
+    );
+  }
+
   if (card.type === 'multi_select') {
     const p = card.payload as MultiSelectPayload;
     const toggleCorrect = (i: number) => api.editExercisePayload((pl) => {
@@ -805,6 +827,17 @@ function PreviewCard({ card, index, total, isSelected, showKey, pendingDelete, o
             </>
           );
         })()}
+
+        {card.type === 'write_in_front' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginTop: 10 }}>
+            {(card.payload as WriteInFrontPayload).items.map((it, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ flex: '0 0 38%', fontSize: 13, fontWeight: 700 }}>{it.word || '…'}</span>
+                <div style={{ flex: 1, minHeight: 32, background: 'white', border: `2px solid ${showKey ? '#3ECF6E' : '#D8D3EE'}`, borderRadius: 10, padding: '5px 10px', fontSize: 12.5, fontWeight: 700, color: '#3E8E5B' }}>{showKey ? it.accept.join(' / ') : ''}</div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {card.type === 'multi_select' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginTop: 10 }}>

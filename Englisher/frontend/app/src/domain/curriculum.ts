@@ -187,6 +187,7 @@ export const emptyPayload: Record<CardTypeKey, () => Payload> = {
   essay: () => ({ ideaBank: [], outline: [] }),
   rubric: () => ({ sections: [{ title: { en: '', si: '' }, items: [{ en: '', si: '' }] }] }),
   translate_si_en: () => ({ sentenceSi: '', accept: [] }),
+  write_in_front: () => ({ items: [{ word: '', accept: [] }, { word: '', accept: [] }] }),
   text: () => ({}),
 };
 type CardTypeKey = ExerciseType | 'text';

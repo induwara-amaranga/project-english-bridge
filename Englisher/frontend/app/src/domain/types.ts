@@ -4,7 +4,7 @@
 export type Lang = 'en' | 'si';
 export type Bilingual = { en: string; si: string };
 
-export type ExerciseType = 'mcq' | 'gap_fill' | 'drag_order' | 'match' | 'free_text' | 'multi_select' | 'essay' | 'rubric' | 'translate_si_en';
+export type ExerciseType = 'mcq' | 'gap_fill' | 'drag_order' | 'match' | 'free_text' | 'multi_select' | 'essay' | 'rubric' | 'translate_si_en' | 'write_in_front';
 export type CardType = 'text' | ExerciseType;
 export type Column = 'left' | 'right' | 'full';
 
@@ -53,6 +53,19 @@ export interface TranslateSiEnPayload {
   sentenceSi: string;
   accept: string[];
 }
+/**
+ * A list of prompt words (e.g. singular nouns) with a text box in front of
+ * each, where the learner writes the related form (e.g. the plural). Every box
+ * has its own accepted answer(s); the card is correct only when all are.
+ * Matching uses the default `norm()` rules, like gap_fill.
+ */
+export interface WriteInFrontItem {
+  word: string;
+  accept: string[];
+}
+export interface WriteInFrontPayload {
+  items: WriteInFrontItem[];
+}
 /** Like MCQ, but any number of options can be correct — graded as an exact set match. */
 export interface MultiSelectPayload {
   options: Bilingual[];
@@ -77,7 +90,7 @@ export interface RubricPayload {
 }
 export type Payload =
   | McqPayload | GapFillPayload | DragOrderPayload | MatchPayload | FreeTextPayload
-  | MultiSelectPayload | EssayPayload | RubricPayload | TranslateSiEnPayload | Record<string, never>;
+  | MultiSelectPayload | EssayPayload | RubricPayload | TranslateSiEnPayload | WriteInFrontPayload | Record<string, never>;
 
 export interface Feedback {
   correct: Bilingual;
@@ -154,6 +167,7 @@ export const TYPE_META: Record<ExerciseType, { short: string; label: string; lab
   essay: { short: 'ESSAY', label: 'Essay / letter paragraph', labelSi: 'රචනාව / ලිපි ඡේදය' },
   rubric: { short: 'RUBRIC', label: 'Self-evaluation rubric', labelSi: 'ස්වයං-තක්සේරු මාර්ගෝපදේශය' },
   translate_si_en: { short: 'SI→EN', label: 'Sinhala to English translation', labelSi: 'සිංහල සිට ඉංග්‍රීසි පරිවර්තනය' },
+  write_in_front: { short: 'WRITE', label: 'Write in front', labelSi: 'ඉදිරියෙන් ලියන්න' },
 };
 
 export const CARD_COLUMNS: { key: Column; label: string }[] = [

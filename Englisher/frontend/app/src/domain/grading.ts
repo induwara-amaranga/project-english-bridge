@@ -1,4 +1,4 @@
-import type { Card, DragOrderPayload, FreeTextPayload, GapFillPayload, MatchPayload, McqPayload, MultiSelectPayload, TranslateSiEnPayload } from './types';
+import type { Card, DragOrderPayload, FreeTextPayload, GapFillPayload, MatchPayload, McqPayload, MultiSelectPayload, TranslateSiEnPayload, WriteInFrontPayload } from './types';
 
 // Extracted from Exercise.dc.html's inline grader so it is unit-testable and
 // shared by the exercise player.
@@ -12,7 +12,9 @@ export type MultiSelectAnswer = number[];
 export type RubricAnswer = Record<string, boolean>;
 /** One entry per blank, keyed by its position in the template. `pending` is which blank the next chip tap fills — same shape convention as `MatchAnswer`. */
 export type GapFillAnswer = { pending: number | null; blanks: Record<number, string> };
-export type Answer = McqAnswer | DragOrderAnswer | MatchAnswer | TextAnswer | MultiSelectAnswer | RubricAnswer | GapFillAnswer;
+/** One typed value per item, by position. */
+export type WriteInFrontAnswer = { values: string[] };
+export type Answer = WriteInFrontAnswer | McqAnswer | DragOrderAnswer | MatchAnswer | TextAnswer | MultiSelectAnswer | RubricAnswer | GapFillAnswer;
 
 /** Splits a gap_fill template on every `___` marker — `segments.length === blank count + 1`, one blank slot between each pair of segments. Shared by the exercise player, the lesson preview and the admin editor so all three agree on where the blanks land. */
 export function splitGapFillTemplate(template: string): string[] {
@@ -60,6 +62,12 @@ export function gradeCard(card: Card, answer: Answer): boolean {
     const p = q as TranslateSiEnPayload;
     return (p.accept || []).some((x) => norm(x, null) === norm(answer as string, null));
   }
+  if (card.type === 'write_in_front') {
+    const p = q as WriteInFrontPayload;
+    const a = answer as WriteInFrontAnswer;
+    return p.items.length > 0 && p.items.every((item, i) =>
+      (item.accept || []).some((x) => norm(x, null) === norm((a.values || [])[i] || '', null)));
+  }
   if (card.type === 'multi_select') {
     const p = q as MultiSelectPayload;
     const a = (answer as MultiSelectAnswer) || [];
@@ -79,6 +87,7 @@ export function defaultAnswerFor(card: Card): Answer {
   if (card.type === 'mcq') return null;
   if (card.type === 'multi_select') return [];
   if (card.type === 'rubric') return {};
+  if (card.type === 'write_in_front') return { values: [] };
   return '';
 }
 
@@ -89,6 +98,7 @@ export function isAnswered(card: Card, a: Answer): boolean {
   // as `match`'s "at least one pair" — gradeCard is what actually requires
   // every blank to be correct.
   if (card.type === 'gap_fill') return Object.values((a as GapFillAnswer).blanks).some((v) => !!v && v.trim());
+  if (card.type === 'write_in_front') return ((a as WriteInFrontAnswer).values || []).some((v) => !!v && v.trim());
   if (card.type === 'free_text' || card.type === 'essay' || card.type === 'translate_si_en') return !!(a && String(a).trim());
   if (card.type === 'mcq') return a !== null && a !== undefined;
   if (card.type === 'multi_select') return ((a as MultiSelectAnswer) || []).length > 0;

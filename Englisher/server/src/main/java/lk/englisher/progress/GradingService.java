@@ -75,6 +75,7 @@ public class GradingService {
             // Always default normalization, unlike free_text — not author-configurable,
             // since the whole point of this type is word-based, whitespace-insensitive matching.
             case "translate_si_en" -> anyAccepted(payload.path("accept"), answer, null);
+            case "write_in_front" -> isWriteInFrontCorrect(payload.path("items"), answer);
             case "multi_select" -> isExactSet(answer, payload.path("correctIndexes"));
             // Self-assessed, never auto-graded.
             case "essay", "rubric" -> true;
@@ -102,6 +103,7 @@ public class GradingService {
             // what actually requires every blank to be correct.
             case "gap_fill" -> isAnyBlankFilled(answer);
             case "mcq" -> answer != null && !answer.isNull();
+            case "write_in_front" -> isAnyValueFilled(answer);
             case "multi_select" -> answer != null && answer.isArray() && !answer.isEmpty();
             // A rubric is a self-check, not a gate — it never blocks moving on.
             case "rubric" -> true;
@@ -148,6 +150,33 @@ public class GradingService {
             }
         }
         return true;
+    }
+
+    /** Every item must have its own accepted answer typed in, default normalization. */
+    private boolean isWriteInFrontCorrect(JsonNode items, JsonNode answer) {
+        if (!items.isArray() || items.isEmpty()) {
+            return false;
+        }
+        JsonNode values = answer == null ? null : answer.path("values");
+        for (int i = 0; i < items.size(); i++) {
+            String given = values == null ? "" : values.path(i).asText("");
+            if (!anyAcceptedText(items.get(i).path("accept"), given, null)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean isAnyValueFilled(JsonNode answer) {
+        if (answer == null) {
+            return false;
+        }
+        for (JsonNode v : answer.path("values")) {
+            if (!v.asText("").trim().isEmpty()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean isAnyBlankFilled(JsonNode answer) {
