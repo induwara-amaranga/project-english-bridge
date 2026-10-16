@@ -354,14 +354,19 @@ export function useCourseEditor() {
     st.lessons.forEach((l, i) => { l.order = i + 1; });
     return { stageId, lessonId: null, exerciseId: null, cardId: null };
   }));
-  const deleteExercise = () => requestDelete('exercise', () => structuralEdit((c) => {
-    const { stageId, lessonId, exerciseId } = sel;
-    const st = c.stages.find((s) => s.id === stageId);
-    const ls = st && st.lessons.find((l) => l.id === lessonId);
-    if (!ls) return null;
-    ls.exercises = ls.exercises.filter((e) => e.id !== exerciseId);
-    return { stageId, lessonId, exerciseId: null, cardId: null };
-  }));
+  // With no target it deletes the open exercise; the tree / lesson list pass one.
+  const deleteExercise = (target?: { stageId: string; lessonId: string; exerciseId: string }) => {
+    const { stageId, lessonId, exerciseId } = target || sel;
+    const key = target ? `exercise:${target.exerciseId}` : 'exercise';
+    requestDelete(key, () => structuralEdit((c) => {
+      const st = c.stages.find((s) => s.id === stageId);
+      const ls = st && st.lessons.find((l) => l.id === lessonId);
+      if (!ls) return null;
+      ls.exercises = ls.exercises.filter((e) => e.id !== exerciseId);
+      const wasOpen = sel.exerciseId === exerciseId;
+      return { stageId: sel.stageId, lessonId: sel.lessonId, exerciseId: wasOpen ? null : sel.exerciseId, cardId: wasOpen ? null : sel.cardId };
+    }));
+  };
 
   const stage = curStage();
   const lesson = curLesson();

@@ -144,6 +144,7 @@ export function CourseEditor() {
                               <div key={x.id} className="treerow" role="button" tabIndex={0} onClick={() => { api.selectExercise(st.id, ls.id, x.id); setTreeOpen(false); }} style={{ padding: '6px 8px 6px 52px', background: xSelected ? '#ECE8FB' : 'transparent' }}>
                                 <span className="cardbadge" style={{ background: TYPE_COLOR[x.type] }}>{TYPE_META[x.type].short}</span>
                                 <span style={{ fontSize: 12, fontWeight: 500, color: xSelected ? '#6C4FF6' : '#6B6580', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flex: 1 }}>{plainText(x.prompt.en) || '(untitled)'}</span>
+                                <button className="movebtn" title={pendingDelete === `exercise:${x.id}` ? 'Click again to delete this exercise' : 'Delete this exercise'} onClick={(e) => { e.stopPropagation(); api.deleteExercise({ stageId: st.id, lessonId: ls.id, exerciseId: x.id }); }} style={{ color: pendingDelete === `exercise:${x.id}` ? 'white' : '#C2354A', background: pendingDelete === `exercise:${x.id}` ? '#FF4D5E' : 'transparent' }}>✕</button>
                                 <TreeMove
                                   upOk={xi > 0} downOk={xi < ls.exercises.length - 1}
                                   onUp={(e) => { e.stopPropagation(); api.moveExercise(st.id, ls.id, x.id, -1); }}
@@ -242,7 +243,7 @@ export function CourseEditor() {
                 </div>
                 <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                   <button className="addbtn" onClick={() => stage && lesson && api.addExercise(stage.id, lesson.id)}>+ Add exercise</button>
-                  <button className="delbtn" onClick={api.deleteExercise} style={{ background: exDel.background, color: exDel.color, borderColor: exDel.borderColor }}>{exDel.label}</button>
+                  <button className="delbtn" onClick={() => api.deleteExercise()} style={{ background: exDel.background, color: exDel.color, borderColor: exDel.borderColor }}>{exDel.label}</button>
                 </div>
               </div>
               <div style={{ background: '#ECE8FB', borderRadius: 12, padding: '14px 16px', fontSize: 12.5, color: '#4A4560', maxWidth: 620 }}>
@@ -674,6 +675,7 @@ function PreviewPane({ api, holder, stage, lesson, exercise }: {
                     <span style={{ fontSize: 11, fontWeight: 800, color: '#B5AFD4', flexShrink: 0 }}>{i + 1}</span>
                     <span className="cardbadge" style={{ background: TYPE_COLOR[x.type] }}>{TYPE_META[x.type].short}</span>
                     <span style={{ fontSize: 12.5, fontWeight: 600, color: x.prompt.en ? '#1E1B2E' : '#B5AFD4', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{plainText(x.prompt.en) || '(no cards yet)'}</span>
+                    <button className="movebtn" title={pendingDelete === `exercise:${x.id}` ? 'Click again to delete this exercise' : 'Delete this exercise'} onClick={(e) => { e.stopPropagation(); stage && lesson && api.deleteExercise({ stageId: stage.id, lessonId: lesson.id, exerciseId: x.id }); }} style={{ marginLeft: 'auto', flexShrink: 0, color: pendingDelete === `exercise:${x.id}` ? 'white' : '#C2354A', background: pendingDelete === `exercise:${x.id}` ? '#FF4D5E' : 'transparent' }}>✕</button>
                   </div>
                 ))}
               </div>
