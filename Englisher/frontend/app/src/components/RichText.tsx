@@ -29,7 +29,7 @@ const SANITIZE_CONFIG = {
     'h1', 'h2', 'h3',
     'table', 'thead', 'tbody', 'tr', 'th', 'td',
   ],
-  ALLOWED_ATTR: ['href', 'src', 'alt', 'style', 'target', 'rel'],
+  ALLOWED_ATTR: ['href', 'src', 'alt', 'style', 'target', 'rel', 'start'],
 };
 
 // The only `style` this editor ever produces is `text-align` (see
