@@ -1,7 +1,7 @@
 import { RichText } from '../../components/RichText';
 import { CheckboxRow } from '../../components/Primitives';
-import { gradeCard, norm, seededShuffle, splitGapFillTemplate, type Answer, type DragOrderAnswer, type GapFillAnswer, type MatchAnswer, type MultiSelectAnswer, type RubricAnswer, type WriteInFrontAnswer } from '../../domain/grading';
-import type { Card, DragOrderPayload, EssayPayload, GapFillPayload, MatchPayload, McqPayload, MultiSelectPayload, RubricPayload, TranslateSiEnPayload, WriteInFrontPayload } from '../../domain/types';
+import { gradeCard, norm, seededShuffle, splitGapFillTemplate, type Answer, type DragOrderAnswer, type GapFillAnswer, type MatchAnswer, type MultiSelectAnswer, type RubricAnswer, type SelectInFrontAnswer, type WriteInFrontAnswer } from '../../domain/grading';
+import type { Card, DragOrderPayload, EssayPayload, GapFillPayload, MatchPayload, McqPayload, MultiSelectPayload, RubricPayload, TranslateSiEnPayload, SelectInFrontPayload, WriteInFrontPayload } from '../../domain/types';
 import { bubble } from '../../lib/bubble';
 
 // One card, rendered for answering *and* for review. The review screens pass
@@ -247,6 +247,37 @@ export function ExerciseCardView({ card, answer, setAnswer, checked, lang, readO
                       placeholder={readOnly ? (si ? 'පිළිතුරු දී නැත' : 'Not answered') : '…'}
                       style={{ flex: 1, minWidth: 0, border: `2px solid ${border}`, borderRadius: 12, padding: '10px 14px', fontSize: 15, outline: 'none', fontFamily: 'var(--font-body)' }}
                     />
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
+
+        {card.type === 'select_in_front' && (() => {
+          const p = card.payload as SelectInFrontPayload;
+          const choices = (answer as SelectInFrontAnswer)?.choices || [];
+          const setChoice = (i: number, val: number) => {
+            const next = p.items.map((_, k) => (choices[k] ?? -1));
+            next[i] = val;
+            set({ choices: next });
+          };
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
+              {p.items.map((item, i) => {
+                const picked = choices[i] ?? -1;
+                const ok = checked && picked === item.correctIndex;
+                const border = checked ? (ok ? 'var(--c-success)' : 'var(--c-danger)') : 'var(--c-primary-line)';
+                return (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <span style={{ flex: '0 0 38%', fontSize: 16, fontWeight: 700, overflowWrap: 'anywhere' }}>{item.word || '…'}</span>
+                    <select
+                      value={picked} disabled={readOnly} onChange={(e) => setChoice(i, Number(e.target.value))}
+                      style={{ flex: 1, minWidth: 0, border: `2px solid ${border}`, borderRadius: 12, padding: '10px 14px', fontSize: 15, outline: 'none', background: 'white', fontFamily: 'var(--font-body)' }}
+                    >
+                      <option value={-1}>{readOnly ? (si ? 'පිළිතුරු දී නැත' : 'Not answered') : (si ? 'තෝරන්න…' : 'Select…')}</option>
+                      {item.options.map((o, k) => <option key={k} value={k}>{o}</option>)}
+                    </select>
                   </div>
                 );
               })}

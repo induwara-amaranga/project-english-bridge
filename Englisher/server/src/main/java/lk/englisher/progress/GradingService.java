@@ -76,6 +76,7 @@ public class GradingService {
             // since the whole point of this type is word-based, whitespace-insensitive matching.
             case "translate_si_en" -> anyAccepted(payload.path("accept"), answer, null);
             case "write_in_front" -> isWriteInFrontCorrect(payload.path("items"), answer);
+            case "select_in_front" -> isSelectInFrontCorrect(payload.path("items"), answer);
             case "multi_select" -> isExactSet(answer, payload.path("correctIndexes"));
             // Self-assessed, never auto-graded.
             case "essay", "rubric" -> true;
@@ -104,6 +105,7 @@ public class GradingService {
             case "gap_fill" -> isAnyBlankFilled(answer);
             case "mcq" -> answer != null && !answer.isNull();
             case "write_in_front" -> isAnyValueFilled(answer);
+            case "select_in_front" -> isAnyChoiceMade(answer);
             case "multi_select" -> answer != null && answer.isArray() && !answer.isEmpty();
             // A rubric is a self-check, not a gate — it never blocks moving on.
             case "rubric" -> true;
@@ -165,6 +167,34 @@ public class GradingService {
             }
         }
         return true;
+    }
+
+    /** Every item must have its own correct option picked; an unpicked item (-1 / missing) is wrong. */
+    private boolean isSelectInFrontCorrect(JsonNode items, JsonNode answer) {
+        if (!items.isArray() || items.isEmpty()) {
+            return false;
+        }
+        JsonNode choices = answer == null ? null : answer.path("choices");
+        for (int i = 0; i < items.size(); i++) {
+            int correct = items.get(i).path("correctIndex").asInt(-1);
+            int given = choices == null ? -1 : choices.path(i).asInt(-1);
+            if (correct < 0 || given != correct) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean isAnyChoiceMade(JsonNode answer) {
+        if (answer == null) {
+            return false;
+        }
+        for (JsonNode c : answer.path("choices")) {
+            if (c.isInt() && c.asInt() >= 0) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean isAnyValueFilled(JsonNode answer) {

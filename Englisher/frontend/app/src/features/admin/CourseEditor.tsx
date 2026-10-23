@@ -4,7 +4,7 @@ import { useCourseEditor, type CourseEditorApi } from './courseEditorState';
 import { CARD_COLUMNS, TYPE_META } from '../../domain/types';
 import type {
   Card, CardType, Column, DragOrderPayload, EssayPayload, Exercise, ExerciseType,
-  GapFillPayload, Lesson, MatchPayload, McqPayload, MultiSelectPayload, RubricPayload, Stage, TranslateSiEnPayload, WriteInFrontPayload,
+  GapFillPayload, Lesson, MatchPayload, McqPayload, MultiSelectPayload, RubricPayload, Stage, TranslateSiEnPayload, WriteInFrontPayload, SelectInFrontPayload,
 } from '../../domain/types';
 import { cardGridColumn, emptyPayload, plainText } from '../../domain/curriculum';
 import { seededShuffle, splitGapFillTemplate } from '../../domain/grading';
@@ -13,10 +13,10 @@ import { RichField } from '../../components/RichTextEditor';
 import { RichText } from '../../components/RichText';
 import './editor.css';
 
-const CARD_TYPES: CardType[] = ['text', 'mcq', 'gap_fill', 'drag_order', 'match', 'free_text', 'multi_select', 'essay', 'rubric', 'translate_si_en', 'write_in_front'];
+const CARD_TYPES: CardType[] = ['text', 'mcq', 'gap_fill', 'drag_order', 'match', 'free_text', 'multi_select', 'essay', 'rubric', 'translate_si_en', 'write_in_front', 'select_in_front'];
 const TYPE_COLOR: Record<CardType, string> = {
   mcq: '#6C4FF6', gap_fill: '#0FA593', drag_order: '#B37E00', match: '#FF4D5E', free_text: '#2FAE63', text: '#4A4560',
-  multi_select: '#5539E0', essay: '#FF6B4A', rubric: '#8A84A8', translate_si_en: '#0F8FA5', write_in_front: '#D9558B',
+  multi_select: '#5539E0', essay: '#FF6B4A', rubric: '#8A84A8', translate_si_en: '#0F8FA5', write_in_front: '#D9558B', select_in_front: '#8E55D9',
 };
 const CARD_SHORT = (t: CardType) => (t === 'text' ? 'TEXT' : TYPE_META[t as ExerciseType].short);
 const UNLOCK_LABEL: Record<string, string> = { always: 'Open to everyone', afterStage: 'After the previous course', minXp: 'At an XP threshold' };
@@ -522,6 +522,45 @@ function PayloadEditor({ api, card }: { api: CourseEditorApi; card: Card }) {
     );
   }
 
+  if (card.type === 'select_in_front') {
+    const p = card.payload as SelectInFrontPayload;
+    const edit = (fn: (items: SelectInFrontPayload['items']) => void) => api.editExercisePayload((pl) => { fn((pl as SelectInFrontPayload).items); });
+    return (
+      <div>
+        <label className="lbl">Words — the learner sees each word with a drop-down in front of it. Mark the correct option for each.</label>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {p.items.map((it, i) => (
+            <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingBottom: 12, borderBottom: '1px dashed #E4E0F4' }}>
+              <div className="ed-row">
+                <div style={{ width: 22, fontSize: 12, fontWeight: 700, color: '#B5AFD4', textAlign: 'center', flexShrink: 0 }}>{i + 1}</div>
+                <input className="fld" style={{ flex: 1 }} value={it.word} onChange={(e) => { const v = e.target.value; edit((items) => { items[i].word = v; }); }} placeholder="Word (e.g. child)" />
+                <button className="iconbtn" onClick={() => edit((items) => { if (items.length > 1) items.splice(i, 1); })}>✕</button>
+              </div>
+              {it.options.map((o, k) => (
+                <div key={k} className="ed-row" style={{ paddingLeft: 30 }}>
+                  <input type="radio" name={`sif-${card.id}-${i}`} checked={it.correctIndex === k} onChange={() => edit((items) => { items[i].correctIndex = k; })} title="Correct option" />
+                  <input className="fld" style={{ flex: 1 }} value={o} onChange={(e) => { const v = e.target.value; edit((items) => { items[i].options[k] = v; }); }} placeholder={`Option ${k + 1}`} />
+                  <button className="iconbtn" onClick={() => edit((items) => {
+                    const item = items[i];
+                    if (item.options.length <= 2) return;
+                    item.options.splice(k, 1);
+                    if (item.correctIndex === k) item.correctIndex = 0;
+                    else if (item.correctIndex > k) item.correctIndex--;
+                  })}>✕</button>
+                </div>
+              ))}
+              <div style={{ paddingLeft: 30 }}>
+                <button className="addbtn" onClick={() => edit((items) => { items[i].options.push(''); })}>+ Add option</button>
+              </div>
+            </div>
+          ))}
+          <button className="addbtn" onClick={() => edit((items) => { items.push({ word: '', options: ['', ''], correctIndex: 0 }); })}>+ Add word</button>
+          <span style={{ fontSize: 11.5, color: '#9B94BE' }}>Each word has its own options; the selected radio button is the correct one. The card is correct only when every drop-down is.</span>
+        </div>
+      </div>
+    );
+  }
+
   if (card.type === 'multi_select') {
     const p = card.payload as MultiSelectPayload;
     const toggleCorrect = (i: number) => api.editExercisePayload((pl) => {
@@ -834,6 +873,17 @@ function PreviewCard({ card, index, total, isSelected, showKey, pendingDelete, o
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ flex: '0 0 38%', fontSize: 13, fontWeight: 700 }}>{it.word || '…'}</span>
                 <div style={{ flex: 1, minHeight: 32, background: 'white', border: `2px solid ${showKey ? '#3ECF6E' : '#D8D3EE'}`, borderRadius: 10, padding: '5px 10px', fontSize: 12.5, fontWeight: 700, color: '#3E8E5B' }}>{showKey ? it.accept.join(' / ') : ''}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {card.type === 'select_in_front' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginTop: 10 }}>
+            {(card.payload as SelectInFrontPayload).items.map((it, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ flex: '0 0 38%', fontSize: 13, fontWeight: 700 }}>{it.word || '…'}</span>
+                <div style={{ flex: 1, minHeight: 32, background: 'white', border: `2px solid ${showKey ? '#3ECF6E' : '#D8D3EE'}`, borderRadius: 10, padding: '5px 10px', fontSize: 12.5, fontWeight: 700, color: '#3E8E5B' }}>{showKey ? (it.options[it.correctIndex] || '') : ''}</div>
               </div>
             ))}
           </div>

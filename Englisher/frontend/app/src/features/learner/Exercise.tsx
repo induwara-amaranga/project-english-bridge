@@ -21,7 +21,7 @@ import { playSound } from '../../lib/sounds';
 import { bubble } from '../../lib/bubble';
 import { CORRECT, WRONG, randomCelebration } from '../../lib/animations';
 
-type InteractiveCard = Extract<Card, { type: 'mcq' | 'gap_fill' | 'drag_order' | 'match' | 'free_text' | 'multi_select' | 'essay' | 'rubric' | 'translate_si_en' | 'write_in_front' }>;
+type InteractiveCard = Extract<Card, { type: 'mcq' | 'gap_fill' | 'drag_order' | 'match' | 'free_text' | 'multi_select' | 'essay' | 'rubric' | 'translate_si_en' | 'write_in_front' | 'select_in_front' }>;
 const isInteractive = (c: Card): c is InteractiveCard => c.type !== 'text';
 
 /**

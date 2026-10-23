@@ -4,7 +4,7 @@
 export type Lang = 'en' | 'si';
 export type Bilingual = { en: string; si: string };
 
-export type ExerciseType = 'mcq' | 'gap_fill' | 'drag_order' | 'match' | 'free_text' | 'multi_select' | 'essay' | 'rubric' | 'translate_si_en' | 'write_in_front';
+export type ExerciseType = 'mcq' | 'gap_fill' | 'drag_order' | 'match' | 'free_text' | 'multi_select' | 'essay' | 'rubric' | 'translate_si_en' | 'write_in_front' | 'select_in_front';
 export type CardType = 'text' | ExerciseType;
 export type Column = 'left' | 'right' | 'full';
 
@@ -66,6 +66,19 @@ export interface WriteInFrontItem {
 export interface WriteInFrontPayload {
   items: WriteInFrontItem[];
 }
+/**
+ * Like write_in_front, but each word has a drop-down of options instead of a
+ * text box. Every item has its own options and one correct option; the card is
+ * correct only when all items are.
+ */
+export interface SelectInFrontItem {
+  word: string;
+  options: string[];
+  correctIndex: number;
+}
+export interface SelectInFrontPayload {
+  items: SelectInFrontItem[];
+}
 /** Like MCQ, but any number of options can be correct — graded as an exact set match. */
 export interface MultiSelectPayload {
   options: Bilingual[];
@@ -90,7 +103,7 @@ export interface RubricPayload {
 }
 export type Payload =
   | McqPayload | GapFillPayload | DragOrderPayload | MatchPayload | FreeTextPayload
-  | MultiSelectPayload | EssayPayload | RubricPayload | TranslateSiEnPayload | WriteInFrontPayload | Record<string, never>;
+  | MultiSelectPayload | EssayPayload | RubricPayload | TranslateSiEnPayload | WriteInFrontPayload | SelectInFrontPayload | Record<string, never>;
 
 export interface Feedback {
   correct: Bilingual;
@@ -168,6 +181,7 @@ export const TYPE_META: Record<ExerciseType, { short: string; label: string; lab
   rubric: { short: 'RUBRIC', label: 'Self-evaluation rubric', labelSi: 'ස්වයං-තක්සේරු මාර්ගෝපදේශය' },
   translate_si_en: { short: 'SI→EN', label: 'Sinhala to English translation', labelSi: 'සිංහල සිට ඉංග්‍රීසි පරිවර්තනය' },
   write_in_front: { short: 'WRITE', label: 'Write in front', labelSi: 'ඉදිරියෙන් ලියන්න' },
+  select_in_front: { short: 'SELECT', label: 'Select in front', labelSi: 'ඉදිරියෙන් තෝරන්න' },
 };
 
 export const CARD_COLUMNS: { key: Column; label: string }[] = [
