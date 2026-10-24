@@ -82,7 +82,7 @@ export function ExerciseCardView({ card, answer, setAnswer, checked, lang, readO
 
           return (
             <>
-              <div style={{ background: '#F7F5FF', borderRadius: 12, padding: 14, fontSize: 15, lineHeight: 1.9, marginTop: 14 }}>
+              <div style={{ background: '#F7F5FF', borderRadius: 12, padding: 14, fontSize: 15, lineHeight: 1.9, marginTop: 14, whiteSpace: 'pre-wrap' }}>
                 {segments.map((seg, i) => (
                   <span key={i}>
                     {seg}

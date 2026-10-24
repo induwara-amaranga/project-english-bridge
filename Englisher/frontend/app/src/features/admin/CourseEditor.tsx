@@ -403,7 +403,7 @@ function PayloadEditor({ api, card }: { api: CourseEditorApi; card: Card }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div>
           <label className="lbl">Sentence — type ___ (three underscores) for each blank, in order</label>
-          <input className="fld" value={p.template.en} onChange={(e) => { const v = e.target.value; api.editExercisePayload((pl) => { (pl as GapFillPayload).template.en = v; }); }} onBlur={syncBlanks} placeholder="We ___ English every ___." />
+          <textarea className="fld" rows={3} style={{ resize: 'vertical' }} value={p.template.en} onChange={(e) => { const v = e.target.value; api.editExercisePayload((pl) => { (pl as GapFillPayload).template.en = v; }); }} onBlur={syncBlanks} placeholder={'We ___ English every ___.\nPress Enter for a new line.'} />
           <span style={{ fontSize: 11.5, color: '#9B94BE' }}>{blankCount} blank{blankCount === 1 ? '' : 's'} found — the list below updates once you click away from this field.</span>
         </div>
         {p.blanks.map((blank, i) => (
@@ -798,7 +798,7 @@ function PreviewCard({ card, index, total, isSelected, showKey, pendingDelete, o
           const acceptedAnywhere = new Set(p.blanks.flatMap((b) => b.accept || []));
           return (
             <>
-              <div style={{ background: 'white', borderRadius: 11, padding: 12, fontSize: 14, lineHeight: 1.9, marginTop: 10 }}>
+              <div style={{ background: 'white', borderRadius: 11, padding: 12, fontSize: 14, lineHeight: 1.9, marginTop: 10, whiteSpace: 'pre-wrap' }}>
                 {segments.map((seg, i) => (
                   <span key={i}>
                     {seg}

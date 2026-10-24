@@ -30,7 +30,7 @@ function LessonCard({ card, lang }: { card: Card; lang: 'en' | 'si' }) {
           const segments = splitGapFillTemplate(si ? (p.template.si || p.template.en) : p.template.en);
           return (
             <>
-              <div style={{ background: 'var(--c-primary-tint-2)', borderRadius: 12, padding: 14, fontSize: 15, lineHeight: 1.9, marginTop: 12 }}>
+              <div style={{ background: 'var(--c-primary-tint-2)', borderRadius: 12, padding: 14, fontSize: 15, lineHeight: 1.9, marginTop: 12, whiteSpace: 'pre-wrap' }}>
                 {segments.map((seg, i) => (
                   <span key={i}>
                     {seg}
