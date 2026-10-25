@@ -4,7 +4,7 @@
 export type Lang = 'en' | 'si';
 export type Bilingual = { en: string; si: string };
 
-export type ExerciseType = 'mcq' | 'gap_fill' | 'drag_order' | 'match' | 'free_text' | 'multi_select' | 'essay' | 'rubric' | 'translate_si_en' | 'write_in_front' | 'select_in_front';
+export type ExerciseType = 'mcq' | 'gap_fill' | 'drag_order' | 'match' | 'free_text' | 'multi_select' | 'essay' | 'rubric' | 'translate_si_en' | 'write_in_front' | 'select_in_front' | 'sentence_build';
 export type CardType = 'text' | ExerciseType;
 export type Column = 'left' | 'right' | 'full';
 
@@ -79,6 +79,19 @@ export interface SelectInFrontItem {
 export interface SelectInFrontPayload {
   items: SelectInFrontItem[];
 }
+/**
+ * The learner builds an English sentence from a Sinhala one in four boxes —
+ * subject noun phrase, verb phrase, object noun phrase, the rest — and sees
+ * them joined live as one sentence. `parts` is in that fixed order, each with
+ * its accepted answer(s); an empty `accept` means that part is expected to be
+ * left blank (e.g. no object). Matching uses the default `norm()` rules.
+ */
+export const SENTENCE_PARTS = ['subject', 'verb', 'object', 'rest'] as const;
+export interface SentenceBuildPayload {
+  sentenceSi: string;
+  hints: string[];
+  parts: { accept: string[] }[];
+}
 /** Like MCQ, but any number of options can be correct — graded as an exact set match. */
 export interface MultiSelectPayload {
   options: Bilingual[];
@@ -103,7 +116,7 @@ export interface RubricPayload {
 }
 export type Payload =
   | McqPayload | GapFillPayload | DragOrderPayload | MatchPayload | FreeTextPayload
-  | MultiSelectPayload | EssayPayload | RubricPayload | TranslateSiEnPayload | WriteInFrontPayload | SelectInFrontPayload | Record<string, never>;
+  | MultiSelectPayload | EssayPayload | RubricPayload | TranslateSiEnPayload | WriteInFrontPayload | SelectInFrontPayload | SentenceBuildPayload | Record<string, never>;
 
 export interface Feedback {
   correct: Bilingual;
@@ -182,6 +195,7 @@ export const TYPE_META: Record<ExerciseType, { short: string; label: string; lab
   translate_si_en: { short: 'SI→EN', label: 'Sinhala to English translation', labelSi: 'සිංහල සිට ඉංග්‍රීසි පරිවර්තනය' },
   write_in_front: { short: 'WRITE', label: 'Write in front', labelSi: 'ඉදිරියෙන් ලියන්න' },
   select_in_front: { short: 'SELECT', label: 'Select in front', labelSi: 'ඉදිරියෙන් තෝරන්න' },
+  sentence_build: { short: 'BUILD', label: 'Sentence build', labelSi: 'වාක්‍ය ගොඩනගන්න' },
 };
 
 export const CARD_COLUMNS: { key: Column; label: string }[] = [

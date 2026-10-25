@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCourseEditor, type CourseEditorApi } from './courseEditorState';
-import { CARD_COLUMNS, TYPE_META } from '../../domain/types';
+import { CARD_COLUMNS, SENTENCE_PARTS, TYPE_META } from '../../domain/types';
 import type {
   Card, CardType, Column, DragOrderPayload, EssayPayload, Exercise, ExerciseType,
-  GapFillPayload, Lesson, MatchPayload, McqPayload, MultiSelectPayload, RubricPayload, Stage, TranslateSiEnPayload, WriteInFrontPayload, SelectInFrontPayload,
+  GapFillPayload, Lesson, MatchPayload, McqPayload, MultiSelectPayload, RubricPayload, Stage, TranslateSiEnPayload, WriteInFrontPayload, SelectInFrontPayload, SentenceBuildPayload,
 } from '../../domain/types';
 import { cardGridColumn, emptyPayload, plainText } from '../../domain/curriculum';
 import { seededShuffle, splitGapFillTemplate } from '../../domain/grading';
@@ -13,10 +13,10 @@ import { RichField } from '../../components/RichTextEditor';
 import { RichText } from '../../components/RichText';
 import './editor.css';
 
-const CARD_TYPES: CardType[] = ['text', 'mcq', 'gap_fill', 'drag_order', 'match', 'free_text', 'multi_select', 'essay', 'rubric', 'translate_si_en', 'write_in_front', 'select_in_front'];
+const CARD_TYPES: CardType[] = ['text', 'mcq', 'gap_fill', 'drag_order', 'match', 'free_text', 'multi_select', 'essay', 'rubric', 'translate_si_en', 'write_in_front', 'select_in_front', 'sentence_build'];
 const TYPE_COLOR: Record<CardType, string> = {
   mcq: '#6C4FF6', gap_fill: '#0FA593', drag_order: '#B37E00', match: '#FF4D5E', free_text: '#2FAE63', text: '#4A4560',
-  multi_select: '#5539E0', essay: '#FF6B4A', rubric: '#8A84A8', translate_si_en: '#0F8FA5', write_in_front: '#D9558B', select_in_front: '#8E55D9',
+  multi_select: '#5539E0', essay: '#FF6B4A', rubric: '#8A84A8', translate_si_en: '#0F8FA5', write_in_front: '#D9558B', select_in_front: '#8E55D9', sentence_build: '#E0832B',
 };
 const CARD_SHORT = (t: CardType) => (t === 'text' ? 'TEXT' : TYPE_META[t as ExerciseType].short);
 const UNLOCK_LABEL: Record<string, string> = { always: 'Open to everyone', afterStage: 'After the previous course', minXp: 'At an XP threshold' };
@@ -522,6 +522,30 @@ function PayloadEditor({ api, card }: { api: CourseEditorApi; card: Card }) {
     );
   }
 
+  if (card.type === 'sentence_build') {
+    const p = card.payload as SentenceBuildPayload;
+    const PART_LABEL = ['Subject noun phrase', 'Verb phrase', 'Object noun phrase', 'The rest'];
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div>
+          <label className="lbl">Sinhala sentence to build</label>
+          <input className="fld si" value={p.sentenceSi} onChange={(e) => { const v = e.target.value; api.editExercisePayload((pl) => { (pl as SentenceBuildPayload).sentenceSi = v; }); }} placeholder="මම පාසලට යනවා" />
+        </div>
+        <div>
+          <label className="lbl">Hints — one per line, shown under the sentence</label>
+          <textarea className="fld" rows={3} defaultValue={p.hints.join('\n')} onBlur={(e) => { const v = e.target.value.split('\n').map((x) => x.trim()).filter(Boolean); api.editExercisePayload((pl) => { (pl as SentenceBuildPayload).hints = v; }); }} placeholder={'පාසල = school\nයනවා = go'} />
+        </div>
+        {SENTENCE_PARTS.map((part, i) => (
+          <div key={part}>
+            <label className="lbl">{PART_LABEL[i]} — accepted answers, one per line</label>
+            <textarea className="fld" rows={2} defaultValue={(p.parts[i]?.accept || []).join('\n')} onBlur={(e) => { const v = e.target.value.split('\n').map((x) => x.trim()).filter(Boolean); api.editExercisePayload((pl) => { const parts = (pl as SentenceBuildPayload).parts; while (parts.length <= i) parts.push({ accept: [] }); parts[i].accept = v; }); }} placeholder={i === 0 ? 'I' : i === 1 ? 'go' : i === 2 ? '' : 'to school'} />
+          </div>
+        ))}
+        <span style={{ fontSize: 11.5, color: '#9B94BE' }}>Leave a part empty if the sentence has none (e.g. no object) — the learner then has to leave that box empty. Matching ignores capitalisation, punctuation and extra spaces.</span>
+      </div>
+    );
+  }
+
   if (card.type === 'select_in_front') {
     const p = card.payload as SelectInFrontPayload;
     const edit = (fn: (items: SelectInFrontPayload['items']) => void) => api.editExercisePayload((pl) => { fn((pl as SelectInFrontPayload).items); });
@@ -863,6 +887,22 @@ function PreviewCard({ card, index, total, isSelected, showKey, pendingDelete, o
               <div className="si" style={{ background: 'white', border: '2px solid #D8D3EE', borderRadius: 11, padding: 12, fontSize: 15, fontWeight: 600, marginTop: 10 }}>{p.sentenceSi || '(no sentence yet)'}</div>
               <div style={{ background: 'white', border: '2px solid #D8D3EE', borderRadius: 11, padding: 12, minHeight: 48, fontSize: 13, color: '#B5AFD4', marginTop: 8 }}>Type the English translation…</div>
               {showKey && <div style={{ marginTop: 9, fontSize: 11.5, color: '#3E8E5B', fontWeight: 700, lineHeight: 1.6 }}>Accepts: {p.accept.join(' · ')}</div>}
+            </>
+          );
+        })()}
+
+        {card.type === 'sentence_build' && (() => {
+          const p = card.payload as SentenceBuildPayload;
+          const labels = ['Subject noun phrase', 'Verb phrase', 'Object noun phrase', 'The rest'];
+          return (
+            <>
+              <div className="si" style={{ background: 'white', border: '2px solid #D8D3EE', borderRadius: 11, padding: 12, fontSize: 15, fontWeight: 600, marginTop: 10 }}>{p.sentenceSi || '(no sentence yet)'}</div>
+              {p.hints.length > 0 && <div style={{ marginTop: 6, fontSize: 12, color: '#7A73A0' }}>Hint: {p.hints.join(' · ')}</div>}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+                {labels.map((l, i) => (
+                  <div key={i} style={{ background: 'white', border: `2px solid ${showKey ? '#3ECF6E' : '#D8D3EE'}`, borderRadius: 10, padding: '5px 10px', fontSize: 12.5, minHeight: 30, color: showKey ? '#3E8E5B' : '#B5AFD4', fontWeight: showKey ? 700 : 400 }}>{showKey ? ((p.parts[i]?.accept || []).join(' / ') || '(blank)') : l}</div>
+                ))}
+              </div>
             </>
           );
         })()}

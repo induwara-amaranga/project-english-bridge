@@ -1,4 +1,4 @@
-import type { Card, DragOrderPayload, FreeTextPayload, GapFillPayload, MatchPayload, McqPayload, MultiSelectPayload, TranslateSiEnPayload, WriteInFrontPayload, SelectInFrontPayload } from './types';
+import type { Card, DragOrderPayload, FreeTextPayload, GapFillPayload, MatchPayload, McqPayload, MultiSelectPayload, TranslateSiEnPayload, WriteInFrontPayload, SelectInFrontPayload, SentenceBuildPayload } from './types';
 
 // Extracted from Exercise.dc.html's inline grader so it is unit-testable and
 // shared by the exercise player.
@@ -16,7 +16,9 @@ export type GapFillAnswer = { pending: number | null; blanks: Record<number, str
 export type WriteInFrontAnswer = { values: string[] };
 /** One picked option index per item, by position; -1 means not picked yet. */
 export type SelectInFrontAnswer = { choices: number[] };
-export type Answer = SelectInFrontAnswer | WriteInFrontAnswer | McqAnswer | DragOrderAnswer | MatchAnswer | TextAnswer | MultiSelectAnswer | RubricAnswer | GapFillAnswer;
+/** subject, verb, object, rest — one typed value each, by position. */
+export type SentenceBuildAnswer = { values: string[] };
+export type Answer = SentenceBuildAnswer | SelectInFrontAnswer | WriteInFrontAnswer | McqAnswer | DragOrderAnswer | MatchAnswer | TextAnswer | MultiSelectAnswer | RubricAnswer | GapFillAnswer;
 
 /** Splits a gap_fill template on every `___` marker — `segments.length === blank count + 1`, one blank slot between each pair of segments. Shared by the exercise player, the lesson preview and the admin editor so all three agree on where the blanks land. */
 export function splitGapFillTemplate(template: string): string[] {
@@ -70,6 +72,15 @@ export function gradeCard(card: Card, answer: Answer): boolean {
     return p.items.length > 0 && p.items.every((item, i) =>
       (item.accept || []).some((x) => norm(x, null) === norm((a.values || [])[i] || '', null)));
   }
+  if (card.type === 'sentence_build') {
+    const p = q as SentenceBuildPayload;
+    const a = answer as SentenceBuildAnswer;
+    return p.parts.length > 0 && p.parts.every((part, i) => {
+      const given = norm((a.values || [])[i] || '', null);
+      const accept = (part.accept || []).filter((x) => norm(x, null));
+      return accept.length === 0 ? given === '' : accept.some((x) => norm(x, null) === given);
+    });
+  }
   if (card.type === 'select_in_front') {
     const p = q as SelectInFrontPayload;
     const a = answer as SelectInFrontAnswer;
@@ -96,6 +107,7 @@ export function defaultAnswerFor(card: Card): Answer {
   if (card.type === 'rubric') return {};
   if (card.type === 'write_in_front') return { values: [] };
   if (card.type === 'select_in_front') return { choices: [] };
+  if (card.type === 'sentence_build') return { values: [] };
   return '';
 }
 
@@ -107,6 +119,7 @@ export function isAnswered(card: Card, a: Answer): boolean {
   // every blank to be correct.
   if (card.type === 'gap_fill') return Object.values((a as GapFillAnswer).blanks).some((v) => !!v && v.trim());
   if (card.type === 'write_in_front') return ((a as WriteInFrontAnswer).values || []).some((v) => !!v && v.trim());
+  if (card.type === 'sentence_build') return ((a as SentenceBuildAnswer).values || []).some((v) => !!v && v.trim());
   if (card.type === 'select_in_front') return ((a as SelectInFrontAnswer).choices || []).some((v) => v >= 0);
   if (card.type === 'free_text' || card.type === 'essay' || card.type === 'translate_si_en') return !!(a && String(a).trim());
   if (card.type === 'mcq') return a !== null && a !== undefined;

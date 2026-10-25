@@ -1,7 +1,7 @@
 import { RichText } from '../../components/RichText';
 import { CheckboxRow } from '../../components/Primitives';
-import { gradeCard, norm, seededShuffle, splitGapFillTemplate, type Answer, type DragOrderAnswer, type GapFillAnswer, type MatchAnswer, type MultiSelectAnswer, type RubricAnswer, type SelectInFrontAnswer, type WriteInFrontAnswer } from '../../domain/grading';
-import type { Card, DragOrderPayload, EssayPayload, GapFillPayload, MatchPayload, McqPayload, MultiSelectPayload, RubricPayload, TranslateSiEnPayload, SelectInFrontPayload, WriteInFrontPayload } from '../../domain/types';
+import { gradeCard, norm, seededShuffle, splitGapFillTemplate, type Answer, type DragOrderAnswer, type GapFillAnswer, type MatchAnswer, type MultiSelectAnswer, type RubricAnswer, type SelectInFrontAnswer, type SentenceBuildAnswer, type WriteInFrontAnswer } from '../../domain/grading';
+import type { Card, DragOrderPayload, EssayPayload, GapFillPayload, MatchPayload, McqPayload, MultiSelectPayload, RubricPayload, TranslateSiEnPayload, SelectInFrontPayload, SentenceBuildPayload, WriteInFrontPayload } from '../../domain/types';
 import { bubble } from '../../lib/bubble';
 
 // One card, rendered for answering *and* for review. The review screens pass
@@ -222,6 +222,47 @@ export function ExerciseCardView({ card, answer, setAnswer, checked, lang, readO
                 placeholder={readOnly ? (si ? 'පිළිතුරු දී නැත' : 'Not answered') : (si ? 'ඉංග්‍රීසි පරිවර්තනය ටයිප් කරන්න…' : 'Type the English translation…')}
                 style={{ width: '100%', border: `2px solid ${checked ? (gradeCard(card, answer) ? 'var(--c-success)' : 'var(--c-danger)') : 'var(--c-primary-line)'}`, borderRadius: 999, padding: '14px 18px', fontSize: 16, marginTop: 10, outline: 'none', fontFamily: 'var(--font-body)' }}
               />
+            </>
+          );
+        })()}
+
+        {card.type === 'sentence_build' && (() => {
+          const p = card.payload as SentenceBuildPayload;
+          const values = (answer as SentenceBuildAnswer)?.values || [];
+          const labels = si
+            ? ['උක්ත නාම පදය', 'ක්‍රියා පදය', 'ප්‍රකෘති නාම පදය', 'ඉතිරි කොටස']
+            : ['Subject noun phrase', 'Verb phrase', 'Object noun phrase', 'The rest'];
+          const setValue = (i: number, val: string) => {
+            const next = [0, 1, 2, 3].map((k) => values[k] || '');
+            next[i] = val;
+            set({ values: next });
+          };
+          const built = [0, 1, 2, 3].map((k) => (values[k] || '').trim()).filter(Boolean).join(' ');
+          const border = checked ? (gradeCard(card, answer) ? 'var(--c-success)' : 'var(--c-danger)') : 'var(--c-primary-line)';
+          return (
+            <>
+              {/* Always Sinhala, regardless of the `lang` toggle — the sentence being built. */}
+              <div className="si" style={{ fontSize: 20, fontWeight: 600, background: '#F7F5FF', borderRadius: 12, padding: '14px 16px', marginTop: 14 }}>{p.sentenceSi}</div>
+              {p.hints.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 8, fontSize: 13, color: 'var(--c-ink-faint)', fontWeight: 600 }}>
+                  {p.hints.map((h, i) => <span key={i} className="si">💡 {h}</span>)}
+                </div>
+              )}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
+                {labels.map((label, i) => (
+                  <label key={i} style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, fontWeight: 700, color: 'var(--c-ink-faint)' }}>
+                    {label}
+                    <input
+                      value={values[i] || ''} readOnly={readOnly} onChange={(e) => setValue(i, e.target.value)}
+                      placeholder={readOnly ? (si ? 'පිළිතුරු දී නැත' : 'Not answered') : '…'}
+                      style={{ width: '100%', border: `2px solid ${border}`, borderRadius: 12, padding: '10px 14px', fontSize: 15, outline: 'none', fontFamily: 'var(--font-body)', color: 'var(--c-ink)', fontWeight: 400 }}
+                    />
+                  </label>
+                ))}
+              </div>
+              <div aria-live="polite" style={{ marginTop: 14, background: '#F7F5FF', borderRadius: 12, padding: '14px 16px', minHeight: 52, fontSize: 18, fontWeight: 600, overflowWrap: 'anywhere' }}>
+                {built || <span style={{ color: 'var(--c-ink-disabled)', fontWeight: 400 }}>{si ? 'ඔබේ වාක්‍යය මෙහි දිස්වේ…' : 'Your sentence will appear here…'}</span>}
+              </div>
             </>
           );
         })()}

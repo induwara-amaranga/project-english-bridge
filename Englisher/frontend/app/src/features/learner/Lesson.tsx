@@ -90,6 +90,13 @@ function LessonCard({ card, lang }: { card: Card; lang: 'en' | 'si' }) {
             ))}
           </div>
         )}
+        {card.type === 'sentence_build' && (
+          <>
+            {/* Always Sinhala — the sentence itself, not chrome. */}
+            <div className="si" style={{ fontSize: 16, fontWeight: 600, background: 'var(--c-primary-tint-2)', borderRadius: 12, padding: 12, marginTop: 12 }}>{(card.payload as { sentenceSi: string }).sentenceSi || '…'}</div>
+            <div style={{ background: 'var(--c-primary-tint-2)', border: '2px solid var(--c-primary-line)', borderRadius: 12, padding: 14, minHeight: 48, fontSize: 14, color: 'var(--c-ink-disabled)', marginTop: 8 }}>{si ? 'අභ්‍යාස තිරයේ පිළිතුරු දෙනු ලැබේ' : 'Answered on the exercise screen'}</div>
+          </>
+        )}
         {card.type === 'translate_si_en' && (
           <>
             {/* Always Sinhala — the sentence itself, not chrome. */}

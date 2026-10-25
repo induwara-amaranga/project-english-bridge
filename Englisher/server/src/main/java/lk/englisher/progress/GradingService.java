@@ -77,6 +77,7 @@ public class GradingService {
             case "translate_si_en" -> anyAccepted(payload.path("accept"), answer, null);
             case "write_in_front" -> isWriteInFrontCorrect(payload.path("items"), answer);
             case "select_in_front" -> isSelectInFrontCorrect(payload.path("items"), answer);
+            case "sentence_build" -> isSentenceBuildCorrect(payload.path("parts"), answer);
             case "multi_select" -> isExactSet(answer, payload.path("correctIndexes"));
             // Self-assessed, never auto-graded.
             case "essay", "rubric" -> true;
@@ -106,6 +107,7 @@ public class GradingService {
             case "mcq" -> answer != null && !answer.isNull();
             case "write_in_front" -> isAnyValueFilled(answer);
             case "select_in_front" -> isAnyChoiceMade(answer);
+            case "sentence_build" -> isAnyValueFilled(answer);
             case "multi_select" -> answer != null && answer.isArray() && !answer.isEmpty();
             // A rubric is a self-check, not a gate — it never blocks moving on.
             case "rubric" -> true;
@@ -163,6 +165,34 @@ public class GradingService {
         for (int i = 0; i < items.size(); i++) {
             String given = values == null ? "" : values.path(i).asText("");
             if (!anyAcceptedText(items.get(i).path("accept"), given, null)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Each of the four parts (subject, verb, object, rest) must match one of its
+     * accepted answers; a part with no accepted answers must be left blank.
+     */
+    private boolean isSentenceBuildCorrect(JsonNode parts, JsonNode answer) {
+        if (!parts.isArray() || parts.isEmpty()) {
+            return false;
+        }
+        JsonNode values = answer == null ? null : answer.path("values");
+        for (int i = 0; i < parts.size(); i++) {
+            String given = values == null ? "" : values.path(i).asText("");
+            boolean hasAccepted = false;
+            for (JsonNode candidate : parts.get(i).path("accept")) {
+                if (!norm(candidate.asText(""), null).isEmpty()) {
+                    hasAccepted = true;
+                    break;
+                }
+            }
+            boolean ok = hasAccepted
+                    ? anyAcceptedText(parts.get(i).path("accept"), given, null)
+                    : norm(given, null).isEmpty();
+            if (!ok) {
                 return false;
             }
         }

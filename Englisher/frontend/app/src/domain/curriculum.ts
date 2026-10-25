@@ -189,6 +189,7 @@ export const emptyPayload: Record<CardTypeKey, () => Payload> = {
   translate_si_en: () => ({ sentenceSi: '', accept: [] }),
   write_in_front: () => ({ items: [{ word: '', accept: [] }, { word: '', accept: [] }] }),
   select_in_front: () => ({ items: [{ word: '', options: ['', ''], correctIndex: 0 }, { word: '', options: ['', ''], correctIndex: 0 }] }),
+  sentence_build: () => ({ sentenceSi: '', hints: [], parts: [{ accept: [] }, { accept: [] }, { accept: [] }, { accept: [] }] }),
   text: () => ({}),
 };
 type CardTypeKey = ExerciseType | 'text';
