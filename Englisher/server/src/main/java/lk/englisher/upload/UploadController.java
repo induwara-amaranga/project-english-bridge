@@ -2,7 +2,9 @@ package lk.englisher.upload;
 
 import lk.englisher.common.ApiException;
 import lk.englisher.config.UploadProperties;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
@@ -15,6 +17,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,10 +50,15 @@ public class UploadController {
     private static final Pattern STORED_NAME = Pattern.compile("[0-9a-f]{32}\\.(png|jpg|gif|webp)");
 
     private final Path root;
+    /** Non-null when R2 is configured; otherwise images live on local disk under {@link #root}. */
+    private final S3Client r2;
+    private final String bucket;
 
-    public UploadController(UploadProperties properties) throws IOException {
+    public UploadController(UploadProperties properties, ObjectProvider<S3Client> r2) throws IOException {
         this.root = Path.of(properties.dir()).toAbsolutePath().normalize();
-        Files.createDirectories(root);
+        this.r2 = r2.getIfAvailable();
+        this.bucket = properties.bucket();
+        if (this.r2 == null) Files.createDirectories(root);
     }
 
     @PostMapping("/admin/uploads")
@@ -56,21 +70,38 @@ public class UploadController {
             throw ApiException.badRequest("upload.unsupportedType", "Please choose a PNG, JPEG, GIF or WebP image.");
         }
         String name = UUID.randomUUID().toString().replace("-", "") + "." + ext;
-        file.transferTo(root.resolve(name));
+        if (r2 != null) {
+            try (InputStream in = file.getInputStream()) {
+                r2.putObject(PutObjectRequest.builder().bucket(bucket).key(name).contentType(mimeFor(name)).build(),
+                        RequestBody.fromInputStream(in, file.getSize()));
+            }
+        } else {
+            file.transferTo(root.resolve(name));
+        }
+        // Served back through this API (see serve) so the URL never depends on the storage backend.
         return Map.of("url", "/api/uploads/" + name);
     }
 
     @GetMapping("/uploads/{name:.+}")
     public ResponseEntity<Resource> serve(@PathVariable String name) {
         if (!STORED_NAME.matcher(name).matches()) throw ApiException.notFound("upload.notFound", "Image not found.");
-        Path file = root.resolve(name);
-        if (!Files.isRegularFile(file)) throw ApiException.notFound("upload.notFound", "Image not found.");
-        return ResponseEntity.ok()
+        ResponseEntity.BodyBuilder ok = ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(mimeFor(name)))
                 .header("X-Content-Type-Options", "nosniff")
                 // Names are random and never reused, so the content is immutable.
-                .cacheControl(CacheControl.maxAge(Duration.ofDays(365)).cachePublic().immutable())
-                .body(new FileSystemResource(file));
+                .cacheControl(CacheControl.maxAge(Duration.ofDays(365)).cachePublic().immutable());
+        if (r2 != null) {
+            try {
+                ResponseInputStream<GetObjectResponse> object =
+                        r2.getObject(GetObjectRequest.builder().bucket(bucket).key(name).build());
+                return ok.contentLength(object.response().contentLength()).body(new InputStreamResource(object));
+            } catch (NoSuchKeyException e) {
+                throw ApiException.notFound("upload.notFound", "Image not found.");
+            }
+        }
+        Path file = root.resolve(name);
+        if (!Files.isRegularFile(file)) throw ApiException.notFound("upload.notFound", "Image not found.");
+        return ok.body(new FileSystemResource(file));
     }
 
     private static String detectExtension(MultipartFile file) throws IOException {

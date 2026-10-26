@@ -53,6 +53,12 @@ englisher:
   uploads:
     # Lesson images (upload/UploadController). Point at a persistent volume in prod.
     dir: ${ENGLISHER_UPLOADS_DIR:./uploads}
+    # Cloudflare R2. Set R2_BUCKET (plus the other three) in prod: Heroku's disk
+    # is wiped on every restart, so local `dir` is for dev only.
+    endpoint: ${R2_ENDPOINT:}
+    access-key: ${R2_ACCESS_KEY:}
+    secret-key: ${R2_SECRET_KEY:}
+    bucket: ${R2_BUCKET:}
   rate-limit:
     # Per-IP throttling of the sign-in/sign-up endpoints — see AuthRateLimitFilter.
     enabled: true
